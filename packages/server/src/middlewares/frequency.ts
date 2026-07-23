@@ -10,10 +10,10 @@ export const NEW_USER_CALL_SERVICE_FREQUENTLY =
     '发消息过于频繁, 你还处于萌新期, 不要恶意刷屏, 先冷静一会再试';
 
 const MaxCallPerMinutes = 20;
-const NewUserMaxCallPerMinutes = 5;
+const NewUserMaxCallPerMinutes = 20;
 const ClearDataInterval = 60000;
 
-const AutoSealDuration = 5; // minutes
+const AutoSealDuration = 1; // minutes
 
 type Options = {
     maxCallPerMinutes?: number;
