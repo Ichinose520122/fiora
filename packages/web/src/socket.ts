@@ -17,7 +17,6 @@ import {
     DeleteMessagePayload,
 } from './state/action';
 import {
-    guest,
     loginByToken,
     getLinkmanHistoryMessages,
     getLinkmansLastMessagesV2,
@@ -31,34 +30,9 @@ const options = {
 };
 const socket = IO(config.server, options);
 
-async function loginFailback() {
-    const defaultGroup = await guest(
-        platform.os?.family,
-        platform.name,
-        platform.description,
-    );
-    if (defaultGroup) {
-        const { messages } = defaultGroup;
-        dispatch({
-            type: ActionTypes.SetGuest,
-            payload: defaultGroup,
-        });
-
-        messages.forEach(convertMessage);
-        dispatch({
-            type: ActionTypes.AddLinkmanHistoryMessages,
-            payload: {
-                linkmanId: defaultGroup._id,
-                messages,
-            },
-        });
-    }
-}
-
 socket.on('connect', async () => {
     dispatch({ type: ActionTypes.Connect, payload: '' });
 
-    await initOSS();
     dispatch({ type: ActionTypes.Ready, payload: '' });
 
     const token = window.localStorage.getItem('token');
@@ -70,6 +44,7 @@ socket.on('connect', async () => {
             platform.description,
         );
         if (user) {
+            await initOSS();
             dispatch({
                 type: ActionTypes.SetUser,
                 payload: user,
@@ -93,8 +68,15 @@ socket.on('connect', async () => {
             });
             return;
         }
+        window.localStorage.removeItem('token');
     }
-    loginFailback();
+    dispatch({
+        type: ActionTypes.SetStatus,
+        payload: {
+            key: 'loginRegisterDialogVisible',
+            value: true,
+        },
+    });
 });
 
 socket.on('disconnect', () => {

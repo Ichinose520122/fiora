@@ -31,18 +31,32 @@ describe('server/middlewares/isLogin', () => {
         expect(next).toBeCalled();
     });
 
-    it('should call service success when it not need login ', async () => {
+    it('should allow login without an existing session', async () => {
         const socket = {
             id: 'id',
-            data: {
-                user: 'user',
-            },
+            data: {},
         } as Socket;
         const middleware = isLogin(socket);
 
-        const { args, next } = getMiddlewareParams('register');
+        const { args, next } = getMiddlewareParams('login');
 
         await middleware(args, next);
         expect(next).toBeCalled();
+    });
+
+    it('should reject guest history access without login', async () => {
+        const socket = {
+            id: 'id',
+            data: {},
+        } as Socket;
+        const middleware = isLogin(socket);
+
+        const { args, cb, next } = getMiddlewareParams(
+            'getDefaultGroupHistoryMessages',
+        );
+
+        await middleware(args, next);
+        expect(cb).toBeCalledWith(PLEASE_LOGIN);
+        expect(next).not.toBeCalled();
     });
 });

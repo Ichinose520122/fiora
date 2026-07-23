@@ -167,6 +167,56 @@ export async function register(
 }
 
 /**
+ * 管理员手动创建账号。公开注册关闭时使用此接口。
+ */
+export async function createUser(
+    ctx: Context<{ username: string; password: string }>,
+) {
+    const username = ctx.data.username?.trim();
+    const { password } = ctx.data;
+    assert(username, '洛克王国 ID 不能为空');
+    assert(password, '学号不能为空');
+
+    const existUser = await User.findOne({ username });
+    assert(!existUser, '该洛克王国 ID 已存在');
+
+    const defaultGroup = await Group.findOne({ isDefault: true });
+    if (!defaultGroup) {
+        throw new AssertionError({ message: '默认群组不存在' });
+    }
+
+    const salt = await bcrypt.genSalt(SALT_ROUNDS);
+    const hash = await bcrypt.hash(password, salt);
+
+    let newUser = null;
+    try {
+        newUser = await User.create({
+            username,
+            salt,
+            password: hash,
+            avatar: getRandomAvatar(),
+        } as UserDocument);
+    } catch (err) {
+        if ((err as Error).name === 'ValidationError') {
+            return '洛克王国 ID 包含不支持的字符或者长度超过限制';
+        }
+        throw err;
+    }
+
+    if (!defaultGroup.creator) {
+        defaultGroup.creator = newUser._id;
+    }
+    defaultGroup.members.push(newUser._id);
+    await defaultGroup.save();
+
+    return {
+        _id: newUser._id,
+        username: newUser.username,
+        avatar: newUser.avatar,
+    };
+}
+
+/**
  * 账密登录
  * @param ctx Context
  */
@@ -224,6 +274,9 @@ export async function login(
     );
 
     const notificationTokens = await getUserNotificationTokens(user);
+    const isAdmin =
+        user.isAdmin || config.administrator.includes(user._id.toString());
+    ctx.socket.isAdmin = isAdmin;
 
     return {
         _id: user._id,
@@ -233,7 +286,7 @@ export async function login(
         groups,
         friends,
         token,
-        isAdmin: config.administrator.includes(user._id.toString()),
+        isAdmin,
         notificationTokens,
     };
 }
@@ -266,6 +319,7 @@ export async function loginByToken(
             username: 1,
             tag: 1,
             createTime: 1,
+            isAdmin: 1,
         },
     );
     if (!user) {
@@ -309,6 +363,9 @@ export async function loginByToken(
     );
 
     const notificationTokens = await getUserNotificationTokens(user);
+    const isAdmin =
+        user.isAdmin || config.administrator.includes(user._id.toString());
+    ctx.socket.isAdmin = isAdmin;
 
     return {
         _id: user._id,
@@ -317,7 +374,7 @@ export async function loginByToken(
         tag: user.tag,
         groups,
         friends,
-        isAdmin: config.administrator.includes(user._id.toString()),
+        isAdmin,
         notificationTokens,
     };
 }

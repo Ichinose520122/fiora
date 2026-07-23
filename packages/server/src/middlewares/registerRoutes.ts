@@ -26,6 +26,9 @@ export default function registerRoutes(socket: Socket, routes: Routes) {
                         get isAdmin() {
                             return socket.data.isAdmin;
                         },
+                        set isAdmin(value: boolean) {
+                            socket.data.isAdmin = value;
+                        },
                         join: socket.join.bind(socket),
                         leave: socket.leave.bind(socket),
                         emit: (target, _event, _data) => {

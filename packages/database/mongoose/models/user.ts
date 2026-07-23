@@ -27,6 +27,10 @@ const UserSchema = new Schema({
         },
     ],
     lastLoginIp: String,
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 export interface UserDocument extends Document {
@@ -48,6 +52,8 @@ export interface UserDocument extends Document {
     lastLoginTime: Date;
     /** 最后登录IP */
     lastLoginIp: string;
+    /** 是否为管理员 */
+    isAdmin: boolean;
 }
 
 /**

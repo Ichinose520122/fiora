@@ -36,7 +36,7 @@ export default {
     /** 禁用注册功能 */
     disableRegister: env.DisableRegister
         ? env.DisableRegister === 'true'
-        : false,
+        : true,
 
     /** disable user create new group */
     disableCreateGroup: env.DisableCreateGroup

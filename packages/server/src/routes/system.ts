@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import assert, { AssertionError } from 'assert';
-import { promisify } from 'util';
 import RegexEscape from 'regex-escape';
 import OSS, { STS } from 'ali-oss';
 
@@ -26,6 +25,43 @@ import {
 let baiduToken = '';
 /** 最后一次获取token的时间 */
 let lastBaiduTokenTime = Date.now();
+
+const AllowedUploadDirectories = new Set([
+    'Avatar',
+    'BackgroundImage',
+    'FileMessage',
+    'GroupAvatar',
+    'ImageMessage',
+]);
+
+function resolveLocalUploadPath(fileNameValue: unknown) {
+    assert.equal(typeof fileNameValue, 'string', '文件名格式错误');
+
+    const parts = (fileNameValue as string).split('/');
+    assert.equal(parts.length, 2, '文件名格式错误');
+
+    const [directory, fileName] = parts;
+    assert(AllowedUploadDirectories.has(directory), '不允许上传到该目录');
+    assert(
+        /^[0-9a-f]{24}_[0-9]+(?:\.[0-9a-z]{1,16})?$/i.test(fileName),
+        '文件名格式错误',
+    );
+
+    const publicRoot = path.resolve(__dirname, '../../public');
+    const directoryPath = path.resolve(publicRoot, directory);
+    const filePath = path.resolve(directoryPath, fileName);
+    assert(
+        filePath.startsWith(`${publicRoot}${path.sep}`),
+        '文件路径超出允许范围',
+    );
+
+    return {
+        directory,
+        directoryPath,
+        fileName,
+        filePath,
+    };
+}
 
 /**
  * 搜索用户和群组
@@ -309,18 +345,12 @@ export async function uploadFile(
             throw Error('上传阿里云OSS失败');
         }
 
-        const [directory, fileName] = ctx.data.fileName.split('/');
-        const filePath = path.resolve('__dirname', '../public', directory);
-        const isExists = await promisify(fs.exists)(filePath);
-        if (!isExists) {
-            await promisify(fs.mkdir)(filePath);
-        }
-        await promisify(fs.writeFile)(
-            path.resolve(filePath, fileName),
-            ctx.data.file,
-        );
+        const { directory, directoryPath, fileName, filePath } =
+            resolveLocalUploadPath(ctx.data.fileName);
+        await fs.promises.mkdir(directoryPath, { recursive: true });
+        await fs.promises.writeFile(filePath, ctx.data.file);
         return {
-            url: `/${ctx.data.fileName}`,
+            url: `/${directory}/${fileName}`,
         };
     } catch (err) {
         const typedErr = err as Error;

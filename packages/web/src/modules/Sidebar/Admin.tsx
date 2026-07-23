@@ -16,6 +16,7 @@ import {
     toggleSendMessage,
     toggleNewUserSendMessage,
     getSystemConfig,
+    createUser,
 } from '../../service';
 
 const styles = {
@@ -47,6 +48,20 @@ function Admin(props: AdminProps) {
     const [sealList, setSealList] = useState({ users: [], ips: [] });
     const [sealIpAddress, setSealIpAddress] = useState('');
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
+    const [newUserId, setNewUserId] = useState('');
+    const [newUserStudentId, setNewUserStudentId] = useState('');
+
+    async function handleCreateUser() {
+        const user = await createUser(
+            newUserId.trim(),
+            newUserStudentId.trim(),
+        );
+        if (user) {
+            Message.success(`账号 ${user.username} 创建成功`);
+            setNewUserId('');
+            setNewUserStudentId('');
+        }
+    }
 
     async function handleGetSealList() {
         const sealListRes = await getSealList();
@@ -148,6 +163,31 @@ function Admin(props: AdminProps) {
             onClose={onClose}
         >
             <div className={Common.container}>
+                <div className={Common.block}>
+                    <p className={Common.title}>创建小洛克账号</p>
+                    <div className={Style.inputBlock}>
+                        <Input
+                            className={`${Style.input} ${Style.tagUsernameInput}`}
+                            value={newUserId}
+                            onChange={setNewUserId}
+                            placeholder="洛克王国 ID"
+                        />
+                        <Input
+                            className={`${Style.input} ${Style.tagInput}`}
+                            type="password"
+                            value={newUserStudentId}
+                            onChange={setNewUserStudentId}
+                            placeholder="学号"
+                            onEnter={handleCreateUser}
+                        />
+                        <Button
+                            className={Style.button}
+                            onClick={handleCreateUser}
+                        >
+                            创建账号
+                        </Button>
+                    </div>
+                </div>
                 <div className={Common.block}>
                     {!systemConfig?.disableSendMessage ? (
                         <Button

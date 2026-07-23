@@ -9,10 +9,11 @@ import useAction from '../../hooks/useAction';
 
 import Style from './LoginRegister.less';
 import { login, getLinkmansLastMessagesV2 } from '../../service';
+import { initOSS } from '../../utils/uploadFile';
 import { Message } from '../../state/reducer';
 import { ActionTypes } from '../../state/action';
 
-/** 登录框 */
+/** 洛克王国账号登录 */
 function Login() {
     const action = useAction();
     const dispatch = useDispatch();
@@ -21,8 +22,8 @@ function Login() {
 
     async function handleLogin() {
         const user = await login(
-            username,
-            password,
+            username.trim(),
+            password.trim(),
             platform.os?.family,
             platform.name,
             platform.description,
@@ -31,6 +32,7 @@ function Login() {
             action.setUser(user);
             action.toggleLoginRegisterDialog(false);
             window.localStorage.setItem('token', user.token);
+            await initOSS();
 
             const linkmanIds = [
                 ...user.groups.map((group: any) => group._id),
@@ -54,14 +56,16 @@ function Login() {
 
     return (
         <div className={Style.loginRegister}>
-            <h3 className={Style.title}>用户名</h3>
+            <h2 className={Style.heading}>欢迎回到小洛克休息室</h2>
+            <p className={Style.description}>账号由林檎统一添加</p>
+            <h3 className={Style.title}>洛克王国 ID</h3>
             <Input
                 className={Style.input}
                 value={username}
                 onChange={setUsername}
                 onEnter={handleLogin}
             />
-            <h3 className={Style.title}>密码</h3>
+            <h3 className={Style.title}>学号</h3>
             <Input
                 className={Style.input}
                 type="password"
@@ -74,7 +78,7 @@ function Login() {
                 onClick={handleLogin}
                 type="button"
             >
-                登录
+                进入休息室
             </button>
         </div>
     );

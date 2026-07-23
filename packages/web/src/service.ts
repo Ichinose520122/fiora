@@ -380,6 +380,11 @@ export async function getSystemConfig() {
     return systemConfig;
 }
 
+export async function createUser(username: string, password: string) {
+    const [, user] = await fetch('createUser', { username, password });
+    return user;
+}
+
 /**
  * 重置指定用户的密码
  * @param username 目标用户名

@@ -14,15 +14,18 @@ export default function isAdmin(socket: Socket) {
         'setUserTag',
         'getUserIps',
         'sealIp',
-        'getSealIpList',
+        'sealUserOnlineIp',
         'toggleSendMessage',
         'toggleNewUserSendMessage',
         'getSystemConfig',
+        'createUser',
+        'register',
     ]);
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         socket.data.isAdmin =
             !!socket.data.user &&
-            config.administrator.includes(socket.data.user);
+            (socket.data.isAdmin === true ||
+                config.administrator.includes(socket.data.user));
         const isAdminEvent = requireAdminEvent.has(event);
         if (!socket.data.isAdmin && isAdminEvent) {
             cb(YOU_ARE_NOT_ADMINISTRATOR);

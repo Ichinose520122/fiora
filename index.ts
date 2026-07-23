@@ -28,6 +28,15 @@ program
     });
 
 program
+    .command('setAdmin <username> [enabled]')
+    .description('Set or remove administrator privileges for an account')
+    .action((username: string, enabled = 'true') => {
+        exec(
+            `npx ts-node --transpile-only packages/bin/index.ts setAdmin ${username} ${enabled}`,
+        );
+    });
+
+program
     .command('deleteUser <userId>')
     .description(i18n('deleteUserDescription'))
     .action((userId: string) => {

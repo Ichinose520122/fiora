@@ -7,6 +7,7 @@ import getRandomAvatar from '@fiora/utils/getRandomAvatar';
 import Group, { GroupDocument } from '@fiora/database/mongoose/models/group';
 import Socket from '@fiora/database/mongoose/models/socket';
 import Message from '@fiora/database/mongoose/models/message';
+import getLinkmanAccess from '../utils/linkmanAccess';
 
 const { isValid } = Types.ObjectId;
 
@@ -171,6 +172,10 @@ function getGroupOnlineMembersWrapperV2() {
     ) {
         const { groupId, cache: cacheKey } = ctx.data;
         assert(isValid(groupId), '无效的群组ID');
+        const { group } = await getLinkmanAccess(ctx.socket.user, groupId);
+        if (!group) {
+            throw new AssertionError({ message: '群组不存在' });
+        }
 
         if (
             cache[groupId] &&
@@ -180,10 +185,6 @@ function getGroupOnlineMembersWrapperV2() {
             return { cache: cacheKey };
         }
 
-        const group = await Group.findOne({ _id: groupId });
-        if (!group) {
-            throw new AssertionError({ message: '群组不存在' });
-        }
         const result = await getGroupOnlineMembersHelper(group);
         const resultCacheKey = stringHash(
             result.map((item) => item.user._id).join(','),
@@ -223,14 +224,15 @@ export async function getGroupOnlineMembers(
 function getDefaultGroupOnlineMembersWrapper() {
     let cache: any = null;
     let expireTime = 0;
-    return async function getDefaultGroupOnlineMembers() {
-        if (cache && expireTime > Date.now()) {
-            return cache;
-        }
-
+    return async function getDefaultGroupOnlineMembers(ctx: Context<{}>) {
         const group = await Group.findOne({ isDefault: true });
         if (!group) {
             throw new AssertionError({ message: '群组不存在' });
+        }
+        await getLinkmanAccess(ctx.socket.user, group._id.toString());
+
+        if (cache && expireTime > Date.now()) {
+            return cache;
         }
         cache = await getGroupOnlineMembersHelper(group);
         expireTime = Date.now() + GroupOnlineMembersCacheExpireTime;

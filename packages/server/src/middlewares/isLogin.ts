@@ -7,15 +7,8 @@ export const PLEASE_LOGIN = '请登录后再试';
  */
 export default function isLogin(socket: Socket) {
     const noRequireLoginEvent = new Set([
-        'register',
         'login',
         'loginByToken',
-        'guest',
-        'getDefaultGroupHistoryMessages',
-        'getDefaultGroupOnlineMembers',
-        'getBaiduToken',
-        'getGroupBasicInfo',
-        'getSTS',
     ]);
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         if (!noRequireLoginEvent.has(event) && !socket.data.user) {

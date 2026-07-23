@@ -6,8 +6,8 @@ import { Expo, ExpoPushErrorTicket } from 'expo-server-sdk';
 
 import xss from '@fiora/utils/xss';
 import logger from '@fiora/utils/logger';
-import User, { UserDocument } from '@fiora/database/mongoose/models/user';
-import Group, { GroupDocument } from '@fiora/database/mongoose/models/group';
+import User from '@fiora/database/mongoose/models/user';
+import Group from '@fiora/database/mongoose/models/group';
 import Message, {
     handleInviteV2Message,
     handleInviteV2Messages,
@@ -25,6 +25,7 @@ import {
     Redis,
 } from '@fiora/database/redis/initRedis';
 import client from '../../../config/client';
+import getLinkmanAccess from '../utils/linkmanAccess';
 
 const { isValid } = Types.ObjectId;
 
@@ -101,17 +102,10 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
     let { type } = ctx.data;
     assert(to, 'to不能为空');
 
-    let toGroup: GroupDocument | null = null;
-    let toUser: UserDocument | null = null;
-    if (isValid(to)) {
-        toGroup = await Group.findOne({ _id: to });
-        assert(toGroup, '群组不存在');
-    } else {
-        const userId = to.replace(ctx.socket.user.toString(), '');
-        assert(isValid(userId), '无效的用户ID');
-        toUser = await User.findOne({ _id: userId });
-        assert(toUser, '用户不存在');
-    }
+    const { group: toGroup, user: toUser } = await getLinkmanAccess(
+        ctx.socket.user,
+        to,
+    );
 
     let messageContent = content;
     if (type === 'text') {
@@ -249,6 +243,12 @@ export async function getLinkmansLastMessages(
 ) {
     const { linkmans } = ctx.data;
     assert(Array.isArray(linkmans), '参数linkmans应该是Array');
+    assert(linkmans.length <= 100, '联系人数量超过限制');
+    await Promise.all(
+        linkmans.map((linkmanId) =>
+            getLinkmanAccess(ctx.socket.user, linkmanId),
+        ),
+    );
 
     const promises = linkmans.map(async (linkmanId) => {
         const messages = await Message.find(
@@ -281,6 +281,13 @@ export async function getLinkmansLastMessagesV2(
     ctx: Context<{ linkmans: string[] }>,
 ) {
     const { linkmans } = ctx.data;
+    assert(Array.isArray(linkmans), '参数linkmans应该是Array');
+    assert(linkmans.length <= 100, '联系人数量超过限制');
+    await Promise.all(
+        linkmans.map((linkmanId) =>
+            getLinkmanAccess(ctx.socket.user, linkmanId),
+        ),
+    );
 
     const histories = await History.find({
         user: ctx.socket.user.toString(),
@@ -355,6 +362,8 @@ export async function getLinkmanHistoryMessages(
     ctx: Context<{ linkmanId: string; existCount: number }>,
 ) {
     const { linkmanId, existCount } = ctx.data;
+    assert(Number.isInteger(existCount) && existCount >= 0, '无效的历史消息位置');
+    await getLinkmanAccess(ctx.socket.user, linkmanId);
 
     const messages = await Message.find(
         { to: linkmanId },
@@ -367,11 +376,12 @@ export async function getLinkmanHistoryMessages(
         },
         {
             sort: { createTime: -1 },
-            limit: EachFetchMessagesCount + existCount,
+            skip: existCount,
+            limit: EachFetchMessagesCount,
         },
     ).populate('from', { username: 1, avatar: 1, tag: 1 });
     await handleInviteV2Messages(messages);
-    const result = messages.slice(existCount).reverse();
+    const result = messages.reverse();
     return result;
 }
 
@@ -383,11 +393,13 @@ export async function getDefaultGroupHistoryMessages(
     ctx: Context<{ existCount: number }>,
 ) {
     const { existCount } = ctx.data;
+    assert(Number.isInteger(existCount) && existCount >= 0, '无效的历史消息位置');
 
     const group = await Group.findOne({ isDefault: true });
     if (!group) {
         throw new AssertionError({ message: '默认群组不存在' });
     }
+    await getLinkmanAccess(ctx.socket.user, group._id.toString());
     const messages = await Message.find(
         { to: group._id },
         {
@@ -399,11 +411,12 @@ export async function getDefaultGroupHistoryMessages(
         },
         {
             sort: { createTime: -1 },
-            limit: EachFetchMessagesCount + existCount,
+            skip: existCount,
+            limit: EachFetchMessagesCount,
         },
     ).populate('from', { username: 1, avatar: 1, tag: 1 });
     await handleInviteV2Messages(messages);
-    const result = messages.slice(existCount).reverse();
+    const result = messages.reverse();
     return result;
 }
 
