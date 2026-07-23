@@ -93,7 +93,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             user && user.createTime.getTime() > Date.now() - OneYear;
         assert(
             ctx.socket.isAdmin || !isNewUser,
-            '新用户禁言中! 主群禁止闲聊, 多交流fiora和开发技术, 自发维护交流环境',
+            '新用户禁言中，请稍后再试并友善交流',
         );
     }
 

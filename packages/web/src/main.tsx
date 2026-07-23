@@ -54,7 +54,7 @@ if (
 
 if (window.location.pathname !== '/') {
     const { pathname } = window.location;
-    window.history.pushState({}, 'fiora', '/');
+    window.history.pushState({}, '林檎的小洛克休息室', '/');
     if (pathname.startsWith('/invite/group/')) {
         const groupId = pathname.replace(`/invite/group/`, '');
         window.sessionStorage.setItem('inviteGroupId', groupId);

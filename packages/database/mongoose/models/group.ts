@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { NAME_REGEXP } from '@fiora/utils/const';
+import { GROUP_NAME_REGEXP } from '@fiora/utils/const';
 
 const GroupSchema = new Schema({
     createTime: { type: Date, default: Date.now },
@@ -8,7 +8,7 @@ const GroupSchema = new Schema({
         type: String,
         trim: true,
         unique: true,
-        match: NAME_REGEXP,
+        match: GROUP_NAME_REGEXP,
         index: true,
     },
     avatar: String,

@@ -14,9 +14,6 @@ import socket from '../../socket';
 import Message from '../../components/Message';
 
 import Admin from './Admin';
-import Download from './Download';
-import Reward from './Reward';
-import About from './About';
 
 import Style from './Sidebar.less';
 import useAero from '../../hooks/useAero';
@@ -48,10 +45,6 @@ function Sidebar() {
     const [selfInfoDialogVisible, toggleSelfInfoDialogVisible] =
         useState(false);
     const [adminDialogVisible, toggleAdminDialogVisible] = useState(false);
-    const [downloadDialogVisible, toggleDownloadDialogVisible] =
-        useState(false);
-    const [rewardDialogVisible, toggleRewardDialogVisible] = useState(false);
-    const [aboutDialogVisible, toggleAboutDialogVisible] = useState(false);
     const [settingDialogVisible, toggleSettingDialogVisible] = useState(false);
     const aero = useAero();
 
@@ -112,55 +105,6 @@ function Sidebar() {
                                 onClick={() => toggleAdminDialogVisible(true)}
                             />,
                         )}
-                    <Tooltip
-                        placement="right"
-                        mouseEnterDelay={0.3}
-                        overlay={<span>源码</span>}
-                    >
-                        <a
-                            className={Style.linkButton}
-                            href="https://github.com/yinxin630/fiora"
-                            target="_black"
-                            rel="noopener noreferrer"
-                        >
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="github"
-                                iconSize={26}
-                            />
-                        </a>
-                    </Tooltip>
-                    {renderTooltip(
-                        '下载APP',
-                        <IconButton
-                            width={40}
-                            height={40}
-                            icon="app"
-                            iconSize={28}
-                            onClick={() => toggleDownloadDialogVisible(true)}
-                        />,
-                    )}
-                    {renderTooltip(
-                        '打赏',
-                        <IconButton
-                            width={40}
-                            height={40}
-                            icon="dashang"
-                            iconSize={26}
-                            onClick={() => toggleRewardDialogVisible(true)}
-                        />,
-                    )}
-                    {renderTooltip(
-                        '关于',
-                        <IconButton
-                            width={40}
-                            height={40}
-                            icon="about"
-                            iconSize={26}
-                            onClick={() => toggleAboutDialogVisible(true)}
-                        />,
-                    )}
                     {isLogin &&
                         renderTooltip(
                             '设置',
@@ -198,18 +142,6 @@ function Sidebar() {
                         onClose={() => toggleAdminDialogVisible(false)}
                     />
                 )}
-                <Download
-                    visible={downloadDialogVisible}
-                    onClose={() => toggleDownloadDialogVisible(false)}
-                />
-                <Reward
-                    visible={rewardDialogVisible}
-                    onClose={() => toggleRewardDialogVisible(false)}
-                />
-                <About
-                    visible={aboutDialogVisible}
-                    onClose={() => toggleAboutDialogVisible(false)}
-                />
                 {isLogin && settingDialogVisible && (
                     <SettingAsync
                         visible={settingDialogVisible}
