@@ -2,6 +2,7 @@ import { mocked } from 'ts-jest/utils';
 import { Redis } from '@fiora/database/redis/initRedis';
 import { Socket } from 'socket.io';
 import frequency, {
+    AutoSealDuration,
     CALL_SERVICE_FREQUENTLY,
     NEW_USER_CALL_SERVICE_FREQUENTLY,
 } from '../../src/middlewares/frequency';
@@ -64,6 +65,11 @@ describe('server/middlewares/frequency', () => {
         await middleware(args, next);
         await middleware(args, next);
         expect(cb).toBeCalledWith(NEW_USER_CALL_SERVICE_FREQUENTLY);
+        expect(Redis.set).toBeCalledWith(
+            expect.any(String),
+            '1',
+            AutoSealDuration,
+        );
     });
 
     it('should clear count data regularly ', async () => {

@@ -646,7 +646,7 @@ function ChatInput() {
                 <input
                     className={Style.input}
                     type="text"
-                    placeholder="随便聊点啥吧, 不要无意义刷屏~~"
+                    placeholder="说点什么吧..."
                     maxLength={2048}
                     ref={$input}
                     onKeyDown={handleInputKeyDown}

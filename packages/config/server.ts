@@ -36,7 +36,10 @@ export default {
     /** 禁用注册功能 */
     disableRegister: env.DisableRegister
         ? env.DisableRegister === 'true'
-        : true,
+        : false,
+
+    /** 全站通用注册邀请码 */
+    inviteCode: env.InviteCode || '',
 
     /** disable user create new group */
     disableCreateGroup: env.DisableCreateGroup

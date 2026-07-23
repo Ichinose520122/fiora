@@ -7,6 +7,7 @@ export const PLEASE_LOGIN = '请登录后再试';
  */
 export default function isLogin(socket: Socket) {
     const noRequireLoginEvent = new Set([
+        'register',
         'login',
         'loginByToken',
     ]);

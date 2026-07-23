@@ -8,20 +8,23 @@ import Style from './LoginRegister.less';
 import Input from '../../components/Input';
 import useAction from '../../hooks/useAction';
 import { register, getLinkmansLastMessagesV2 } from '../../service';
+import { initOSS } from '../../utils/uploadFile';
 import { Message } from '../../state/reducer';
 import { ActionTypes } from '../../state/action';
 
-/** 登录框 */
+/** 邀请码注册 */
 function Register() {
     const action = useAction();
     const dispatch = useDispatch();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [inviteCode, setInviteCode] = useState('');
 
     async function handleRegister() {
         const user = await register(
-            username,
-            password,
+            username.trim(),
+            password.trim(),
+            inviteCode.trim(),
             platform.os?.family,
             platform.name,
             platform.description,
@@ -30,6 +33,7 @@ function Register() {
             action.setUser(user);
             action.toggleLoginRegisterDialog(false);
             window.localStorage.setItem('token', user.token);
+            await initOSS();
 
             const linkmanIds = [
                 ...user.groups.map((group: any) => group._id),
@@ -52,15 +56,17 @@ function Register() {
     }
 
     return (
-        <div className={Style.loginRegister}>
-            <h3 className={Style.title}>用户名</h3>
+        <div className={`${Style.loginRegister} ${Style.register}`}>
+            <h2 className={Style.heading}>加入小洛克休息室</h2>
+            <p className={Style.description}>使用林檎分享的通用邀请码</p>
+            <h3 className={Style.title}>洛克王国 ID</h3>
             <Input
                 className={Style.input}
                 value={username}
                 onChange={setUsername}
                 onEnter={handleRegister}
             />
-            <h3 className={Style.title}>密码</h3>
+            <h3 className={Style.title}>学号</h3>
             <Input
                 className={Style.input}
                 type="password"
@@ -68,12 +74,20 @@ function Register() {
                 onChange={setPassword}
                 onEnter={handleRegister}
             />
+            <h3 className={Style.title}>邀请码</h3>
+            <Input
+                className={Style.input}
+                type="password"
+                value={inviteCode}
+                onChange={setInviteCode}
+                onEnter={handleRegister}
+            />
             <button
                 className={Style.button}
                 onClick={handleRegister}
                 type="button"
             >
-                注册
+                注册并进入休息室
             </button>
         </div>
     );

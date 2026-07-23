@@ -16,6 +16,7 @@ function saveUsername(username: string) {
 export async function register(
     username: string,
     password: string,
+    inviteCode: string,
     os = '',
     browser = '',
     environment = '',
@@ -23,6 +24,7 @@ export async function register(
     const [err, user] = await fetch('register', {
         username,
         password,
+        inviteCode,
         os,
         browser,
         environment,

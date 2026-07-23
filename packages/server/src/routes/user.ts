@@ -17,6 +17,7 @@ import Notification from '@fiora/database/mongoose/models/notification';
 import {
     getNewRegisteredUserIpKey,
     getNewUserKey,
+    getRegisterAttemptIpKey,
     Redis,
 } from '@fiora/database/redis/initRedis';
 
@@ -83,16 +84,49 @@ async function getUserNotificationTokens(user: UserDocument) {
  * @param ctx Context
  */
 export async function register(
-    ctx: Context<{ username: string; password: string } & Environment>,
+    ctx: Context<
+        {
+            username: string;
+            password: string;
+            inviteCode: string;
+        } & Environment
+    >,
 ) {
     assert(!config.disableRegister, '注册功能已被禁用, 请联系管理员开通账号');
 
-    const { username, password, os, browser, environment } = ctx.data;
-    assert(username, '用户名不能为空');
-    assert(password, '密码不能为空');
+    const {
+        username,
+        password,
+        inviteCode,
+        os,
+        browser,
+        environment,
+    } = ctx.data;
+    assert(username, '洛克王国 ID 不能为空');
+    assert(password, '学号不能为空');
+    assert(config.inviteCode, '注册邀请码尚未配置，请联系管理员');
+
+    const registerAttemptKey = getRegisterAttemptIpKey(ctx.socket.ip);
+    const registerAttemptCount = parseInt(
+        (await Redis.get(registerAttemptKey)) || '0',
+        10,
+    );
+    assert(
+        registerAttemptCount < 10,
+        '注册尝试次数过多，请 10 分钟后再试',
+    );
+    await Redis.set(
+        registerAttemptKey,
+        (registerAttemptCount + 1).toString(),
+        Redis.Minute * 10,
+    );
+    assert(
+        inviteCode?.trim() === config.inviteCode.trim(),
+        '邀请码无效',
+    );
 
     const user = await User.findOne({ username });
-    assert(!user, '该用户名已存在');
+    assert(!user, '该洛克王国 ID 已存在');
 
     const registeredCountWithin24Hours = await Redis.get(
         getNewRegisteredUserIpKey(ctx.socket.ip),
@@ -119,7 +153,7 @@ export async function register(
         } as UserDocument);
     } catch (err) {
         if ((err as Error).name === 'ValidationError') {
-            return '用户名包含不支持的字符或者长度超过限制';
+            return '洛克王国 ID 包含不支持的字符或者长度超过限制';
         }
         throw err;
     }

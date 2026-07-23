@@ -46,6 +46,10 @@ export function getNewRegisteredUserIpKey(ip: string) {
     return `NewRegisteredUserIpV2-${ip}`;
 }
 
+export function getRegisterAttemptIpKey(ip: string) {
+    return `RegisterAttempt-${ip}`;
+}
+
 export function getSealIpKey(ip: string) {
     return `SealIp-${ip}`;
 }

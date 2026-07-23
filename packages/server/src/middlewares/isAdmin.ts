@@ -19,7 +19,6 @@ export default function isAdmin(socket: Socket) {
         'toggleNewUserSendMessage',
         'getSystemConfig',
         'createUser',
-        'register',
     ]);
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         socket.data.isAdmin =
