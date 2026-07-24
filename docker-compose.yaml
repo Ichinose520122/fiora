@@ -13,5 +13,8 @@ services:
     ports:
       - "9200:9200"
     environment:
-      - Database=mongodb://mongodb/fiora
-      - RedisHost=redis
+  - Database=mongodb://mongodb/fiora
+  - RedisHost=redis
+  - JwtSecret=${FIORA_JWT_SECRET}
+  - InviteCode=${FIORA_INVITE_CODE}
+  - DisableRegister=${FIORA_DISABLE_REGISTER:-false}
