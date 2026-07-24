@@ -57,7 +57,7 @@ function Login() {
     return (
         <div className={Style.loginRegister}>
             <h2 className={Style.heading}>欢迎回到小洛克休息室</h2>
-            <p className={Style.description}>账号由林檎统一添加</p>
+            <p className={Style.description}>账号可以邀请码注册哦~</p>
             <h3 className={Style.title}>洛克王国 ID</h3>
             <Input
                 className={Style.input}
