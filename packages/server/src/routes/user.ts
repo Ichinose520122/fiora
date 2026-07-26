@@ -655,37 +655,45 @@ export async function getUserIps(
     return Array.from(new Set(ipList));
 }
 
-const UserOnlineStatusCacheExpireTime = 1000 * 60;
-function getUserOnlineStatusWrapper() {
-    const cache: Record<
-        string,
-        {
-            value: boolean;
-            expireTime: number;
-        }
-    > = {};
-    return async function getUserOnlineStatus(
-        ctx: Context<{ userId: string }>,
-    ) {
-        const { userId } = ctx.data;
-        assert(userId, 'userId不能为空');
-        assert(isValid(userId), '不合法的userId');
+const UserOnlineStatusCacheExpireTime = 1000 * 10;
+const userOnlineStatusCache: Record<
+    string,
+    {
+        value: boolean;
+        expireTime: number;
+    }
+> = {};
 
-        if (cache[userId] && cache[userId].expireTime > Date.now()) {
-            return {
-                isOnline: cache[userId].value,
-            };
-        }
+export function _invalidateUserOnlineStatusCache(userId?: string) {
+    if (userId) {
+        delete userOnlineStatusCache[userId];
+        return;
+    }
+    Object.keys(userOnlineStatusCache).forEach(
+        (cachedUserId) => delete userOnlineStatusCache[cachedUserId],
+    );
+}
 
-        const sockets = await Socket.find({ user: userId });
-        const isOnline = sockets.length > 0;
-        cache[userId] = {
-            value: isOnline,
-            expireTime: Date.now() + UserOnlineStatusCacheExpireTime,
-        };
+export async function getUserOnlineStatus(
+    ctx: Context<{ userId: string }>,
+) {
+    const { userId } = ctx.data;
+    assert(userId, 'userId不能为空');
+    assert(isValid(userId), '不合法的userId');
+
+    const cachedStatus = userOnlineStatusCache[userId];
+    if (cachedStatus && cachedStatus.expireTime > Date.now()) {
         return {
-            isOnline,
+            isOnline: cachedStatus.value,
         };
+    }
+
+    const isOnline = !!(await Socket.findOne({ user: userId }, { _id: 1 }).lean());
+    userOnlineStatusCache[userId] = {
+        value: isOnline,
+        expireTime: Date.now() + UserOnlineStatusCacheExpireTime,
+    };
+    return {
+        isOnline,
     };
 }
-export const getUserOnlineStatus = getUserOnlineStatusWrapper();

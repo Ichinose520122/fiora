@@ -51,17 +51,25 @@ function Chat() {
     }, []);
 
     async function fetchGroupOnlineMembers() {
-        let onlineMembers: GroupMember[] | { cache: true } = [];
+        let onlineMembers: GroupMember[] | null = null;
         if (isLogin) {
             onlineMembers = await getGroupOnlineMembers(focus);
         }
         if (Array.isArray(onlineMembers)) {
             action.setLinkmanProperty(focus, 'onlineMembers', onlineMembers);
+            action.setLinkmanProperty(focus, 'onlineStatusKnown', true);
+        } else {
+            action.setLinkmanProperty(focus, 'onlineStatusKnown', false);
         }
     }
     async function fetchUserOnlineStatus() {
         const isOnline = await getUserOnlineStatus(focus.replace(self, ''));
-        action.setLinkmanProperty(focus, 'isOnline', isOnline);
+        if (typeof isOnline === 'boolean') {
+            action.setLinkmanProperty(focus, 'isOnline', isOnline);
+            action.setLinkmanProperty(focus, 'onlineStatusKnown', true);
+        } else {
+            action.setLinkmanProperty(focus, 'onlineStatusKnown', false);
+        }
     }
     useEffect(() => {
         if (!linkman) {
@@ -71,6 +79,7 @@ function Chat() {
             linkman.type === 'group'
                 ? fetchGroupOnlineMembers
                 : fetchUserOnlineStatus;
+        action.setLinkmanProperty(focus, 'onlineStatusKnown', false);
         request();
         const timer = setInterval(() => request(), 1000 * 60);
         return () => clearInterval(timer);
@@ -124,7 +133,7 @@ function Chat() {
 
     async function handleClickFunction() {
         if (linkman.type === 'group') {
-            let onlineMembers: GroupMember[] | { cache: true } = [];
+            let onlineMembers: GroupMember[] | null = null;
             if (isLogin) {
                 onlineMembers = await getGroupOnlineMembers(focus);
             }
@@ -134,6 +143,9 @@ function Chat() {
                     'onlineMembers',
                     onlineMembers,
                 );
+                action.setLinkmanProperty(focus, 'onlineStatusKnown', true);
+            } else {
+                action.setLinkmanProperty(focus, 'onlineStatusKnown', false);
             }
             toggleGroupManagePanel(true);
         } else {
@@ -150,6 +162,7 @@ function Chat() {
                 type={linkman.type}
                 onlineMembersCount={linkman.onlineMembers?.length}
                 isOnline={linkman.isOnline}
+                onlineStatusKnown={linkman.onlineStatusKnown}
                 onClickFunction={handleClickFunction}
             />
             <MessageList />

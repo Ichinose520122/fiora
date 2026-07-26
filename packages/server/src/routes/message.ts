@@ -229,7 +229,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         }
     }
 
-    createOrUpdateHistory(ctx.socket.user.toString(), to, message._id);
+    await createOrUpdateHistory(ctx.socket.user.toString(), to, message._id);
 
     return messageData;
 }

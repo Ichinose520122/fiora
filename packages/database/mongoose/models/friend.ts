@@ -14,6 +14,8 @@ const FriendSchema = new Schema({
     },
 });
 
+FriendSchema.index({ from: 1, to: 1 });
+
 export interface FriendDocument extends Document {
     /** 源用户id */
     from: string;

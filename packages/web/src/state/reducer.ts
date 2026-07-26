@@ -73,6 +73,7 @@ export interface Linkman extends Group, User {
     type: string;
     unread: number;
     messages: MessagesMap;
+    onlineStatusKnown?: boolean;
 }
 
 export interface LinkmansMap {

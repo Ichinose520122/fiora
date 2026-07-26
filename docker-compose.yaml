@@ -1,20 +1,74 @@
-version: '3.2'
-
 services:
   mongodb:
-    image: mongo
-    restart: always
+    image: mongo:6.0
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - fiora-internal
+
   redis:
-    image: redis
-    restart: always
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fiora-internal
+
   fiora:
+    image: ghcr.io/ichinose520122/fiora:custom
     build: .
-    restart: always
-    ports:
-      - "9200:9200"
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-  - Database=mongodb://mongodb/fiora
-  - RedisHost=redis
-  - JwtSecret=${FIORA_JWT_SECRET}
-  - InviteCode=${FIORA_INVITE_CODE}
-  - DisableRegister=${FIORA_DISABLE_REGISTER:-false}
+      Host: 0.0.0.0
+      Port: 9200
+      Database: mongodb://mongodb:27017/fiora
+      RedisHost: redis
+      RedisPort: 6379
+      JwtSecret: ${FIORA_JWT_SECRET:?FIORA_JWT_SECRET is required}
+      InviteCode: ${FIORA_INVITE_CODE:-}
+      AllowOrigin: https://${FIORA_DOMAIN:?FIORA_DOMAIN is required}
+      DisableRegister: ${DisableRegister:-false}
+      TrustProxyHeaders: ${FIORA_TRUST_PROXY_HEADERS:-false}
+      ALIYUN_OSS: "false"
+    expose:
+      - "9200"
+    volumes:
+      - ./uploads/Avatar:/usr/app/fiora/packages/server/public/Avatar
+      - ./uploads/BackgroundImage:/usr/app/fiora/packages/server/public/BackgroundImage
+      - ./uploads/FileMessage:/usr/app/fiora/packages/server/public/FileMessage
+      - ./uploads/GroupAvatar:/usr/app/fiora/packages/server/public/GroupAvatar
+      - ./uploads/ImageMessage:/usr/app/fiora/packages/server/public/ImageMessage
+    networks:
+      fiora-internal:
+      caddy-proxy:
+        aliases:
+          - fiora
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+  redis_data:
+
+networks:
+  fiora-internal:
+  caddy-proxy:
+    external: true

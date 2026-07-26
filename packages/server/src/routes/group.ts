@@ -153,7 +153,12 @@ export async function leaveGroup(ctx: Context<{ groupId: string }>) {
     return {};
 }
 
-const GroupOnlineMembersCacheExpireTime = 1000 * 60;
+const GroupOnlineMembersCacheExpireTime = 1000 * 10;
+const groupOnlineCacheInvalidators: Array<() => void> = [];
+
+export function _invalidateGroupOnlineMembersCache() {
+    groupOnlineCacheInvalidators.forEach((invalidate) => invalidate());
+}
 
 /**
  * 获取群组在线成员
@@ -167,6 +172,9 @@ function getGroupOnlineMembersWrapperV2() {
             expireTime: number;
         }
     > = {};
+    groupOnlineCacheInvalidators.push(() => {
+        Object.keys(cache).forEach((groupId) => delete cache[groupId]);
+    });
     return async function getGroupOnlineMembersV2(
         ctx: Context<{ groupId: string; cache?: string }>,
     ) {
@@ -224,6 +232,10 @@ export async function getGroupOnlineMembers(
 function getDefaultGroupOnlineMembersWrapper() {
     let cache: any = null;
     let expireTime = 0;
+    groupOnlineCacheInvalidators.push(() => {
+        cache = null;
+        expireTime = 0;
+    });
     return async function getDefaultGroupOnlineMembers(ctx: Context<{}>) {
         const group = await Group.findOne({ isDefault: true });
         if (!group) {

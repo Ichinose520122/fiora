@@ -25,6 +25,12 @@ export default {
 
     allowOrigin: env.AllowOrigin ? env.AllowOrigin.split(',') : null,
 
+    /**
+     * Only trust forwarded client IP headers when every request reaches Fiora
+     * through a reverse proxy that overwrites those headers.
+     */
+    trustProxyHeaders: env.TrustProxyHeaders === 'true',
+
     // token expires time
     tokenExpiresTime: env.TokenExpiresTime
         ? parseInt(env.TokenExpiresTime, 10)

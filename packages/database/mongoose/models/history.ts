@@ -15,6 +15,8 @@ const HistoryScheme = new Schema({
     },
 });
 
+HistoryScheme.index({ user: 1, linkman: 1 });
+
 export interface HistoryDocument extends Document {
     /** user id */
     user: string;
@@ -35,16 +37,10 @@ export async function createOrUpdateHistory(
     linkmanId: string,
     messageId: string,
 ) {
-    const history = await History.findOne({ user: userId, linkman: linkmanId });
-    if (history) {
-        history.message = messageId;
-        await history.save();
-    } else {
-        await History.create({
-            user: userId,
-            linkman: linkmanId,
-            message: messageId,
-        });
-    }
+    await History.updateOne(
+        { user: userId, linkman: linkmanId },
+        { $set: { message: messageId } },
+        { upsert: true },
+    );
     return {};
 }

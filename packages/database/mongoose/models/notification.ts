@@ -6,6 +6,7 @@ const NotificationSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
+        index: true,
     },
     token: {
         type: String,
