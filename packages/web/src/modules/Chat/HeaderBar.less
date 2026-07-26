@@ -26,14 +26,6 @@
             }
         }
 
-        .online, .offline {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 4px;
-            transform: translateY(1px);
-        }
     }
 }
 
@@ -66,4 +58,21 @@
     color: #999;
     font-size: 12px;
     transform: scale(0.6);
+}
+
+.statusDot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    border-radius: 50%;
+    transform: translateY(1px);
+}
+
+.onlineDot {
+    background-color: rgb(94, 212, 92);
+}
+
+.offlineDot {
+    background-color: rgb(206, 12, 35);
 }

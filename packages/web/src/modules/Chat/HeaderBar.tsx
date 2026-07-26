@@ -30,6 +30,7 @@ type Props = {
     type: string;
     onlineMembersCount?: number;
     isOnline?: boolean;
+    onlineStatusKnown?: boolean;
     /** 功能按钮点击事件 */
     onClickFunction: () => void;
 };
@@ -41,6 +42,7 @@ function HeaderBar(props: Props) {
         type,
         onlineMembersCount,
         isOnline,
+        onlineStatusKnown,
         onClickFunction,
     } = props;
 
@@ -51,6 +53,15 @@ function HeaderBar(props: Props) {
         (state: State) => state.status.sidebarVisible,
     );
     const aero = useAero();
+    const targetStatus = (() => {
+        if (!connectStatus || !onlineStatusKnown) {
+            return '状态未知';
+        }
+        if (type === 'group') {
+            return `${onlineMembersCount || 0} 人在线`;
+        }
+        return isOnline ? '对方在线' : '对方离线';
+    })();
 
     function handleShareGroup() {
         Message.success('已复制邀请链接到粘贴板, 去邀请其它人加入群组吧');
@@ -87,22 +98,23 @@ function HeaderBar(props: Props) {
                 {name && (
                     <span>
                         {name}{' '}
-                        {isLogin && onlineMembersCount !== undefined && (
-                            <b
-                                className={styles.count}
-                            >{`(${onlineMembersCount})`}</b>
-                        )}
-                        {isLogin && isOnline !== undefined && (
-                            <b className={styles.count}>{`(${
-                                isOnline ? '在线' : '离线'
-                            })`}</b>
+                        {isLogin && type && (
+                            <b className={styles.count}>{`(${targetStatus})`}</b>
                         )}
                     </span>
                 )}
                 {isMobile && (
                     <span className={Style.status}>
-                        <div className={connectStatus ? 'online' : 'offline'} />
-                        {connectStatus ? '在线' : '离线'}
+                        <span
+                            className={`${Style.statusDot} ${
+                                connectStatus
+                                    ? Style.onlineDot
+                                    : Style.offlineDot
+                            }`}
+                        />
+                        {connectStatus
+                            ? '服务器已连接'
+                            : '服务器连接已断开'}
                     </span>
                 )}
             </h2>

@@ -13,6 +13,24 @@ lerna-debug.log
 .env
 .env.local
 
+backups/
+uploads/*
+!uploads/Avatar/
+!uploads/BackgroundImage/
+!uploads/FileMessage/
+!uploads/GroupAvatar/
+!uploads/ImageMessage/
+uploads/Avatar/*
+uploads/BackgroundImage/*
+uploads/FileMessage/*
+uploads/GroupAvatar/*
+uploads/ImageMessage/*
+!uploads/Avatar/.gitkeep
+!uploads/BackgroundImage/.gitkeep
+!uploads/FileMessage/.gitkeep
+!uploads/GroupAvatar/.gitkeep
+!uploads/ImageMessage/.gitkeep
+
 packages/server/public/*
 !packages/server/public/avatar/
 packages/server/public/avatar/*_*.*

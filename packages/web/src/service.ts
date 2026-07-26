@@ -313,13 +313,13 @@ export const getGroupOnlineMembers = (() => {
     };
     return async function _getGroupOnlineMembers(
         groupId: string,
-    ): Promise<GroupMember[]> {
-        const [, result] = await fetch('getGroupOnlineMembersV2', {
+    ): Promise<GroupMember[] | null> {
+        const [error, result] = await fetch('getGroupOnlineMembersV2', {
             groupId,
             cache: cache.groupId === groupId ? cache.key : undefined,
         });
-        if (!result) {
-            return [];
+        if (error || !result) {
+            return null;
         }
 
         if (result.cache === cache.key) {
@@ -416,8 +416,11 @@ export async function getUserIps(userId: string) {
 }
 
 export async function getUserOnlineStatus(userId: string) {
-    const [, res] = await fetch('getUserOnlineStatus', { userId });
-    return res && res.isOnline;
+    const [error, res] = await fetch('getUserOnlineStatus', { userId });
+    if (error || !res || typeof res.isOnline !== 'boolean') {
+        return undefined;
+    }
+    return res.isOnline as boolean;
 }
 
 export async function updateHistory(linkmanId: string, messageId: string) {

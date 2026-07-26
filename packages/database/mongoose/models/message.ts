@@ -28,6 +28,8 @@ const MessageSchema = new Schema({
     },
 });
 
+MessageSchema.index({ to: 1, createTime: -1 });
+
 export interface MessageDocument extends Document {
     /** 发送人 */
     from: string;

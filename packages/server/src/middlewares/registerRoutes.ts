@@ -1,22 +1,32 @@
 import assert from 'assert';
 import logger from '@fiora/utils/logger';
 import { getSocketIp } from '@fiora/utils/socket';
+import config from '@fiora/config/server';
 import { Socket } from 'socket.io';
+
+type RegisterRoutesOptions = {
+    onUserChange?: (userId: string) => void;
+};
 
 function defaultCallback() {
     logger.error('Server Error: emit event with callback');
 }
 
-export default function registerRoutes(socket: Socket, routes: Routes) {
+export default function registerRoutes(
+    socket: Socket,
+    routes: Routes,
+    { onUserChange }: RegisterRoutesOptions = {},
+) {
     return async ([event, data, cb = defaultCallback]: MiddlewareArgs) => {
         const route = routes[event];
         if (route) {
             try {
+                const previousUserId = socket.data.user;
                 const ctx: Context<any> = {
                     data,
                     socket: {
                         id: socket.id,
-                        ip: getSocketIp(socket),
+                        ip: getSocketIp(socket, config.trustProxyHeaders),
                         get user() {
                             return socket.data.user;
                         },
@@ -38,6 +48,13 @@ export default function registerRoutes(socket: Socket, routes: Routes) {
                 };
                 const before = Date.now();
                 const res = await route(ctx);
+                if (
+                    socket.data.user &&
+                    socket.data.user !== previousUserId &&
+                    onUserChange
+                ) {
+                    onUserChange(socket.data.user);
+                }
                 const after = Date.now();
                 logger.info(
                     `[${event}]`,

@@ -62,14 +62,14 @@ app.use(
     }),
 );
 
-const routes: Routes = {
+const routes = {
     ...userRoutes,
     ...groupRoutes,
     ...messageRoutes,
     ...systemRoutes,
     ...notificationRoutes,
     ...historyRoutes,
-};
+} as unknown as Routes;
 Object.keys(routes).forEach((key) => {
     if (key.startsWith('_')) {
         routes[key] = null;
@@ -77,7 +77,7 @@ Object.keys(routes).forEach((key) => {
 });
 
 io.on('connection', async (socket) => {
-    const ip = getSocketIp(socket);
+    const ip = getSocketIp(socket, config.trustProxyHeaders);
     logger.trace(`connection ${socket.id} ${ip}`);
     await SocketModel.create({
         id: socket.id,
@@ -86,16 +86,29 @@ io.on('connection', async (socket) => {
 
     socket.on('disconnect', async () => {
         logger.trace(`disconnect ${socket.id}`);
-        await SocketModel.deleteOne({
+        const disconnectedSocket = await SocketModel.findOneAndDelete({
             id: socket.id,
         });
+        if (disconnectedSocket?.user) {
+            userRoutes._invalidateUserOnlineStatusCache(
+                disconnectedSocket.user.toString(),
+            );
+            groupRoutes._invalidateGroupOnlineMembersCache();
+        }
     });
 
     socket.use(seal(socket));
     socket.use(isLogin(socket));
     socket.use(isAdmin(socket));
     socket.use(frequency(socket));
-    socket.use(registerRoutes(socket, routes));
+    socket.use(
+        registerRoutes(socket, routes, {
+            onUserChange: (userId) => {
+                userRoutes._invalidateUserOnlineStatusCache(userId);
+                groupRoutes._invalidateGroupOnlineMembersCache();
+            },
+        }),
+    );
 });
 
 export default httpServer;

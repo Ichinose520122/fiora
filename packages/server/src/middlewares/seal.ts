@@ -1,6 +1,7 @@
 import { SEAL_TEXT } from '@fiora/utils/const';
 import { getSocketIp } from '@fiora/utils/socket';
 import { Socket } from 'socket.io';
+import config from '@fiora/config/server';
 import {
     getSealIpKey,
     getSealUserKey,
@@ -12,7 +13,7 @@ import {
  */
 export default function seal(socket: Socket) {
     return async ([, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
-        const ip = getSocketIp(socket);
+        const ip = getSocketIp(socket, config.trustProxyHeaders);
         const isSealIp = await Redis.has(getSealIpKey(ip));
         const isSealUser =
             socket.data.user &&
