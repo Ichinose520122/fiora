@@ -34,6 +34,8 @@ const io = new Server(httpServer, {
         origin: config.allowOrigin || '*',
         credentials: true,
     },
+
+    maxHttpBufferSize: config.maxHttpBufferSize,
     pingTimeout: 10000,
     pingInterval: 5000,
 });
