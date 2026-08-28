@@ -56,16 +56,16 @@ function Login() {
 
     return (
         <div className={Style.loginRegister}>
-            <h2 className={Style.heading}>欢迎</h2>
-            <p className={Style.description}>账号可以邀请码注册~</p>
-            <h3 className={Style.title}>洛克王国 ID</h3>
+            <h2 className={Style.heading}>欢迎回来</h2>
+            <p className={Style.description}>登录</p>
+            <h3 className={Style.title}>用户名</h3>
             <Input
                 className={Style.input}
                 value={username}
                 onChange={setUsername}
                 onEnter={handleLogin}
             />
-            <h3 className={Style.title}>账号</h3>
+            <h3 className={Style.title}>密码</h3>
             <Input
                 className={Style.input}
                 type="password"
