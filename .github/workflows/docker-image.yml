@@ -3,7 +3,7 @@ name: Build Fiora Docker image
 on:
   push:
     branches:
-      - ichinose-custom
+      - chat
   workflow_dispatch:
 
 permissions:
@@ -38,6 +38,6 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/ichinose520122/fiora:custom
+          tags: ghcr.io/ichinose520122/fiora:chat
           cache-from: type=gha
           cache-to: type=gha,mode=max
