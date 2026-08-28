@@ -13,7 +13,7 @@ import { initOSS } from '../../utils/uploadFile';
 import { Message } from '../../state/reducer';
 import { ActionTypes } from '../../state/action';
 
-/** 洛克王国账号登录 */
+
 function Login() {
     const action = useAction();
     const dispatch = useDispatch();
@@ -56,8 +56,8 @@ function Login() {
 
     return (
         <div className={Style.loginRegister}>
-            <h2 className={Style.heading}>欢迎回到小洛克休息室</h2>
-            <p className={Style.description}>账号可以邀请码注册哦~</p>
+            <h2 className={Style.heading}>欢迎</h2>
+            <p className={Style.description}>账号可以邀请码注册~</p>
             <h3 className={Style.title}>洛克王国 ID</h3>
             <Input
                 className={Style.input}
@@ -65,7 +65,7 @@ function Login() {
                 onChange={setUsername}
                 onEnter={handleLogin}
             />
-            <h3 className={Style.title}>学号</h3>
+            <h3 className={Style.title}>账号</h3>
             <Input
                 className={Style.input}
                 type="password"
@@ -78,7 +78,7 @@ function Login() {
                 onClick={handleLogin}
                 type="button"
             >
-                进入休息室
+                进入
             </button>
         </div>
     );
