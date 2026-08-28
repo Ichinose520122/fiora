@@ -1,10 +1,10 @@
 {
-    "name": "林檎的小洛克休息室",
-    "short_name": "小洛克休息室",
+    "name": "休息室",
+    "short_name": "休息室",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#FAFAFA",
-    "description": "一个为朋友们准备的温馨聊天空间",
+    "description": "",
     "orientation": "portrait-primary",
     "theme_color": "#4a90e2",
     "icons": [
