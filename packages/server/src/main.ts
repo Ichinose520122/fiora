@@ -7,7 +7,7 @@ import Socket from '@fiora/database/mongoose/models/socket';
 import Group, { GroupDocument } from '@fiora/database/mongoose/models/group';
 import app from './app';
 
-const DEFAULT_GROUP_NAME = '林檎的小洛克休息室';
+const DEFAULT_GROUP_NAME = '休息室';
 
 (async () => {
     if (process.argv.find((argv) => argv === '--doctor')) {
