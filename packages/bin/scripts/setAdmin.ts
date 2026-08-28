@@ -9,7 +9,7 @@ import User from '../../database/mongoose/models/user';
 
 export async function setAdmin(username: string, enabled = true) {
     if (!username) {
-        console.log(chalk.red('洛克王国 ID 不能为空'));
+        console.log(chalk.red('用户名不能为空'));
         return false;
     }
 

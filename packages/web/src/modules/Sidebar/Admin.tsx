@@ -48,18 +48,18 @@ function Admin(props: AdminProps) {
     const [sealList, setSealList] = useState({ users: [], ips: [] });
     const [sealIpAddress, setSealIpAddress] = useState('');
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
-    const [newUserId, setNewUserId] = useState('');
-    const [newUserStudentId, setNewUserStudentId] = useState('');
+    const [newUsername, setNewUsername] = useState('');
+    const [newUserPassword, setNewUserPassword] = useState('');
 
     async function handleCreateUser() {
         const user = await createUser(
-            newUserId.trim(),
-            newUserStudentId.trim(),
+            newUsername.trim(),
+            newUserPassword.trim(),
         );
         if (user) {
             Message.success(`账号 ${user.username} 创建成功`);
-            setNewUserId('');
-            setNewUserStudentId('');
+            setNewUsername('');
+            setNewUserPassword('');
         }
     }
 
@@ -164,20 +164,20 @@ function Admin(props: AdminProps) {
         >
             <div className={Common.container}>
                 <div className={Common.block}>
-                    <p className={Common.title}>创建小洛克账号</p>
+                    <p className={Common.title}>创建账号</p>
                     <div className={Style.inputBlock}>
                         <Input
                             className={`${Style.input} ${Style.tagUsernameInput}`}
-                            value={newUserId}
-                            onChange={setNewUserId}
-                            placeholder="洛克王国 ID"
+                            value={newUsername}
+                            onChange={setNewUsername}
+                            placeholder="用户名"
                         />
                         <Input
                             className={`${Style.input} ${Style.tagInput}`}
                             type="password"
-                            value={newUserStudentId}
-                            onChange={setNewUserStudentId}
-                            placeholder="学号"
+                            value={newUserPassword}
+                            onChange={setNewUserPassword}
+                            placeholder="密码"
                             onEnter={handleCreateUser}
                         />
                         <Button

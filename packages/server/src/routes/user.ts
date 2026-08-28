@@ -102,8 +102,8 @@ export async function register(
         browser,
         environment,
     } = ctx.data;
-    assert(username, '洛克王国 ID 不能为空');
-    assert(password, '学号不能为空');
+    assert(username, '用户名不能为空');
+    assert(password, '密码不能为空');
     assert(config.inviteCode, '注册邀请码尚未配置，请联系管理员');
 
     const registerAttemptKey = getRegisterAttemptIpKey(ctx.socket.ip);
@@ -126,7 +126,7 @@ export async function register(
     );
 
     const user = await User.findOne({ username });
-    assert(!user, '该洛克王国 ID 已存在');
+    assert(!user, '该用户名已存在');
 
     const registeredCountWithin24Hours = await Redis.get(
         getNewRegisteredUserIpKey(ctx.socket.ip),
@@ -153,7 +153,7 @@ export async function register(
         } as UserDocument);
     } catch (err) {
         if ((err as Error).name === 'ValidationError') {
-            return '洛克王国 ID 包含不支持的字符或者长度超过限制';
+            return '用户名包含不支持的字符或者长度超过限制';
         }
         throw err;
     }
@@ -208,11 +208,11 @@ export async function createUser(
 ) {
     const username = ctx.data.username?.trim();
     const { password } = ctx.data;
-    assert(username, '洛克王国 ID 不能为空');
-    assert(password, '学号不能为空');
+    assert(username, '用户名不能为空');
+    assert(password, '密码不能为空');
 
     const existUser = await User.findOne({ username });
-    assert(!existUser, '该洛克王国 ID 已存在');
+    assert(!existUser, '该用户名已存在');
 
     const defaultGroup = await Group.findOne({ isDefault: true });
     if (!defaultGroup) {
@@ -232,7 +232,7 @@ export async function createUser(
         } as UserDocument);
     } catch (err) {
         if ((err as Error).name === 'ValidationError') {
-            return '洛克王国 ID 包含不支持的字符或者长度超过限制';
+            return '用户名包含不支持的字符或者长度超过限制';
         }
         throw err;
     }
