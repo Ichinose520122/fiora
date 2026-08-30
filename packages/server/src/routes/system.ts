@@ -156,6 +156,19 @@ function getSogouItems(data: any): SogouImage[] {
     return [];
 }
 
+export function parseSogouInitialState(html: string) {
+    const marker = html.match(/window\.__INITIAL_STATE__\s*=\s*/);
+    if (!marker || marker.index === undefined) {
+        return null;
+    }
+    const jsonStart = marker.index + marker[0].length;
+    const jsonEnd = html.indexOf('</script>', jsonStart);
+    if (jsonEnd === -1) {
+        return null;
+    }
+    return JSON.parse(html.slice(jsonStart, jsonEnd));
+}
+
 export async function searchExpression(
     ctx: Context<{ keywords: string; limit?: number }>,
 ) {
@@ -210,12 +223,10 @@ export async function searchExpression(
                     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
             },
         });
-        const match = String(response.data).match(
-            /window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});/,
-        );
-        if (match) {
+        const initialState = parseSogouInitialState(String(response.data));
+        if (initialState) {
             const result = parseSogouImageItems(
-                getSogouItems(JSON.parse(match[1])),
+                getSogouItems(initialState),
                 limit,
             );
             if (result.length > 0) {
