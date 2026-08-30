@@ -16,13 +16,33 @@
         .rc-tabs-tabpane {
             height: 100%;
         }
+        .rc-tabs-top .rc-tabs-nav-scroll {
+            width: 100%;
+        }
+        .rc-tabs-top .rc-tabs-nav {
+            width: 100%;
+            display: flex;
+        }
+        .rc-tabs-top .rc-tabs-tab {
+            flex: 1;
+            margin-right: 0;
+            padding: 6px 4px;
+            font-size: 13px;
+            text-align: center;
+        }
     }
 }
 
-.panelScroll,
-.emojiPanel,
+.panelScroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
 .qqPanel {
     height: 100%;
+    overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -40,17 +60,18 @@
 
 .defaultExpression {
     width: 100%;
-    min-height: 100px;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     padding: 0 7px;
+    box-sizing: border-box;
 }
 
 .defaultExpressionBlock {
     width: 40px;
-    height: 40px;;
-    padding: 5px;
+    height: 40px;
+    padding: 5px 4px;
+    box-sizing: border-box;
     transition: all 0.3s;
 
     &:hover {
@@ -176,24 +197,35 @@
 }
 
 .emojiPanel {
+    height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .emojiCategories {
+    min-height: 34px;
+    flex: 0 0 34px;
     display: flex;
+    align-items: center;
+    justify-content: flex-start;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 4px 8px;
     border-bottom: 1px solid #eee;
+    box-sizing: border-box;
 }
 
 .emojiCategoryButton {
+    height: 26px;
     flex: none;
     padding: 4px 7px;
     border: 0;
     border-radius: 3px;
     background: transparent;
     color: #666;
+    line-height: 18px;
+    white-space: nowrap;
     cursor: pointer;
 }
 
@@ -203,6 +235,8 @@
 }
 
 .emojiGrid {
+    min-height: 0;
+    flex: 1;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
     gap: 2px;
@@ -230,6 +264,20 @@
 .qqPanel {
     position: relative;
     padding-bottom: 28px;
+}
+
+.qqPanel .imageGrid {
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    gap: 4px;
+}
+
+.qfaceItem {
+    height: 42px;
+
+    > img {
+        max-width: 36px;
+        max-height: 36px;
+    }
 }
 
 .centerMessage {

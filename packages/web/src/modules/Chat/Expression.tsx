@@ -237,7 +237,6 @@ function Expression(props: ExpressionProps) {
                                 </div>
                             </section>
                         )}
-                        <p className={Style.sectionTitle}>经典表情</p>
                         <div className={Style.defaultExpression}>
                             {expressions.default.map((expression, index) => (
                                 <div

@@ -1,13 +1,20 @@
+@import '../../styles/variable.less';
+
 .admin {
-    // height: 50% !important;
+    width: 780px !important;
+    max-width: calc(100vw - 24px);
 }
 
 .inputBlock {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
 }
 
 .input {
     flex: 1;
+    min-width: 160px;
     height: 36px;
 }
 
@@ -17,13 +24,11 @@
 
 .tagInput {
     flex: 2;
-    margin-left: 6px;
 }
 
 .button {
     width: 100px;
     height: 36px;
-    margin-left: 10px;
 }
 
 .sealList {
@@ -65,5 +70,16 @@
 
     > span:first-child {
         margin-right: 8px;
+    }
+}
+
+@media @mobile {
+    .admin {
+        width: 94% !important;
+        max-width: none;
+    }
+
+    .input {
+        min-width: 140px;
     }
 }

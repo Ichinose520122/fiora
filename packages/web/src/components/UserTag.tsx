@@ -62,11 +62,17 @@ function UserTag(props: UserTagProps) {
                 const progress = index / particleCount;
                 const angle = progress * Math.PI * 2;
                 const sizeProgress = (index % 3) / 2;
+                const particleX =
+                    Math.cos(angle) * tagEffect.particle.spreadXPx;
+                const particleY =
+                    Math.sin(angle) * tagEffect.particle.spreadYPx;
                 const particleStyle = {
-                    '--particle-x': `${Math.cos(angle) *
-                        tagEffect.particle.spreadXPx}px`,
-                    '--particle-y': `${Math.sin(angle) *
-                        tagEffect.particle.spreadYPx}px`,
+                    '--particle-start-x': `${particleX *
+                        tagEffect.particle.startSpreadRatio}px`,
+                    '--particle-start-y': `${particleY *
+                        tagEffect.particle.startSpreadRatio}px`,
+                    '--particle-x': `${particleX}px`,
+                    '--particle-y': `${particleY}px`,
                     '--particle-start-scale': tagEffect.particle.startScale,
                     '--particle-end-scale': tagEffect.particle.endScale,
                     color: particleColors[index % particleColors.length],

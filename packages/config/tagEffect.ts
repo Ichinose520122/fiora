@@ -15,6 +15,7 @@ export default {
         maxSizePx: 13,
         spreadXPx: 34,
         spreadYPx: 18,
+        startSpreadRatio: 0.45,
         startScale: 0.45,
         endScale: 1.15,
     },
