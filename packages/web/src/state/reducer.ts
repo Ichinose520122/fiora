@@ -1,6 +1,7 @@
 import { isMobile } from '@fiora/utils/ua';
 import getFriendId from '@fiora/utils/getFriendId';
 import convertMessage from '@fiora/utils/convertMessage';
+import { defaultTagStyle, TagStyle } from '@fiora/utils/tagStyle';
 import getData from '../localStorage';
 import {
     Action,
@@ -28,6 +29,7 @@ export interface Message {
         avatar: string;
         originUsername: string;
         tag: string;
+        tagStyle?: TagStyle;
     };
     loading: boolean;
     percent: number;
@@ -96,6 +98,8 @@ export interface State {
         username: string;
         avatar: string;
         tag: string;
+        tagStyle: TagStyle;
+        expressions: string[];
         isAdmin: boolean;
     } | null;
     linkmans: LinkmansMap;
@@ -297,6 +301,8 @@ function reducer(state: State = initialState, action: Action): State {
                     username: '',
                     avatar: '',
                     tag: '',
+                    tagStyle: defaultTagStyle,
+                    expressions: [],
                     isAdmin: false,
                 },
                 linkmans: {
@@ -307,8 +313,17 @@ function reducer(state: State = initialState, action: Action): State {
         }
 
         case ActionTypes.SetUser: {
-            const { _id, username, avatar, tag, groups, friends, isAdmin } =
-                action.payload as SetUserPayload;
+            const {
+                _id,
+                username,
+                avatar,
+                tag,
+                tagStyle,
+                expressions,
+                groups,
+                friends,
+                isAdmin,
+            } = action.payload as SetUserPayload;
             // @ts-ignore
             const linkmans: Linkman[] = [
                 // @ts-ignore
@@ -331,6 +346,8 @@ function reducer(state: State = initialState, action: Action): State {
                     username,
                     avatar,
                     tag,
+                    tagStyle: tagStyle || defaultTagStyle,
+                    expressions: expressions || [],
                     isAdmin,
                 },
                 linkmans: getLinkmansMap(linkmans),

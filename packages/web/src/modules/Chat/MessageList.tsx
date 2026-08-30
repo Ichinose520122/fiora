@@ -140,6 +140,7 @@ function MessageList() {
                 type={message.type}
                 content={message.content}
                 tag={tag}
+                tagStyle={message.from.tagStyle}
                 loading={message.loading}
                 percent={message.percent}
                 shouldScroll={shouldScroll}

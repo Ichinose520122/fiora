@@ -1,5 +1,5 @@
 import { mocked } from 'ts-jest/utils';
-import { Redis } from '@fiora/database/redis/initRedis';
+import { getSealUserKey, Redis } from '@fiora/database/redis/initRedis';
 import { Socket } from 'socket.io';
 import frequency, {
     AutoSealDuration,
@@ -12,6 +12,13 @@ jest.mock('@fiora/database/redis/initRedis');
 jest.useFakeTimers();
 
 describe('server/middlewares/frequency', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mocked(getSealUserKey).mockImplementation(
+            (userId) => `SealUser-${userId}`,
+        );
+    });
+
     it('should response call service frequently', async () => {
         const socket = {
             id: 'id',

@@ -156,7 +156,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
 
     const user = await User.findOne(
         { _id: ctx.socket.user },
-        { username: 1, avatar: 1, tag: 1 },
+        { username: 1, avatar: 1, tag: 1, tagStyle: 1 },
     );
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
@@ -261,7 +261,12 @@ export async function getLinkmansLastMessages(
                 deleted: 1,
             },
             { sort: { createTime: -1 }, limit: FirstTimeMessagesCount },
-        ).populate('from', { username: 1, avatar: 1, tag: 1 });
+        ).populate('from', {
+            username: 1,
+            avatar: 1,
+            tag: 1,
+            tagStyle: 1,
+        });
         await handleInviteV2Messages(messages);
         return messages;
     });
@@ -317,7 +322,12 @@ export async function getLinkmansLastMessagesV2(
                     sort: { createTime: -1 },
                     limit: historyMap[linkmanId] ? 100 : FirstTimeMessagesCount,
                 },
-            ).populate('from', { username: 1, avatar: 1, tag: 1 });
+            ).populate('from', {
+                username: 1,
+                avatar: 1,
+                tag: 1,
+                tagStyle: 1,
+            });
             await handleInviteV2Messages(messages);
             return messages;
         }),
@@ -379,7 +389,12 @@ export async function getLinkmanHistoryMessages(
             skip: existCount,
             limit: EachFetchMessagesCount,
         },
-    ).populate('from', { username: 1, avatar: 1, tag: 1 });
+    ).populate('from', {
+        username: 1,
+        avatar: 1,
+        tag: 1,
+        tagStyle: 1,
+    });
     await handleInviteV2Messages(messages);
     const result = messages.reverse();
     return result;
@@ -414,7 +429,12 @@ export async function getDefaultGroupHistoryMessages(
             skip: existCount,
             limit: EachFetchMessagesCount,
         },
-    ).populate('from', { username: 1, avatar: 1, tag: 1 });
+    ).populate('from', {
+        username: 1,
+        avatar: 1,
+        tag: 1,
+        tagStyle: 1,
+    });
     await handleInviteV2Messages(messages);
     const result = messages.reverse();
     return result;

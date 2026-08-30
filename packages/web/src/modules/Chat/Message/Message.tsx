@@ -5,6 +5,7 @@ import { connect } from 'react-redux';
 import Time from '@fiora/utils/time';
 import { getRandomColor, getPerRandomColor } from '@fiora/utils/getRandomColor';
 import client from '@fiora/config/client';
+import { TagStyle } from '@fiora/utils/tagStyle';
 import Style from './Message.less';
 import Avatar from '../../../components/Avatar';
 import TextMessage from './TextMessage';
@@ -22,6 +23,7 @@ import { State } from '../../../state/reducer';
 import Tooltip from '../../../components/Tooltip';
 import themes from '../../../themes';
 import FileMessage from './FileMessage';
+import UserTag from '../../../components/UserTag';
 
 const { dispatch } = store;
 
@@ -34,6 +36,7 @@ interface MessageProps {
     username: string;
     originUsername: string;
     tag: string;
+    tagStyle?: TagStyle;
     time: string;
     type: string;
     content: string;
@@ -147,7 +150,15 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     renderContent() {
-        const { type, content, loading, percent, originUsername } = this.props;
+        const {
+            id,
+            isSelf,
+            type,
+            content,
+            loading,
+            percent,
+            originUsername,
+        } = this.props;
         switch (type) {
             case 'text': {
                 return <TextMessage content={content} />;
@@ -158,6 +169,8 @@ class Message extends Component<MessageProps, MessageState> {
                         src={content}
                         loading={loading}
                         percent={percent}
+                        messageId={id}
+                        isSelf={isSelf}
                     />
                 );
             }
@@ -187,7 +200,14 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     render() {
-        const { isSelf, avatar, tag, tagColorMode, username } = this.props;
+        const {
+            isSelf,
+            avatar,
+            tag,
+            tagStyle,
+            tagColorMode,
+            username,
+        } = this.props;
         const { showButtonList } = this.state;
 
         let tagColor = `rgb(${themes.default.primaryColor})`;
@@ -218,12 +238,12 @@ class Message extends Component<MessageProps, MessageState> {
                 <div className={Style.right}>
                     <div className={Style.nicknameTimeBlock}>
                         {tag && (
-                            <span
+                            <UserTag
                                 className={Style.tag}
-                                style={{ backgroundColor: tagColor }}
-                            >
-                                {tag}
-                            </span>
+                                text={tag}
+                                tagStyle={tagStyle}
+                                fallbackColor={tagColor}
+                            />
                         )}
                         <span className={Style.nickname}>{username}</span>
                         <span className={Style.time}>{this.formatTime()}</span>

@@ -1,3 +1,4 @@
+import { TagStyle } from '@fiora/utils/tagStyle';
 import fetch from './utils/fetch';
 import { User, GroupMember } from './state/reducer';
 
@@ -401,9 +402,25 @@ export async function resetUserPassword(username: string) {
  * @param username 目标用户名
  * @param tag 标签
  */
-export async function setUserTag(username: string, tag: string) {
-    const [err] = await fetch('setUserTag', { username, tag });
+export async function setUserTag(
+    username: string,
+    tag: string,
+    tagStyle: TagStyle,
+) {
+    const [err] = await fetch('setUserTag', { username, tag, tagStyle });
     return !err;
+}
+
+/** 收藏自己已经发送的图片消息 */
+export async function addExpression(messageId: string) {
+    const [, expressions] = await fetch('addExpression', { messageId });
+    return expressions as string[] | null;
+}
+
+/** 删除收藏的图片表情 */
+export async function removeExpression(expression: string) {
+    const [, expressions] = await fetch('removeExpression', { expression });
+    return expressions as string[] | null;
 }
 
 /**
