@@ -27,9 +27,19 @@ import store from './state/store';
 const { dispatch } = store;
 
 const options = {
-    // reconnectionDelay: 1000,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 10000,
+    timeout: 20000,
 };
 const socket = IO(config.server, options);
+
+function reconnectIfNeeded() {
+    if (socket.disconnected && navigator.onLine !== false) {
+        socket.connect();
+    }
+}
 
 socket.on('connect', async () => {
     dispatch({ type: ActionTypes.Connect, payload: '' });
@@ -80,18 +90,31 @@ socket.on('connect', async () => {
     });
 });
 
-socket.on('disconnect', () => {
+socket.on('disconnect', (reason) => {
     // @ts-ignore
     dispatch({ type: ActionTypes.Disconnect, payload: null });
+
+    // 服务端主动断开时 Socket.IO 不会自动重连, 这里补一次恢复尝试
+    if (reason === 'io server disconnect') {
+        window.setTimeout(reconnectIfNeeded, 1000);
+    }
 });
 
 let windowStatus = 'focus';
 window.onfocus = () => {
     windowStatus = 'focus';
+    reconnectIfNeeded();
 };
 window.onblur = () => {
     windowStatus = 'blur';
 };
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        reconnectIfNeeded();
+    }
+});
+window.addEventListener('online', reconnectIfNeeded);
+window.addEventListener('pageshow', reconnectIfNeeded);
 
 let prevFrom: string | null = '';
 let prevName = '';

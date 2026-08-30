@@ -52,9 +52,7 @@ function UserTag(props: UserTagProps) {
         <span
             className={`${Style.tag} ${
                 isGradient ? Style.animatedGradient : ''
-            } ${tagStyle.preset === 'monochrome' ? Style.monochrome : ''} ${
-                particleCount > 0 ? Style.hasParticles : ''
-            } ${className}`}
+            } ${tagStyle.preset === 'monochrome' ? Style.monochrome : ''} ${className}`}
             style={rootStyle}
         >
             <span className={Style.text}>{text}</span>

@@ -39,8 +39,8 @@ const io = new Server(httpServer, {
     },
 
     maxHttpBufferSize: config.maxHttpBufferSize,
-    pingTimeout: 10000,
-    pingInterval: 5000,
+    pingTimeout: 120000,
+    pingInterval: 30000,
 });
 
 // Wait for the complete local QQ expression cache before publishing its manifest.

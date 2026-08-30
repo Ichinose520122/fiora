@@ -1,9 +1,11 @@
 .tag {
     height: 20px;
-    line-height: 20px;
     border-radius: 4px;
     padding: 0 7px;
-    display: inline-block;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
     isolation: isolate;
     font-size: 13px;
@@ -12,11 +14,13 @@
 }
 
 .text {
+    display: block;
     position: relative;
     z-index: 2;
     color: #fff !important;
     font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .animatedGradient {
@@ -29,10 +33,6 @@
     border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow: 0 0 6px rgba(255, 255, 255, 0.7),
         inset 0 0 4px rgba(0, 0, 0, 0.65);
-}
-
-.hasParticles {
-    z-index: 1;
 }
 
 .particle {

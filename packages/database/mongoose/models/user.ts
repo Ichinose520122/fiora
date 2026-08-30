@@ -1,5 +1,9 @@
 import { Schema, model, Document } from 'mongoose';
-import { NAME_REGEXP } from '@fiora/utils/const';
+import {
+    isValidUserTag,
+    NAME_REGEXP,
+    USER_TAG_MAX_LENGTH,
+} from '@fiora/utils/const';
 import { TagStyle } from '@fiora/utils/tagStyle';
 
 const TagStyleSchema = new Schema(
@@ -37,7 +41,10 @@ const UserSchema = new Schema({
         type: String,
         default: '',
         trim: true,
-        match: NAME_REGEXP,
+        validate: {
+            validator: (tag: string) => tag === '' || isValidUserTag(tag),
+            message: `用户标签不能超过${USER_TAG_MAX_LENGTH}个字符`,
+        },
     },
     tagStyle: {
         type: TagStyleSchema,

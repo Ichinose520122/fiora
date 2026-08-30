@@ -5,7 +5,11 @@ import { Types } from '@fiora/database/mongoose';
 
 import config from '@fiora/config/server';
 import getRandomAvatar from '@fiora/utils/getRandomAvatar';
-import { SALT_ROUNDS } from '@fiora/utils/const';
+import {
+    isValidUserTag,
+    SALT_ROUNDS,
+    USER_TAG_MAX_LENGTH,
+} from '@fiora/utils/const';
 import {
     defaultTagStyle,
     TagParticleTypes,
@@ -656,10 +660,7 @@ export async function setUserTag(
     const { username, tag, tagStyle } = ctx.data;
     assert(username !== '', 'username不能为空');
     assert(tag !== '', 'tag不能为空');
-    assert(
-        /^([0-9a-zA-Z]{1,2}|[\u4e00-\u9eff]){1,5}$/.test(tag),
-        '标签不符合要求, 允许5个汉字或者10个字母',
-    );
+    assert(isValidUserTag(tag), `标签不能超过${USER_TAG_MAX_LENGTH}个字符`);
 
     const user = await User.findOne({ username });
     if (!user) {

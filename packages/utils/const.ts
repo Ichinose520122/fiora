@@ -19,3 +19,22 @@ export const MB = 1024 * 1024;
 export const NAME_REGEXP = /^([0-9a-zA-Z]{1,2}|[\u4e00-\u9eff]|[\u3040-\u309Fー]|[\u30A0-\u30FF]){1,8}$/;
 
 export const GROUP_NAME_REGEXP = /^([0-9a-zA-Z]{1,2}|[\u4e00-\u9eff]|[\u3040-\u309Fー]|[\u30A0-\u30FF]){1,16}$/;
+
+/** 用户标签使用独立规则, 不受用户名字符集限制 */
+export const USER_TAG_MAX_LENGTH = 32;
+
+export function isValidUserTag(tag: string) {
+    if (typeof tag !== 'string') {
+        return false;
+    }
+    const normalizedTag = tag.trim();
+    const characters = Array.from(normalizedTag);
+    return (
+        normalizedTag.length > 0 &&
+        characters.length <= USER_TAG_MAX_LENGTH &&
+        !characters.some((character) => {
+            const characterCode = character.charCodeAt(0);
+            return characterCode <= 31 || characterCode === 127;
+        })
+    );
+}
