@@ -6,6 +6,7 @@ import initMongoDB from '@fiora/database/mongoose/initMongoDB';
 import Socket from '@fiora/database/mongoose/models/socket';
 import Group, { GroupDocument } from '@fiora/database/mongoose/models/group';
 import app from './app';
+import ensureQQExpressionCache from './utils/qqExpressionCache';
 
 const DEFAULT_GROUP_NAME = '休息室';
 
@@ -37,6 +38,11 @@ const DEFAULT_GROUP_NAME = '休息室';
     app.listen(config.port, async () => {
         await Socket.deleteMany({}); // 删除Socket表所有历史数据
         logger.info(`>>> server listen on http://localhost:${config.port}`);
+    });
+
+    // Warm the complete persistent cache in the background after the server starts.
+    ensureQQExpressionCache().catch((error) => {
+        logger.error('[QQExpressionCache]', (error as Error).message);
     });
 
     return null;

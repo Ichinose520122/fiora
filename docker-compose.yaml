@@ -57,6 +57,7 @@ services:
       - ./uploads/FileMessage:/usr/app/fiora/packages/server/public/FileMessage
       - ./uploads/GroupAvatar:/usr/app/fiora/packages/server/public/GroupAvatar
       - ./uploads/ImageMessage:/usr/app/fiora/packages/server/public/ImageMessage
+      - ./uploads/QQExpression:/usr/app/fiora/packages/server/public/QQExpression
     networks:
       fiora-internal:
       caddy-proxy:

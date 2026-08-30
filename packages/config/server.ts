@@ -10,8 +10,8 @@ export default {
     port: env.Port ? parseInt(env.Port, 10) : 9200,
 
     maxHttpBufferSize: env.MaxHttpBufferSize
-    ? parseInt(env.MaxHttpBufferSize, 10)
-    : 32 * 1024 * 1024,
+        ? parseInt(env.MaxHttpBufferSize, 10)
+        : 32 * 1024 * 1024,
 
     // mongodb address
     database: env.Database || 'mongodb://localhost:27017/fiora',
@@ -19,6 +19,22 @@ export default {
     redis: {
         host: env.RedisHost || 'localhost',
         port: env.RedisPort ? parseInt(env.RedisPort, 10) : 6379,
+    },
+
+    /** QQ 表情源与本地全量缓存参数 */
+    qqExpressionCache: {
+        manifestUrl:
+            env.QQExpressionSourceManifestUrl ||
+            'https://koishi.js.org/QFace/assets/qq_emoji/_index.json',
+        assetBaseUrl:
+            env.QQExpressionSourceAssetBaseUrl ||
+            'https://koishi.js.org/QFace/',
+        maxItems: env.QQExpressionMaxItems
+            ? parseInt(env.QQExpressionMaxItems, 10)
+            : 240,
+        concurrency: env.QQExpressionCacheConcurrency
+            ? parseInt(env.QQExpressionCacheConcurrency, 10)
+            : 8,
     },
 
     // jwt encryption secret

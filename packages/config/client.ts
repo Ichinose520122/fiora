@@ -23,17 +23,13 @@ export default {
     sound: process.env.Sound || 'default',
     tagColorMode: process.env.TagColorMode || 'fixedColor',
 
-    /**
-     * QQ 表情资源。测试环境默认读取 QFace 原站，正式环境建议替换为自有 R2 域名。
-     * R2 中保持 _index.json 内的 assets/qq_emoji/... 目录结构即可。
-     */
+    /** QQ 表情默认从 Fiora 服务器的持久化缓存读取。 */
     qqExpression: {
         manifestUrl:
             process.env.QQExpressionManifestUrl ||
-            'https://koishi.js.org/QFace/assets/qq_emoji/_index.json',
+            '/QQExpression/_index.json',
         assetBaseUrl:
-            process.env.QQExpressionAssetBaseUrl ||
-            'https://koishi.js.org/QFace/',
+            process.env.QQExpressionAssetBaseUrl || '/QQExpression/',
         maxItems: process.env.QQExpressionMaxItems
             ? parseInt(process.env.QQExpressionMaxItems, 10)
             : 240,

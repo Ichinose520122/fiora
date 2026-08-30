@@ -56,7 +56,11 @@ interface QFaceExpression {
 let cachedQFaceExpressions: QFaceExpression[] | null = null;
 
 function resolveQFaceAsset(path: string) {
-    return new URL(path, config.qqExpression.assetBaseUrl).toString();
+    const assetBaseUrl = new URL(
+        config.qqExpression.assetBaseUrl,
+        window.location.origin,
+    );
+    return new URL(path, assetBaseUrl).toString();
 }
 
 function isUnicodeEmojiId(id: string) {
@@ -136,7 +140,7 @@ function Expression(props: ExpressionProps) {
             .catch(() => {
                 if (!canceled) {
                     setQFaceError(
-                        'QQ 表情加载失败，请检查资源地址或 R2 CORS 配置',
+                        'QQ 表情缓存尚未准备好，请稍后重试',
                     );
                     setQFaceLoading(false);
                 }

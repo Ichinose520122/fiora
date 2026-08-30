@@ -24,6 +24,9 @@ import * as systemRoutes from './routes/system';
 import * as notificationRoutes from './routes/notification';
 import * as historyRoutes from './routes/history';
 import registerRoutes from './middlewares/registerRoutes';
+import ensureQQExpressionCache, {
+    qqExpressionCacheRoot,
+} from './utils/qqExpressionCache';
 
 const app = new Koa();
 app.proxy = true;
@@ -38,6 +41,27 @@ const io = new Server(httpServer, {
     maxHttpBufferSize: config.maxHttpBufferSize,
     pingTimeout: 10000,
     pingInterval: 5000,
+});
+
+// Wait for the complete local QQ expression cache before publishing its manifest.
+app.use(async (ctx, next) => {
+    if (ctx.path !== '/QQExpression/_index.json') {
+        await next();
+        return;
+    }
+
+    try {
+        await ensureQQExpressionCache();
+        await koaSend(ctx, '_index.json', {
+            root: qqExpressionCacheRoot,
+            maxage: 1000 * 60 * 60 * 24 * 7,
+            gzip: true,
+        });
+    } catch (error) {
+        logger.error('[QQExpressionCache]', (error as Error).message);
+        ctx.status = 503;
+        ctx.body = { message: 'QQ 表情缓存暂时不可用' };
+    }
 });
 
 // serve index.html

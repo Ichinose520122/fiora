@@ -20,16 +20,19 @@ uploads/*
 !uploads/FileMessage/
 !uploads/GroupAvatar/
 !uploads/ImageMessage/
+!uploads/QQExpression/
 uploads/Avatar/*
 uploads/BackgroundImage/*
 uploads/FileMessage/*
 uploads/GroupAvatar/*
 uploads/ImageMessage/*
+uploads/QQExpression/*
 !uploads/Avatar/.gitkeep
 !uploads/BackgroundImage/.gitkeep
 !uploads/FileMessage/.gitkeep
 !uploads/GroupAvatar/.gitkeep
 !uploads/ImageMessage/.gitkeep
+!uploads/QQExpression/.gitkeep
 
 packages/server/public/*
 !packages/server/public/avatar/
