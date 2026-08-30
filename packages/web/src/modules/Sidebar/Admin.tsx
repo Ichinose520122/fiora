@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
 import { css } from 'linaria';
+import { TagParticleType, TagStylePreset } from '@fiora/utils/tagStyle';
 import Style from './Admin.less';
 import Common from './Common.less';
 import Dialog from '../../components/Dialog';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import Message from '../../components/Message';
+import UserTag from '../../components/UserTag';
 import {
     getSealList,
     resetUserPassword,
@@ -33,6 +35,16 @@ type SystemConfig = {
     disableNewUserSendMessage: boolean;
 };
 
+function getTagColorCount(preset: TagStylePreset) {
+    if (preset === 'dualGradient') {
+        return 2;
+    }
+    if (preset === 'tripleGradient') {
+        return 3;
+    }
+    return 0;
+}
+
 interface AdminProps {
     visible: boolean;
     onClose: () => void;
@@ -43,6 +55,13 @@ function Admin(props: AdminProps) {
 
     const [tagUsername, setTagUsername] = useState('');
     const [tag, setTag] = useState('');
+    const [tagPreset, setTagPreset] = useState<TagStylePreset>('solid');
+    const [tagParticle, setTagParticle] = useState<TagParticleType>('none');
+    const [tagColors, setTagColors] = useState([
+        '#5b8ff9',
+        '#f759ab',
+        '#ffd666',
+    ]);
     const [resetPasswordUsername, setResetPasswordUsername] = useState('');
     const [sealUsername, setSealUsername] = useState('');
     const [sealList, setSealList] = useState({ users: [], ips: [] });
@@ -86,7 +105,12 @@ function Admin(props: AdminProps) {
      * 处理更新用户标签
      */
     async function handleSetTag() {
-        const isSuccess = await setUserTag(tagUsername, tag.trim());
+        const colorCount = getTagColorCount(tagPreset);
+        const isSuccess = await setUserTag(tagUsername, tag.trim(), {
+            preset: tagPreset,
+            particle: tagParticle,
+            colors: tagColors.slice(0, colorCount),
+        });
         if (isSuccess) {
             Message.success('更新用户标签成功, 请刷新页面更新数据');
             setTagUsername('');
@@ -237,9 +261,73 @@ function Admin(props: AdminProps) {
                             onChange={setTag}
                             placeholder="标签内容"
                         />
+                        <select
+                            className={Style.tagSelect}
+                            value={tagPreset}
+                            onChange={(event) =>
+                                setTagPreset(
+                                    event.target.value as TagStylePreset,
+                                )
+                            }
+                        >
+                            <option value="solid">经典纯色</option>
+                            <option value="dualGradient">双色渐变</option>
+                            <option value="tripleGradient">三色流光</option>
+                            <option value="monochrome">黑白曜影</option>
+                        </select>
+                        <select
+                            className={Style.tagSelect}
+                            value={tagParticle}
+                            onChange={(event) =>
+                                setTagParticle(
+                                    event.target.value as TagParticleType,
+                                )
+                            }
+                        >
+                            <option value="none">无粒子</option>
+                            <option value="star">空心五角星</option>
+                            <option value="heart">爱心粒子</option>
+                        </select>
+                        {(tagPreset === 'dualGradient' ||
+                            tagPreset === 'tripleGradient') &&
+                            tagColors
+                                .slice(
+                                    0,
+                                    tagPreset === 'dualGradient' ? 2 : 3,
+                                )
+                                .map((color, index) => (
+                                    <input
+                                        // eslint-disable-next-line react/no-array-index-key
+                                        key={index}
+                                        className={Style.tagColorInput}
+                                        type="color"
+                                        value={color}
+                                        onChange={(event) => {
+                                            const newColors = [...tagColors];
+                                            newColors[index] =
+                                                event.target.value;
+                                            setTagColors(newColors);
+                                        }}
+                                    />
+                                ))}
                         <Button className={Style.button} onClick={handleSetTag}>
                             确定
                         </Button>
+                    </div>
+                    <div className={Style.tagPreview}>
+                        <span>效果预览：</span>
+                        <UserTag
+                            text={tag.trim() || '炫彩标签'}
+                            tagStyle={{
+                                preset: tagPreset,
+                                particle: tagParticle,
+                                colors: tagColors.slice(
+                                    0,
+                                    getTagColorCount(tagPreset),
+                                ),
+                            }}
+                            fallbackColor="#5b8ff9"
+                        />
                     </div>
                 </div>
                 <div className={Common.block}>

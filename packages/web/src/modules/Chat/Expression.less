@@ -11,13 +11,36 @@
         }
         .rc-tabs-content {
             flex: 1;
+            min-height: 0;
+        }
+        .rc-tabs-tabpane {
+            height: 100%;
         }
     }
 }
 
+.panelScroll,
+.emojiPanel,
+.qqPanel {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.sectionTitle {
+    margin: 5px 10px;
+    color: #888;
+    font-size: 12px;
+}
+
+.favoriteSection {
+    padding-bottom: 4px;
+    border-bottom: 1px solid #eee;
+}
+
 .defaultExpression {
     width: 100%;
-    height: 100%;
+    min-height: 100px;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -104,4 +127,120 @@
         top: 50%;
         transform: translate(-50%, -50%);
     }
+}
+
+.imageGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 6px;
+    padding: 6px 10px;
+}
+
+.imageGridItem,
+.qfaceItem {
+    width: 100%;
+    height: 52px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+
+    &:hover {
+        background: #f1f1f1;
+    }
+
+    > img {
+        max-width: 46px;
+        max-height: 46px;
+        object-fit: contain;
+    }
+}
+
+.removeFavorite {
+    width: 18px;
+    height: 18px;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    line-height: 18px;
+    cursor: pointer;
+}
+
+.emojiPanel {
+    display: flex;
+    flex-direction: column;
+}
+
+.emojiCategories {
+    display: flex;
+    overflow-x: auto;
+    padding: 4px 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.emojiCategoryButton {
+    flex: none;
+    padding: 4px 7px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+}
+
+.activeCategory {
+    background: var(--primary-color-8);
+    color: var(--primary-text-color-9);
+}
+
+.emojiGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+    gap: 2px;
+    padding: 7px;
+    overflow-y: auto;
+}
+
+.emojiItem {
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji',
+        'Noto Color Emoji', sans-serif;
+    font-size: 25px;
+    line-height: 38px;
+    cursor: pointer;
+
+    &:hover {
+        background: #eee;
+    }
+}
+
+.qqPanel {
+    position: relative;
+    padding-bottom: 28px;
+}
+
+.centerMessage {
+    padding: 35px 15px;
+    color: #888;
+    text-align: center;
+}
+
+.copyrightNotice {
+    margin: 4px 10px;
+    color: #aaa;
+    font-size: 11px;
+    text-align: center;
 }

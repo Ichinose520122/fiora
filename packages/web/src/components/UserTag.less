@@ -1,0 +1,93 @@
+.tag {
+    height: 16px;
+    line-height: 16px;
+    border-radius: 3px;
+    padding: 0 5px;
+    display: inline-block;
+    position: relative;
+    isolation: isolate;
+    font-size: 12px;
+    color: #fff;
+    transform: scale(0.9);
+    user-select: text;
+}
+
+.text {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.animatedGradient {
+    animation-name: tagGradientFlow;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+.monochrome {
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.7),
+        inset 0 0 4px rgba(0, 0, 0, 0.65);
+}
+
+.hasParticles {
+    z-index: 1;
+}
+
+.particle {
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    top: 50%;
+    width: 1em;
+    height: 1em;
+    line-height: 1em;
+    margin-left: -0.5em;
+    margin-top: -0.5em;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    text-shadow: 0 0 4px currentColor;
+    animation-name: tagParticleFloat;
+    animation-timing-function: ease-out;
+    animation-iteration-count: infinite;
+}
+
+@keyframes tagGradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes tagParticleFloat {
+    0% {
+        opacity: 0;
+        transform: translate(0, 0) scale(var(--particle-start-scale));
+    }
+    25% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--particle-x), var(--particle-y))
+            scale(var(--particle-end-scale));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animatedGradient,
+    .particle {
+        animation: none;
+    }
+
+    .particle {
+        display: none;
+    }
+}
+

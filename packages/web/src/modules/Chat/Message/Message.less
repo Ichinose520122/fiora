@@ -24,18 +24,8 @@
 }
 
 .tag {
-    height: 16px;
-    line-height: 16px;
-    border-radius: 3px;
-    padding: 0 5px;
-    display: inline-block;
-    font-size: 12px;
-    background-color: var(--primary-color-9);
-    color: var(--primary-text-color-10);
-    transform: scale(0.9);
     margin-left: -1px;
     margin-right: 2px;
-    user-select: text;
 }
 
 .nickname {
@@ -118,6 +108,36 @@
 
 .imageMessage {
     position: relative;
+
+    &:hover .saveExpressionButton {
+        opacity: 1;
+    }
+}
+
+.saveExpressionButton {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    z-index: 2;
+    padding: 3px 6px;
+    border: 0;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+
+    &:disabled {
+        cursor: default;
+    }
+}
+
+@media (hover: none) {
+    .saveExpressionButton {
+        opacity: 1;
+    }
 }
 
 .imageProgress {

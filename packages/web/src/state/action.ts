@@ -1,3 +1,4 @@
+import { TagStyle } from '@fiora/utils/tagStyle';
 import { Group, Friend, Message, Linkman } from './reducer';
 
 // eslint-disable-next-line import/prefer-default-export
@@ -46,6 +47,8 @@ export type SetUserPayload = {
     _id: string;
     username: string;
     tag: string;
+    tagStyle?: TagStyle;
+    expressions?: string[];
     avatar: string;
     groups: Group[];
     friends: Friend[];

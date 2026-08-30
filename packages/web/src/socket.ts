@@ -3,6 +3,7 @@ import platform from 'platform';
 
 import convertMessage from '@fiora/utils/convertMessage';
 import getFriendId from '@fiora/utils/getFriendId';
+import { TagStyle } from '@fiora/utils/tagStyle';
 import config from '@fiora/config/client';
 import notification from './utils/notification';
 import voice from './utils/voice';
@@ -104,6 +105,19 @@ socket.on('message', async (message: any) => {
             type: ActionTypes.UpdateUserInfo,
             payload: {
                 tag: message.from.tag,
+            },
+        });
+    }
+    if (
+        isSelfMessage &&
+        message.from.tagStyle &&
+        JSON.stringify(message.from.tagStyle) !==
+            JSON.stringify(state.user?.tagStyle)
+    ) {
+        dispatch({
+            type: ActionTypes.UpdateUserInfo,
+            payload: {
+                tagStyle: message.from.tagStyle,
             },
         });
     }
@@ -234,6 +248,15 @@ socket.on('changeTag', (tag: string) => {
         type: ActionTypes.UpdateUserInfo,
         payload: {
             tag,
+        },
+    });
+});
+
+socket.on('changeTagStyle', (tagStyle: TagStyle) => {
+    dispatch({
+        type: ActionTypes.UpdateUserInfo,
+        payload: {
+            tagStyle,
         },
     });
 });

@@ -6,6 +6,12 @@ import { Types } from '@fiora/database/mongoose';
 import config from '@fiora/config/server';
 import getRandomAvatar from '@fiora/utils/getRandomAvatar';
 import { SALT_ROUNDS } from '@fiora/utils/const';
+import {
+    defaultTagStyle,
+    TagParticleTypes,
+    TagStyle,
+    TagStylePresets,
+} from '@fiora/utils/tagStyle';
 import User, { UserDocument } from '@fiora/database/mongoose/models/user';
 import Group, { GroupDocument } from '@fiora/database/mongoose/models/group';
 import Friend, { FriendDocument } from '@fiora/database/mongoose/models/friend';
@@ -25,6 +31,34 @@ const { isValid } = Types.ObjectId;
 
 /** 一天时间 */
 const OneDay = 1000 * 60 * 60 * 24;
+const HexColorRegExp = /^#[0-9a-f]{6}$/i;
+
+function normalizeTagStyle(style: TagStyle): TagStyle {
+    assert(style && typeof style === 'object', '标签样式格式错误');
+    assert(
+        TagStylePresets.includes(style.preset),
+        '不支持的标签颜色模板',
+    );
+    assert(
+        TagParticleTypes.includes(style.particle),
+        '不支持的标签粒子类型',
+    );
+
+    const colors = Array.isArray(style.colors) ? style.colors.slice(0, 3) : [];
+    assert(colors.every((color) => HexColorRegExp.test(color)), '标签颜色格式错误');
+    if (style.preset === 'dualGradient') {
+        assert(colors.length === 2, '双色渐变需要配置两个颜色');
+    }
+    if (style.preset === 'tripleGradient') {
+        assert(colors.length === 3, '三色渐变需要配置三个颜色');
+    }
+
+    return {
+        preset: style.preset,
+        colors,
+        particle: style.particle,
+    };
+}
 
 interface Environment {
     /** 客户端系统 */
@@ -317,6 +351,8 @@ export async function login(
         avatar: user.avatar,
         username: user.username,
         tag: user.tag,
+        tagStyle: user.tagStyle || defaultTagStyle,
+        expressions: user.expressions || [],
         groups,
         friends,
         token,
@@ -352,6 +388,8 @@ export async function loginByToken(
             avatar: 1,
             username: 1,
             tag: 1,
+            tagStyle: 1,
+            expressions: 1,
             createTime: 1,
             isAdmin: 1,
         },
@@ -406,6 +444,8 @@ export async function loginByToken(
         avatar: user.avatar,
         username: user.username,
         tag: user.tag,
+        tagStyle: user.tagStyle || defaultTagStyle,
+        expressions: user.expressions || [],
         groups,
         friends,
         isAdmin,
@@ -611,9 +651,9 @@ export async function resetUserPassword(ctx: Context<{ username: string }>) {
  * @param ctx Context
  */
 export async function setUserTag(
-    ctx: Context<{ username: string; tag: string }>,
+    ctx: Context<{ username: string; tag: string; tagStyle?: TagStyle }>,
 ) {
-    const { username, tag } = ctx.data;
+    const { username, tag, tagStyle } = ctx.data;
     assert(username !== '', 'username不能为空');
     assert(tag !== '', 'tag不能为空');
     assert(
@@ -627,17 +667,69 @@ export async function setUserTag(
     }
 
     user.tag = tag;
+    if (tagStyle) {
+        user.tagStyle = normalizeTagStyle(tagStyle);
+    }
     await user.save();
 
     const sockets = await Socket.find({ user: user._id });
     const socketIdList = sockets.map((socket) => socket.id);
     if (socketIdList.length) {
         ctx.socket.emit(socketIdList, 'changeTag', user.tag);
+        ctx.socket.emit(
+            socketIdList,
+            'changeTagStyle',
+            user.tagStyle || defaultTagStyle,
+        );
     }
 
     return {
         msg: 'ok',
     };
+}
+
+/**
+ * 收藏自己已经发送成功的图片消息, 后续可直接作为表情再次发送
+ */
+export async function addExpression(
+    ctx: Context<{ messageId: string }>,
+) {
+    const { messageId } = ctx.data;
+    assert(messageId && isValid(messageId), '无效的消息ID');
+
+    const message = await Message.findOne({
+        _id: messageId,
+        from: ctx.socket.user,
+        type: 'image',
+        deleted: { $ne: true },
+    });
+    assert(message, '只能收藏自己已经发送的图片消息');
+
+    const user = await User.findOne({ _id: ctx.socket.user });
+    assert(user, '用户不存在');
+    const expressions = user.expressions || [];
+    if (!expressions.includes(message.content)) {
+        expressions.unshift(message.content);
+        user.expressions = expressions.slice(0, 100);
+        await user.save();
+    }
+    return user.expressions;
+}
+
+/** 删除收藏的图片表情 */
+export async function removeExpression(
+    ctx: Context<{ expression: string }>,
+) {
+    const { expression } = ctx.data;
+    assert(expression, '表情地址不能为空');
+
+    const user = await User.findOne({ _id: ctx.socket.user });
+    assert(user, '用户不存在');
+    user.expressions = (user.expressions || []).filter(
+        (item) => item !== expression,
+    );
+    await user.save();
+    return user.expressions;
 }
 
 /**

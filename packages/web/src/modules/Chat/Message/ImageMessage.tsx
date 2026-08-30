@@ -5,6 +5,10 @@ import { isMobile } from '@fiora/utils/ua';
 import { getOSSFileUrl } from '../../../utils/uploadFile';
 import Style from './Message.less';
 import { CircleProgress } from '../../../components/Progress';
+import Message from '../../../components/Message';
+import { addExpression } from '../../../service';
+import store from '../../../state/store';
+import { ActionTypes } from '../../../state/action';
 
 const ReactViewerAsync = loadable(
     async () =>
@@ -16,12 +20,15 @@ interface ImageMessageProps {
     src: string;
     loading: boolean;
     percent: number;
+    messageId: string;
+    isSelf: boolean;
 }
 
 function ImageMessage(props: ImageMessageProps) {
-    const { src, loading, percent } = props;
+    const { src, loading, percent, messageId, isSelf } = props;
 
     const [viewer, toggleViewer] = useState(false);
+    const [saved, setSaved] = useState(false);
     const closeViewer = useCallback(() => toggleViewer(false), []);
     const $container = useRef(null);
 
@@ -69,6 +76,19 @@ function ImageMessage(props: ImageMessageProps) {
         }
     }
 
+    async function handleAddExpression(e: MouseEvent<HTMLButtonElement>) {
+        e.stopPropagation();
+        const expressions = await addExpression(messageId);
+        if (expressions) {
+            store.dispatch({
+                type: ActionTypes.UpdateUserInfo,
+                payload: { expressions },
+            });
+            setSaved(true);
+            Message.success('已添加到我的表情');
+        }
+    }
+
     return (
         <>
             <div className={className} ref={$container}>
@@ -80,6 +100,16 @@ function ImageMessage(props: ImageMessageProps) {
                     height={height}
                     onClick={() => toggleViewer(true)}
                 />
+                {isSelf && !loading && (
+                    <button
+                        type="button"
+                        className={Style.saveExpressionButton}
+                        onClick={handleAddExpression}
+                        disabled={saved}
+                    >
+                        {saved ? '已收藏' : '收藏表情'}
+                    </button>
+                )}
                 <CircleProgress
                     className={Style.imageProgress}
                     percent={percent}

@@ -1,5 +1,23 @@
 import { Schema, model, Document } from 'mongoose';
 import { NAME_REGEXP } from '@fiora/utils/const';
+import { TagStyle } from '@fiora/utils/tagStyle';
+
+const TagStyleSchema = new Schema(
+    {
+        preset: {
+            type: String,
+            enum: ['solid', 'dualGradient', 'tripleGradient', 'monochrome'],
+            default: 'solid',
+        },
+        colors: [{ type: String }],
+        particle: {
+            type: String,
+            enum: ['none', 'star', 'heart'],
+            default: 'none',
+        },
+    },
+    { _id: false },
+);
 
 const UserSchema = new Schema({
     createTime: { type: Date, default: Date.now },
@@ -20,6 +38,14 @@ const UserSchema = new Schema({
         default: '',
         trim: true,
         match: NAME_REGEXP,
+    },
+    tagStyle: {
+        type: TagStyleSchema,
+        default: () => ({
+            preset: 'solid',
+            colors: [],
+            particle: 'none',
+        }),
     },
     expressions: [
         {
@@ -44,6 +70,8 @@ export interface UserDocument extends Document {
     avatar: string;
     /** 用户标签 */
     tag: string;
+    /** 用户标签样式 */
+    tagStyle: TagStyle;
     /** 表情收藏 */
     expressions: string[];
     /** 创建时间 */

@@ -67,6 +67,7 @@ function ChatInput() {
     const username = useSelector((state: State) => state.user?.username);
     const avatar = useSelector((state: State) => state.user?.avatar);
     const tag = useSelector((state: State) => state.user?.tag);
+    const tagStyle = useSelector((state: State) => state.user?.tagStyle);
     const focus = useSelector((state: State) => state.focus);
     const linkman = useSelector((state: State) => state.linkmans[focus]);
     const selfVoiceSwitch = useSelector(
@@ -159,6 +160,10 @@ function ChatInput() {
         insertAtCursor(`#(${expression})`);
     }
 
+    function handleSelectEmoji(emoji: string) {
+        insertAtCursor(emoji);
+    }
+
     function addSelfMessage(type: string, content: string) {
         const _id = focus + Date.now();
         const message = {
@@ -171,6 +176,7 @@ function ChatInput() {
                 username,
                 avatar,
                 tag,
+                tagStyle,
             },
             loading: true,
             percent: type === 'image' || type === 'file' ? 0 : 100,
@@ -600,6 +606,7 @@ function ChatInput() {
                     <div className={Style.expressionDropdown}>
                         <ExpressionAsync
                             onSelectText={handleSelectExpression}
+                            onSelectEmoji={handleSelectEmoji}
                             onSelectImage={sendImageMessage}
                         />
                     </div>

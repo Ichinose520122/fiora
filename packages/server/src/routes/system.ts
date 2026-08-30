@@ -101,59 +101,132 @@ export async function search(ctx: Context<{ keywords: string }>) {
  * 搜索表情包, 爬其它站资源
  * @param ctx Context
  */
+type SogouImage = {
+    locImageLink?: string;
+    picUrl?: string;
+    thumbUrl?: string;
+    width?: number | string;
+    height?: number | string;
+    picWidth?: number | string;
+    picHeight?: number | string;
+};
+
+function normalizeImageUrl(url: string) {
+    if (url.startsWith('//')) {
+        return `https:${url}`;
+    }
+    if (url.startsWith('http://')) {
+        return `https://${url.slice('http://'.length)}`;
+    }
+    return url;
+}
+
+export function parseSogouImageItems(items: SogouImage[], limit: number) {
+    const result: { image: string; width: number; height: number }[] = [];
+    const urls = new Set<string>();
+    items.forEach((item) => {
+        const rawUrl = item.picUrl || item.thumbUrl || item.locImageLink || '';
+        const image = normalizeImageUrl(rawUrl);
+        if (!image.startsWith('https://') || urls.has(image)) {
+            return;
+        }
+        urls.add(image);
+        result.push({
+            image,
+            width: Number(item.width || item.picWidth) || 120,
+            height: Number(item.height || item.picHeight) || 120,
+        });
+    });
+    return result.slice(0, limit);
+}
+
+function getSogouItems(data: any): SogouImage[] {
+    if (Array.isArray(data?.data?.items)) {
+        return data.data.items;
+    }
+    if (Array.isArray(data?.data)) {
+        return data.data;
+    }
+    if (Array.isArray(data?.items)) {
+        return data.items;
+    }
+    if (Array.isArray(data?.searchList?.searchList)) {
+        return data.searchList.searchList;
+    }
+    return [];
+}
+
 export async function searchExpression(
     ctx: Context<{ keywords: string; limit?: number }>,
 ) {
-    const { keywords, limit = Infinity } = ctx.data;
+    const keywords = ctx.data.keywords?.trim() || '';
+    const requestedLimit = Number(ctx.data.limit) || 60;
+    const limit = Math.max(1, Math.min(requestedLimit, 60));
     if (keywords === '') {
         return [];
     }
-
-    const res = await axios({
-        method: 'get',
-        url: `https://pic.sogou.com/pics/json.jsp?query=${encodeURIComponent(
-            `${keywords} 表情`,
-        )}&st=5&start=0&xml_len=60&callback=callback&reqFrom=wap_result&`,
-        headers: {
-            accept: '*/*',
-            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7',
-            'cache-control': 'no-cache',
-            pragma: 'no-cache',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            referrer: `https://pic.sogou.com/pic/emo/searchList.jsp?statref=search_form&uID=hTHHybkSPt37C46z&spver=0&rcer=&keyword=${encodeURIComponent(
-                keywords,
-            )}`,
-            referrerPolicy: 'no-referrer-when-downgrade',
-            'user-agent':
-                'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1',
-        },
-    });
-    assert(res.status === 200, '搜索表情包失败, 请重试');
+    assert(keywords.length <= 20, '搜索关键词过长');
 
     try {
-        const parseDataResult = res.data.match(/callback\((.+)\)/);
-        const data = JSON.parse(`${parseDataResult[1]}`);
-
-        type Image = {
-            locImageLink: string;
-            width: number;
-            height: number;
-        };
-        const images = data.items as Image[];
-        return images
-            .map(({ locImageLink, width, height }) => ({
-                image: locImageLink,
-                width,
-                height,
-            }))
-            .filter((image, index) =>
-                limit === Infinity ? true : index < limit,
-            );
+        const response = await axios.get(
+            'https://pic.sogou.com/napi/pc/searchList',
+            {
+                params: {
+                    mode: 20,
+                    start: 0,
+                    xml_len: 60,
+                    query: `${keywords} 表情`,
+                },
+                timeout: 8000,
+                headers: {
+                    accept: 'application/json, text/plain, */*',
+                    'accept-language': 'zh-CN,zh;q=0.9',
+                    'user-agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+                },
+            },
+        );
+        const result = parseSogouImageItems(
+            getSogouItems(response.data),
+            limit,
+        );
+        if (result.length > 0) {
+            return result;
+        }
     } catch (err) {
-        assert(false, '搜索表情包失败, 数据解析异常');
+        logger.warn('[searchExpression:napi]', (err as Error).message);
     }
 
+    try {
+        const response = await axios.get('https://pic.sogou.com/pics', {
+            params: {
+                query: `${keywords} 表情`,
+                start: 0,
+            },
+            timeout: 8000,
+            headers: {
+                'accept-language': 'zh-CN,zh;q=0.9',
+                'user-agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+            },
+        });
+        const match = String(response.data).match(
+            /window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});/,
+        );
+        if (match) {
+            const result = parseSogouImageItems(
+                getSogouItems(JSON.parse(match[1])),
+                limit,
+            );
+            if (result.length > 0) {
+                return result;
+            }
+        }
+    } catch (err) {
+        logger.warn('[searchExpression:html]', (err as Error).message);
+    }
+
+    assert(false, '在线表情搜索暂时不可用，请稍后重试');
     return [];
 }
 

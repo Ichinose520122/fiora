@@ -24,6 +24,22 @@ export default {
     tagColorMode: process.env.TagColorMode || 'fixedColor',
 
     /**
+     * QQ 表情资源。测试环境默认读取 QFace 原站，正式环境建议替换为自有 R2 域名。
+     * R2 中保持 _index.json 内的 assets/qq_emoji/... 目录结构即可。
+     */
+    qqExpression: {
+        manifestUrl:
+            process.env.QQExpressionManifestUrl ||
+            'https://koishi.js.org/QFace/assets/qq_emoji/_index.json',
+        assetBaseUrl:
+            process.env.QQExpressionAssetBaseUrl ||
+            'https://koishi.js.org/QFace/',
+        maxItems: process.env.QQExpressionMaxItems
+            ? parseInt(process.env.QQExpressionMaxItems, 10)
+            : 240,
+    },
+
+    /**
      * 前端监控: https://yueying.effirst.com/index
      * 值为监控应用id, 为空则不启用监控
      */
