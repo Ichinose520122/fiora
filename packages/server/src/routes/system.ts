@@ -26,6 +26,11 @@ let baiduToken = '';
 /** 最后一次获取token的时间 */
 let lastBaiduTokenTime = Date.now();
 
+/** Application-level liveness; no user data is exposed. */
+export async function connectionHealth(ctx: Context<{}>) {
+    return { ok: true, authenticated: Boolean(ctx.socket.user) };
+}
+
 const AllowedUploadDirectories = new Set([
     'Avatar',
     'BackgroundImage',

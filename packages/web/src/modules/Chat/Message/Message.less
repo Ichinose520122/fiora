@@ -109,9 +109,13 @@
 
 .imageMessage {
     position: relative;
+    isolation: isolate;
 
-    &:hover .saveExpressionButton {
+    &:hover .saveExpressionButton,
+    &:focus-within .saveExpressionButton {
         opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
     }
 }
 
@@ -128,6 +132,8 @@
     font-size: 12px;
     cursor: pointer;
     opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
     transition: opacity 0.2s;
 
     &:disabled {
@@ -138,6 +144,8 @@
 @media (hover: none) {
     .saveExpressionButton {
         opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
     }
 }
 

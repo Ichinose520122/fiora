@@ -10,6 +10,7 @@ export default function isLogin(socket: Socket) {
         'register',
         'login',
         'loginByToken',
+        'connectionHealth',
     ]);
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         if (!noRequireLoginEvent.has(event) && !socket.data.user) {

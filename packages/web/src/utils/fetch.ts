@@ -30,15 +30,19 @@ export default function fetch<T = any>(
         const finish = (result: [string | null, T | null]) => {
             if (!settled) {
                 settled = true;
+                window.clearTimeout(timer);
+                socket.off('disconnect', onDisconnect);
                 resolve(result);
             }
         };
+        const onDisconnect = () => finish([DisconnectedText, null]);
         const timer = window.setTimeout(() => {
             if (toast) {
                 Message.error(RequestTimeoutText);
             }
             finish([RequestTimeoutText, null]);
         }, RequestTimeout);
+        socket.on('disconnect', onDisconnect);
 
         socket.emit(event, data, (res: any) => {
             if (settled) {

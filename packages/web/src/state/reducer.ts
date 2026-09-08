@@ -490,7 +490,13 @@ function reducer(state: State = initialState, action: Action): State {
                     ...(linkmansMessages[linkmanId]
                         ? {
                             messages: getMessagesMap(
-                                linkmansMessages[linkmanId].messages,
+                                [
+                                    ...linkmansMessages[linkmanId].messages,
+                                    ...Object.values(linkmans[linkmanId].messages),
+                                ].sort((a, b) =>
+                                    new Date(a.createTime).getTime() -
+                                    new Date(b.createTime).getTime(),
+                                ),
                             ),
                             unread: linkmansMessages[linkmanId].unread,
                         }

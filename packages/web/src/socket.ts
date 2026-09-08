@@ -18,11 +18,12 @@ import {
     DeleteMessagePayload,
 } from './state/action';
 import {
-    loginByToken,
+    loginByTokenWithError,
     getLinkmanHistoryMessages,
     getLinkmansLastMessagesV2,
 } from './service';
 import store from './state/store';
+import installConnectionRecovery from './utils/connectionRecovery';
 
 const { dispatch } = store;
 
@@ -41,56 +42,111 @@ function reconnectIfNeeded() {
     }
 }
 
+let sessionVersion = 0;
+let restoringSession = false;
+let restoreTimer: number | undefined;
+const InvalidTokenErrors = new Set([
+    '非法token', 'token已过期', '非法登录', '用户不存在', 'token不能为空',
+]);
+
 socket.on('connect', async () => {
-    dispatch({ type: ActionTypes.Connect, payload: '' });
-
-    dispatch({ type: ActionTypes.Ready, payload: '' });
-
+    const version = ++sessionVersion;
     const token = window.localStorage.getItem('token');
-    if (token) {
-        const user = await loginByToken(
-            token,
-            platform.os?.family,
-            platform.name,
-            platform.description,
-        );
-        if (user) {
-            await initOSS();
-            dispatch({
-                type: ActionTypes.SetUser,
-                payload: user,
-            });
-            const linkmanIds = [
-                ...user.groups.map((group: any) => group._id),
-                ...user.friends.map((friend: any) =>
-                    getFriendId(friend.from, friend.to._id),
-                ),
-            ];
-            const linkmanMessages = await getLinkmansLastMessagesV2(linkmanIds);
-            Object.values(linkmanMessages).forEach(
-                // @ts-ignore
-                ({ messages }: { messages: Message[] }) => {
-                    messages.forEach(convertMessage);
-                },
-            );
-            dispatch({
-                type: ActionTypes.SetLinkmansLastMessages,
-                payload: linkmanMessages,
-            });
+    const isCurrent = () =>
+        version === sessionVersion &&
+        socket.connected &&
+        token === window.localStorage.getItem('token');
+    window.clearTimeout(restoreTimer);
+    restoringSession = true;
+    dispatch({ type: ActionTypes.Ready, payload: '' });
+    // Transport connected does not yet mean authentication/history are ready.
+    dispatch({ type: ActionTypes.Disconnect, payload: '' });
+
+    function retryRestore() {
+        if (!isCurrent()) {
             return;
         }
-        window.localStorage.removeItem('token');
+        restoreTimer = window.setTimeout(() => {
+            if (isCurrent() && navigator.onLine !== false) {
+                socket.disconnect();
+                socket.connect();
+            }
+        }, 5000);
     }
-    dispatch({
-        type: ActionTypes.SetStatus,
-        payload: {
-            key: 'loginRegisterDialogVisible',
-            value: true,
-        },
-    });
+
+    try {
+        if (token) {
+            const [error, user] = await loginByTokenWithError(
+                token,
+                platform.os?.family,
+                platform.name,
+                platform.description,
+            );
+            if (!isCurrent()) {
+                return;
+            }
+            if (error || !user) {
+                if (!error || !InvalidTokenErrors.has(error)) {
+                    retryRestore();
+                    return;
+                }
+                window.localStorage.removeItem('token');
+                dispatch({ type: ActionTypes.Logout, payload: '' });
+            } else {
+                dispatch({ type: ActionTypes.SetUser, payload: user });
+                const linkmanIds = [
+                    ...user.groups.map((group: any) => group._id),
+                    ...user.friends.map((friend: any) =>
+                        getFriendId(friend.from, friend.to._id),
+                    ),
+                ];
+                // The server accepts at most 100 conversations per request.
+                const linkmanMessages: Record<string, any> = {};
+                for (let offset = 0; offset < linkmanIds.length; offset += 100) {
+                    // eslint-disable-next-line no-await-in-loop
+                    const batch = await getLinkmansLastMessagesV2(
+                        linkmanIds.slice(offset, offset + 100),
+                    );
+                    if (!isCurrent()) {
+                        return;
+                    }
+                    if (!batch) {
+                        retryRestore();
+                        return;
+                    }
+                    Object.assign(linkmanMessages, batch);
+                }
+                Object.values(linkmanMessages).forEach(({ messages }) => {
+                    messages.forEach(convertMessage);
+                });
+                dispatch({
+                    type: ActionTypes.SetLinkmansLastMessages,
+                    payload: linkmanMessages,
+                });
+                dispatch({ type: ActionTypes.Connect, payload: '' });
+                // OSS credentials must not block chat recovery.
+                initOSS().catch(() => undefined);
+                return;
+            }
+        }
+        dispatch({ type: ActionTypes.Connect, payload: '' });
+        dispatch({
+            type: ActionTypes.SetStatus,
+            payload: { key: 'loginRegisterDialogVisible', value: true },
+        });
+    } catch (error) {
+        retryRestore();
+    } finally {
+        if (version === sessionVersion) {
+            restoringSession = false;
+        }
+    }
 });
 
 socket.on('disconnect', (reason) => {
+    sessionVersion += 1;
+    restoringSession = false;
+    window.clearTimeout(restoreTimer);
     // @ts-ignore
     dispatch({ type: ActionTypes.Disconnect, payload: null });
 
@@ -103,18 +159,11 @@ socket.on('disconnect', (reason) => {
 let windowStatus = 'focus';
 window.onfocus = () => {
     windowStatus = 'focus';
-    reconnectIfNeeded();
 };
 window.onblur = () => {
     windowStatus = 'blur';
 };
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        reconnectIfNeeded();
-    }
-});
-window.addEventListener('online', reconnectIfNeeded);
-window.addEventListener('pageshow', reconnectIfNeeded);
+installConnectionRecovery(socket, () => restoringSession);
 
 let prevFrom: string | null = '';
 let prevName = '';

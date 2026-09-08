@@ -3,8 +3,18 @@ import fetch from './fetch';
 
 let ossClient: OSS;
 let endpoint = '/';
+let refreshTimer: ReturnType<typeof setInterval> | undefined;
+let credentialsVersion = 0;
 export async function initOSS() {
+    const version = ++credentialsVersion;
+    if (refreshTimer !== undefined) {
+        clearInterval(refreshTimer);
+        refreshTimer = undefined;
+    }
     const [, token] = await fetch('getSTS');
+    if (version !== credentialsVersion) {
+        return;
+    }
     if (token?.enable) {
         // @ts-ignore
         ossClient = new OSS({
@@ -19,9 +29,9 @@ export async function initOSS() {
         }
 
         const OneHour = 1000 * 60 * 60;
-        setInterval(async () => {
+        refreshTimer = setInterval(async () => {
             const [, refreshToken] = await fetch('getSTS');
-            if (refreshToken?.enable) {
+            if (version === credentialsVersion && refreshToken?.enable) {
                 // @ts-ignore
                 ossClient = new OSS({
                     region: refreshToken.region,

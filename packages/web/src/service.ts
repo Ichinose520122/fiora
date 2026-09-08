@@ -83,6 +83,17 @@ export async function loginByToken(
     browser = '',
     environment = '',
 ) {
+    const [err, user] = await loginByTokenWithError(token, os, browser, environment);
+    return err ? null : user;
+}
+
+/** Preserve transport/server errors so reconnects do not discard valid tokens. */
+export async function loginByTokenWithError(
+    token: string,
+    os = '',
+    browser = '',
+    environment = '',
+) {
     const [err, user] = await fetch(
         'loginByToken',
         {
@@ -94,12 +105,10 @@ export async function loginByToken(
         { toast: false },
     );
 
-    if (err) {
-        return null;
+    if (!err && user) {
+        saveUsername(user.username);
     }
-
-    saveUsername(user.username);
-    return user;
+    return [err, user] as [string | null, any];
 }
 
 /**

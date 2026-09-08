@@ -105,13 +105,31 @@ Object.keys(routes).forEach((key) => {
 io.on('connection', async (socket) => {
     const ip = getSocketIp(socket, config.trustProxyHeaders);
     logger.trace(`connection ${socket.id} ${ip}`);
-    await SocketModel.create({
+    const socketRecord = SocketModel.create({
         id: socket.id,
         ip,
-    } as SocketDocument);
+    } as SocketDocument).catch((error) => {
+        logger.error('[SocketInit]', error.message);
+        return null;
+    });
+
+    // Install handlers synchronously: clients can send login as soon as connected.
+    socket.use(async ([, , cb], next) => {
+        const record = await socketRecord;
+        if (!record) {
+            if (typeof cb === 'function') {
+                cb('Server Error: connection initialization failed');
+            }
+            return;
+        }
+        if (socket.connected) {
+            next();
+        }
+    });
 
     socket.on('disconnect', async () => {
         logger.trace(`disconnect ${socket.id}`);
+        await socketRecord;
         const disconnectedSocket = await SocketModel.findOneAndDelete({
             id: socket.id,
         });
