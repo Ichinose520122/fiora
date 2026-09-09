@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useLayoutEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import { css } from 'linaria';
@@ -13,6 +13,9 @@ import {
 import MessageComponent from './Message/Message';
 
 import Style from './MessageList.less';
+import {
+    captureMessageScroll, restoreMessageScroll, MessageScroll,
+} from '../../utils/messageScroll';
 
 const styles = {
     container: css`
@@ -57,6 +60,17 @@ function MessageList() {
     );
 
     const $list = useRef<HTMLDivElement>(null);
+    const positions = useRef<Record<string, MessageScroll>>({});
+    const isFetching = useRef(false);
+
+    function restorePosition() {
+        if ($list.current) {
+            restoreMessageScroll($list.current, positions.current[focus]);
+            positions.current[focus] = captureMessageScroll($list.current);
+        }
+    }
+
+    useLayoutEffect(restorePosition, [focus, messages]);
 
     function clearUnread() {
         action.setLinkmanProperty(focus, 'unread', 0);
@@ -69,13 +83,15 @@ function MessageList() {
         }
     }
 
-    let isFetching = false;
     async function handleScroll(e: any) {
         // Don't know why the code-view dialog will also trigger when scrolling
         if ($list.current && e.target !== $list.current) {
             return;
         }
-        if (isFetching) {
+        if ($list.current) {
+            positions.current[focus] = captureMessageScroll($list.current);
+        }
+        if (isFetching.current) {
             return;
         }
 
@@ -83,13 +99,14 @@ function MessageList() {
 
         if (
             unread &&
-            $div.scrollHeight - $div.clientHeight - $div.scrollTop > 50
+            !document.hidden &&
+            $div.scrollHeight - $div.clientHeight - $div.scrollTop <= 50
         ) {
             clearUnread();
         }
 
         if ($div.scrollTop === 0 && $div.scrollHeight > $div.clientHeight) {
-            isFetching = true;
+            isFetching.current = true;
             let historyMessages: Message[] = [];
             if (isLogin) {
                 historyMessages = await getLinkmanHistoryMessages(
@@ -104,22 +121,12 @@ function MessageList() {
             if (historyMessages && historyMessages.length > 0) {
                 action.addLinkmanHistoryMessages(focus, historyMessages);
             }
-            isFetching = false;
+            isFetching.current = false;
         }
     }
 
     function renderMessage(message: Message) {
         const isSelf = message.from._id === selfId;
-        let shouldScroll = true;
-        if ($list.current) {
-            // @ts-ignore
-            const { scrollHeight, clientHeight, scrollTop } = $list.current;
-            shouldScroll =
-                isSelf ||
-                scrollHeight === clientHeight ||
-                scrollTop === 0 ||
-                scrollTop > scrollHeight - clientHeight * 2;
-        }
 
         let { tag } = message.from;
         if (!tag && isGroup && message.from._id === creator) {
@@ -143,7 +150,7 @@ function MessageList() {
                 tagStyle={message.from.tagStyle}
                 loading={message.loading}
                 percent={message.percent}
-                shouldScroll={shouldScroll}
+                shouldScroll={false}
                 tagColorMode={tagColorMode}
             />
         );
@@ -154,6 +161,7 @@ function MessageList() {
             <div
                 className={`${Style.messageList} show-scrollbar`}
                 onScroll={handleScroll}
+                onLoadCapture={restorePosition}
                 ref={$list}
             >
                 {Object.values(messages).map((message) =>

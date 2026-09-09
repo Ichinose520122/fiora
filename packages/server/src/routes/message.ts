@@ -368,6 +368,47 @@ export async function getLinkmansLastMessagesV2(
  * 获取联系人的历史消息
  * @param ctx Context
  */
+export async function syncLinkmanMessages(
+    ctx: Context<{
+        linkmanId: string;
+        since: string;
+        until?: string;
+        cursor?: { time: string; id: string };
+    }>,
+) {
+    const { linkmanId, since, until, cursor } = ctx.data;
+    await getLinkmanAccess(ctx.socket.user, linkmanId);
+    const start = new Date(since);
+    const end = until ? new Date(until) : new Date();
+    assert(Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()), '无效的同步时间');
+    assert(start <= end && end.getTime() <= Date.now() + 1000, '无效的同步范围');
+    const query: any = { to: linkmanId, createTime: { $gte: start, $lte: end } };
+    if (cursor) {
+        const time = new Date(cursor.time);
+        assert(isValid(cursor.id) && Number.isFinite(time.getTime()), '无效的同步游标');
+        assert(time >= start && time <= end, '同步游标超出范围');
+        query.$or = [
+            { createTime: { $gt: time } },
+            { createTime: time, _id: { $gt: cursor.id } },
+        ];
+    }
+    const found = await Message.find(query, {
+        type: 1, content: 1, from: 1, createTime: 1, deleted: 1,
+    }, { sort: { createTime: 1, _id: 1 }, limit: 101 }).populate('from', {
+        username: 1, avatar: 1, tag: 1, tagStyle: 1,
+    });
+    const messages = found.slice(0, 100);
+    const last = messages[messages.length - 1];
+    await handleInviteV2Messages(messages);
+    return {
+        messages,
+        until: end.toISOString(),
+        next: found.length > 100 && last
+            ? { time: last.createTime.toISOString(), id: last._id.toString() }
+            : null,
+    };
+}
+
 export async function getLinkmanHistoryMessages(
     ctx: Context<{ linkmanId: string; existCount: number }>,
 ) {

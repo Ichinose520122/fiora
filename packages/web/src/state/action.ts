@@ -7,6 +7,8 @@ export enum ActionTypes {
     SetGuest = 'SetGuest',
     /** 设置用户信息 */
     SetUser = 'SetUser',
+    RestoreUser = 'RestoreUser',
+    MergeRecoveredMessages = 'MergeRecoveredMessages',
     /** 更新用户信息 */
     UpdateUserInfo = 'UpdateUserInfo',
     /** 更新客户端状态 */

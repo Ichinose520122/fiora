@@ -221,6 +221,7 @@ class Message extends Component<MessageProps, MessageState> {
             <div
                 className={`${Style.message} ${isSelf ? Style.self : ''}`}
                 ref={this.$container}
+                data-message-id={this.props.id}
             >
                 <ShowUserOrGroupInfoContext.Consumer>
                     {(context) => (

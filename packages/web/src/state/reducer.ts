@@ -312,7 +312,8 @@ function reducer(state: State = initialState, action: Action): State {
             };
         }
 
-        case ActionTypes.SetUser: {
+        case ActionTypes.SetUser:
+        case ActionTypes.RestoreUser: {
             const {
                 _id,
                 username,
@@ -332,11 +333,33 @@ function reducer(state: State = initialState, action: Action): State {
                 ...friends.map(transformFriend),
             ];
 
+            const restored = action.type === ActionTypes.RestoreUser && state.user?._id === _id;
+            const linkmansMap = getLinkmansMap(linkmans);
+            if (restored) {
+                Object.keys(linkmansMap).forEach((id) => {
+                    const previous = state.linkmans[id];
+                    if (previous) {
+                        linkmansMap[id] = {
+                            ...previous,
+                            ...linkmansMap[id],
+                            messages: previous.messages,
+                            unread: previous.unread,
+                            onlineMembers: previous.onlineMembers,
+                        };
+                    }
+                });
+                // Unsolicited private conversations are not necessarily in the friends list.
+                Object.values(state.linkmans).forEach((linkman) => {
+                    if (linkman.type === 'temporary' && !linkmansMap[linkman._id]) {
+                        linkmansMap[linkman._id] = linkman;
+                    }
+                });
+            }
             // 如果没登录过, 则将聚焦联系人设置为第一个联系人
             let { focus } = state;
             /* istanbul ignore next */
-            if (!state.user && linkmans.length > 0) {
-                focus = linkmans[0]._id;
+            if (!linkmansMap[focus]) {
+                focus = Object.keys(linkmansMap)[0] || '';
             }
 
             return {
@@ -350,7 +373,7 @@ function reducer(state: State = initialState, action: Action): State {
                     expressions: expressions || [],
                     isAdmin,
                 },
-                linkmans: getLinkmansMap(linkmans),
+                linkmans: linkmansMap,
                 focus,
             };
         }
@@ -475,6 +498,48 @@ function reducer(state: State = initialState, action: Action): State {
                     ...linkmans,
                 },
                 focus,
+            };
+        }
+
+        case ActionTypes.MergeRecoveredMessages: {
+            const { linkmanId, messages, baseline } = action.payload as {
+                linkmanId: string;
+                messages: Message[];
+                baseline: MessagesMap;
+            };
+            const linkman = state.linkmans[linkmanId];
+            if (!linkman) {
+                return state;
+            }
+            const merged = { ...linkman.messages };
+            const snapshot = getMessagesMap(messages);
+            // Only replace records unchanged since the request started. Live events win.
+            Object.keys(baseline).forEach((id) => {
+                if (merged[id] === baseline[id] && /^[a-f0-9]{24}$/i.test(id)) {
+                    delete merged[id];
+                }
+            });
+            Object.keys(snapshot).forEach((id) => {
+                const current = linkman.messages[id];
+                if ((!baseline[id] && !current) || current === baseline[id]) {
+                    merged[id] = snapshot[id];
+                }
+            });
+            const ordered = Object.values(merged).sort((a, b) =>
+                new Date(a.createTime).getTime() - new Date(b.createTime).getTime() ||
+                a._id.localeCompare(b._id),
+            );
+            const added = messages.filter((message) => !linkman.messages[message._id]).length;
+            return {
+                ...state,
+                linkmans: {
+                    ...state.linkmans,
+                    [linkmanId]: {
+                        ...linkman,
+                        messages: getMessagesMap(ordered),
+                        unread: linkman.unread + added,
+                    },
+                },
             };
         }
 

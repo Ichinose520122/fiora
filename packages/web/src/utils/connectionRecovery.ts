@@ -17,7 +17,6 @@ export default function installConnectionRecovery(
     const timeoutMs = 8000;
     let probeTimer: number | undefined;
     let probeVersion = 0;
-    let hiddenAt: number | undefined;
     let lastCheck = 0;
     let lastRestart = 0;
 
@@ -80,30 +79,20 @@ export default function installConnectionRecovery(
         if (document.hidden) {
             return;
         }
-        const slept = hiddenAt !== undefined && Date.now() - hiddenAt >= intervalMs;
-        hiddenAt = undefined;
-        cancelProbe();
-        if (slept && socket.connected && window.localStorage.getItem('token')) {
-            // Re-login and fetch history even if the old transport reports connected.
-            restart();
-        } else {
-            check();
-        }
+        // Keep an in-flight probe: focus/pageshow/visibilitychange often arrive together.
+        check();
     }
 
     function visibilityChanged() {
         if (document.hidden) {
-            hiddenAt = Date.now();
             cancelProbe();
+            lastCheck = 0;
         } else {
             resume();
         }
     }
 
-    function pageShown(event: PageTransitionEvent) {
-        if (event.persisted) {
-            hiddenAt = Date.now() - intervalMs;
-        }
+    function pageShown() {
         resume();
     }
 

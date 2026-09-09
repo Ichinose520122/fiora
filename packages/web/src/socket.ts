@@ -21,9 +21,11 @@ import {
     loginByTokenWithError,
     getLinkmanHistoryMessages,
     getLinkmansLastMessagesV2,
+    syncLinkmanMessages,
 } from './service';
 import store from './state/store';
 import installConnectionRecovery from './utils/connectionRecovery';
+import recoverMessages from './utils/recoverMessages';
 
 const { dispatch } = store;
 
@@ -49,7 +51,7 @@ const InvalidTokenErrors = new Set([
     '非法token', 'token已过期', '非法登录', '用户不存在', 'token不能为空',
 ]);
 
-socket.on('connect', async () => {
+async function restoreSession() {
     const version = ++sessionVersion;
     const token = window.localStorage.getItem('token');
     const isCurrent = () =>
@@ -60,7 +62,9 @@ socket.on('connect', async () => {
     restoringSession = true;
     dispatch({ type: ActionTypes.Ready, payload: '' });
     // Transport connected does not yet mean authentication/history are ready.
-    dispatch({ type: ActionTypes.Disconnect, payload: '' });
+    if (!store.getState().connect) {
+        dispatch({ type: ActionTypes.Disconnect, payload: '' });
+    }
 
     function retryRestore() {
         if (!isCurrent()) {
@@ -68,8 +72,7 @@ socket.on('connect', async () => {
         }
         restoreTimer = window.setTimeout(() => {
             if (isCurrent() && navigator.onLine !== false) {
-                socket.disconnect();
-                socket.connect();
+                restoreSession();
             }
         }, 5000);
     }
@@ -93,13 +96,46 @@ socket.on('connect', async () => {
                 window.localStorage.removeItem('token');
                 dispatch({ type: ActionTypes.Logout, payload: '' });
             } else {
-                dispatch({ type: ActionTypes.SetUser, payload: user });
-                const linkmanIds = [
+                const restoringUser = store.getState().user?._id === user._id;
+                dispatch({
+                    type: restoringUser ? ActionTypes.RestoreUser : ActionTypes.SetUser,
+                    payload: user,
+                });
+                if (restoringUser) {
+                    // Authentication is ready; history catch-up must not block typing/sending.
+                    dispatch({ type: ActionTypes.Connect, payload: '' });
+                }
+                let linkmanIds = [
                     ...user.groups.map((group: any) => group._id),
                     ...user.friends.map((friend: any) =>
                         getFriendId(friend.from, friend.to._id),
                     ),
                 ];
+                if (restoringUser) {
+                    const currentLinkmans = store.getState().linkmans;
+                    linkmanIds = Object.keys(currentLinkmans);
+                    const emptyLinkmans: string[] = [];
+                    for (const id of linkmanIds) {
+                        const baseline = currentLinkmans[id].messages;
+                        // eslint-disable-next-line no-await-in-loop
+                        const recovered = await recoverMessages(
+                            id, baseline, syncLinkmanMessages, isCurrent,
+                        );
+                        if (!isCurrent()) {
+                            return;
+                        }
+                        if (recovered === null) {
+                            emptyLinkmans.push(id);
+                        } else {
+                            recovered.forEach(convertMessage);
+                            dispatch({
+                                type: ActionTypes.MergeRecoveredMessages,
+                                payload: { linkmanId: id, messages: recovered, baseline },
+                            });
+                        }
+                    }
+                    linkmanIds = emptyLinkmans;
+                }
                 // The server accepts at most 100 conversations per request.
                 const linkmanMessages: Record<string, any> = {};
                 for (let offset = 0; offset < linkmanIds.length; offset += 100) {
@@ -141,7 +177,9 @@ socket.on('connect', async () => {
             restoringSession = false;
         }
     }
-});
+}
+
+socket.on('connect', restoreSession);
 
 socket.on('disconnect', (reason) => {
     sessionVersion += 1;

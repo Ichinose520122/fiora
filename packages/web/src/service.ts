@@ -243,6 +243,19 @@ export async function getLinkmansLastMessagesV2(linkmanIds: string[]) {
     return linkmanMessages;
 }
 
+export async function syncLinkmanMessages(data: {
+    linkmanId: string;
+    since: string;
+    until?: string;
+    cursor?: { time: string; id: string };
+}) {
+    const [error, result] = await fetch('syncLinkmanMessages', data, { toast: false });
+    if (error || !result) {
+        throw new Error(error || '消息同步失败');
+    }
+    return result;
+}
+
 /**
  * 获取联系人历史消息
  * @param linkmanId 联系人id
