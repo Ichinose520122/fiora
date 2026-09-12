@@ -99,8 +99,13 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
     }
 
     const { to, content } = ctx.data;
-    let { type } = ctx.data;
+    let { type = 'text' } = ctx.data;
     assert(to, 'to不能为空');
+    assert(typeof content === 'string', '消息内容必须是字符串');
+    assert(
+        ['text', 'image', 'file', 'code', 'inviteV2'].includes(type),
+        '不支持的消息类型',
+    );
 
     const { group: toGroup, user: toUser } = await getLinkmanAccess(
         ctx.socket.user,

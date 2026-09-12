@@ -85,6 +85,27 @@ app.use(
     koaStatic(path.join(__dirname, '../public'), {
         maxAge: 1000 * 60 * 60 * 24 * 7,
         gzip: true,
+        setHeaders: (res, filePath) => {
+            const directory = path
+                .relative(path.join(__dirname, '../public'), filePath)
+                .split(path.sep)[0];
+            const uploadDirectories = [
+                'Avatar', 'BackgroundImage', 'FileMessage', 'GroupAvatar', 'ImageMessage',
+            ];
+            if (uploadDirectories.includes(directory)) {
+                res.setHeader('X-Content-Type-Options', 'nosniff');
+                res.setHeader(
+                    'Content-Security-Policy',
+                    "sandbox; default-src 'none'",
+                );
+                if (
+                    directory === 'FileMessage' ||
+                    !/\.(png|jpe?g|gif|webp|bmp|avif|ico)$/i.test(filePath)
+                ) {
+                    res.setHeader('Content-Disposition', 'attachment');
+                }
+            }
+        },
     }),
 );
 

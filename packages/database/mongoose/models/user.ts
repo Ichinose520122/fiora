@@ -36,6 +36,7 @@ const UserSchema = new Schema({
     },
     salt: String,
     password: String,
+    tokenVersion: { type: Number, default: 0 },
     avatar: String,
     tag: {
         type: String,
@@ -73,6 +74,8 @@ export interface UserDocument extends Document {
     salt: string;
     /** 加密的密码 */
     password: string;
+    /** Incremented whenever the password changes to invalidate older tokens. */
+    tokenVersion: number;
     /** 头像 */
     avatar: string;
     /** 用户标签 */

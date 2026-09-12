@@ -23,7 +23,17 @@ function convertSystemMessage(message: any) {
         message.from.avatar = WuZeiNiangImage;
         message.from.tag = 'system';
 
-        const content = JSON.parse(message.content);
+        let content;
+        try {
+            content = JSON.parse(message.content);
+        } catch (error) {
+            message.content = '无效的系统消息';
+            return;
+        }
+        if (!content || typeof content !== 'object') {
+            message.content = '无效的系统消息';
+            return;
+        }
         switch (content.command) {
             case 'roll': {
                 message.content = `掷出了${content.value}点 (上限${content.top}点)`;

@@ -78,11 +78,12 @@ interface Environment {
  * @param user 用户
  * @param environment 客户端环境信息
  */
-function generateToken(user: string, environment: string) {
+function generateToken(user: string, environment: string, tokenVersion = 0) {
     return jwt.encode(
         {
             user,
             environment,
+            tokenVersion,
             expires: Date.now() + config.tokenExpiresTime,
         },
         config.jwtSecret,
@@ -207,6 +208,8 @@ export async function register(
     const token = generateToken(newUser._id.toString(), environment);
 
     ctx.socket.user = newUser._id.toString();
+    ctx.socket.isAdmin = false;
+    ctx.socket.join(defaultGroup._id.toString());
     await Socket.updateOne(
         { id: ctx.socket.id },
         {
@@ -332,7 +335,9 @@ export async function login(
         username: 1,
     });
 
-    const token = generateToken(user._id.toString(), environment);
+    const token = generateToken(
+        user._id.toString(), environment, user.tokenVersion,
+    );
 
     ctx.socket.user = user._id.toString();
     await Socket.updateOne(
@@ -396,11 +401,17 @@ export async function loginByToken(
             expressions: 1,
             createTime: 1,
             isAdmin: 1,
+            tokenVersion: 1,
         },
     );
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
+
+    assert(
+        (payload.tokenVersion ?? 0) === (user.tokenVersion ?? 0),
+        'token已过期',
+    );
 
     await handleNewUser(user);
 
@@ -592,8 +603,10 @@ export async function changePassword(
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const hash = await bcrypt.hash(newPassword, salt);
 
-    user.password = hash;
-    await user.save();
+    await User.updateOne(
+        { _id: user._id },
+        { $set: { password: hash, salt }, $inc: { tokenVersion: 1 } },
+    );
 
     return {
         msg: 'ok',
@@ -641,9 +654,10 @@ export async function resetUserPassword(ctx: Context<{ username: string }>) {
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const hash = await bcrypt.hash(newPassword, salt);
 
-    user.salt = salt;
-    user.password = hash;
-    await user.save();
+    await User.updateOne(
+        { _id: user._id },
+        { $set: { password: hash, salt }, $inc: { tokenVersion: 1 } },
+    );
 
     return {
         newPassword,

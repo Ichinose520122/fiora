@@ -39,7 +39,7 @@ const AllowedUploadDirectories = new Set([
     'ImageMessage',
 ]);
 
-function resolveLocalUploadPath(fileNameValue: unknown) {
+function resolveLocalUploadPath(fileNameValue: unknown, userId: string) {
     assert.equal(typeof fileNameValue, 'string', '文件名格式错误');
 
     const parts = (fileNameValue as string).split('/');
@@ -50,6 +50,10 @@ function resolveLocalUploadPath(fileNameValue: unknown) {
     assert(
         /^[0-9a-f]{24}_[0-9]+(?:\.[0-9a-z]{1,16})?$/i.test(fileName),
         '文件名格式错误',
+    );
+    assert(
+        fileName.slice(0, 24).toLowerCase() === userId.toString().toLowerCase(),
+        '不能上传其他用户的文件',
     );
 
     const publicRoot = path.resolve(__dirname, '../../public');
@@ -435,9 +439,9 @@ export async function uploadFile(
         }
 
         const { directory, directoryPath, fileName, filePath } =
-            resolveLocalUploadPath(ctx.data.fileName);
+            resolveLocalUploadPath(ctx.data.fileName, ctx.socket.user);
         await fs.promises.mkdir(directoryPath, { recursive: true });
-        await fs.promises.writeFile(filePath, ctx.data.file);
+        await fs.promises.writeFile(filePath, ctx.data.file, { flag: 'wx' });
         return {
             url: `/${directory}/${fileName}`,
         };

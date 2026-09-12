@@ -1,6 +1,7 @@
 import React from 'react';
 
 import expressions from '@fiora/utils/expressions';
+import xss from '@fiora/utils/xss';
 import { TRANSPARENT_IMAGE } from '@fiora/utils/const';
 import Style from './Message.less';
 
@@ -10,7 +11,7 @@ interface TextMessageProps {
 
 function TextMessage(props: TextMessageProps) {
     // eslint-disable-next-line react/destructuring-assignment
-    const content = props.content
+    const content = xss(props.content)
         .replace(
             /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}(\.[a-z]{2,6})?\b(:[0-9]{2,5})?([-a-zA-Z0-9@:%_+.~#?&//=]*)/g,
             (r) =>

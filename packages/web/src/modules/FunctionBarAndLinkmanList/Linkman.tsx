@@ -2,6 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 
 import Time from '@fiora/utils/time';
+import xss from '@fiora/utils/xss';
 import { isMobile } from '@fiora/utils/ua';
 import Avatar from '../../components/Avatar';
 import { State } from '../../state/reducer';
@@ -80,7 +81,7 @@ function Linkman(props: LinkmanProps) {
                     <p
                         className={Style.preview}
                         // eslint-disable-next-line react/no-danger
-                        dangerouslySetInnerHTML={{ __html: preview }}
+                        dangerouslySetInnerHTML={{ __html: xss(preview) }}
                     />
                     {unread > 0 && (
                         <div className={Style.unread}>
