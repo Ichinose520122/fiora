@@ -6,6 +6,7 @@ export const chatCommands = [
     { value: '/music qq ', description: '从 QQ 音乐点歌' },
     { value: '/music playlist ', description: '导入歌单 ID 或链接（最多 50 首）' },
     { value: '/music list', description: '打开音乐面板和队列' },
+    { value: '/music login', description: '打开网易云手机号验证码登录' },
     { value: '/music join', description: '加入当前聊天的一起听' },
     { value: '/music leave', description: '退出一起听' },
     { value: '/music vote', description: '投票切歌' },
@@ -19,4 +20,3 @@ export function commandSuggestions(value: string) {
     if (!value || !/^[/-]/.test(value)) return [];
     return chatCommands.filter((item) => item.value.startsWith(value) && item.value !== value).slice(0, 7);
 }
-

@@ -26,6 +26,7 @@ import {
 } from '@fiora/database/redis/initRedis';
 import client from '../../../config/client';
 import getLinkmanAccess from '../utils/linkmanAccess';
+import { executeMusicCommand } from '../music/commands';
 
 const { isValid } = Types.ObjectId;
 
@@ -117,7 +118,13 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(messageContent.length <= 2048, '消息长度过长');
 
         const rollRegex = /^-roll( ([0-9]*))?$/;
-        if (rollRegex.test(messageContent)) {
+        if (/^\/music(?:\s|$)/.test(messageContent.trim())) {
+            type = 'system';
+            messageContent = JSON.stringify({
+                command: 'music',
+                value: await executeMusicCommand(ctx, messageContent.trim()),
+            });
+        } else if (rollRegex.test(messageContent)) {
             const regexResult = rollRegex.exec(messageContent);
             if (regexResult) {
                 let numberStr = regexResult[1] || '100';

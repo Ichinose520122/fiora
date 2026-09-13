@@ -9,7 +9,9 @@ services:
     logging: *review-logging
     image: fiora-review-netease:4.40.1
     restart: unless-stopped
-    volumes: ["../secrets:/secrets:ro"]
+    environment:
+      MusicAuthToken: ${FIORA_MUSIC_AUTH_TOKEN:?required}
+    volumes: ["../secrets:/secrets:ro", "../data/music-auth:/music-auth"]
   mongodb:
     logging: *review-logging
     image: public.ecr.aws/docker/library/mongo:6.0
@@ -39,7 +41,9 @@ services:
       AllowOrigin: http://172.16.24.3:9200
       MusicDirectory: /music
       NeteaseMusicApi: http://netease:3000
+      MusicAuthToken: ${FIORA_MUSIC_AUTH_TOKEN:?required}
       ALIYUN_OSS: "false"
+      Administrator: ${FIORA_ADMINISTRATOR:-}
     volumes:
       - ../music:/music:ro
       - ../data/uploads/Avatar:/usr/app/fiora/packages/server/public/Avatar

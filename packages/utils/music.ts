@@ -4,12 +4,15 @@ export interface MusicTrack {
     provider: MusicProvider;
     title: string;
     artist: string;
+    album?: string;
     duration: number; // seconds
     cover?: string;
     lyrics?: string;
+    translatedLyrics?: string;
     url?: string;
     entryId?: string;
     requestedBy?: string;
+    requestedByName?: string;
     idle?: boolean;
 }
 export interface MusicRoomState {
@@ -49,4 +52,3 @@ export function parseLyrics(text = '') {
     });
     return lines.sort((a, b) => a.time - b.time);
 }
-

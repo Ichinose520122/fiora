@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { MusicProvider } from '@fiora/utils/music';
+import User from '@fiora/database/mongoose/models/user';
 import getLinkmanAccess from '../utils/linkmanAccess';
 import { enqueue, setPaused, voteNext } from '../music/room';
 import { loadRoom, roomSerial, snapshot, publish, nextTrack, listenerIds, subscribe, unsubscribe } from '../music/service';
@@ -35,7 +36,8 @@ async function access(ctx: Context<any>) {
 export async function musicGetState(ctx: Context<any>) {
     const { roomId, canControl } = await access(ctx);
     return roomSerial.run(roomId, async () => {
-        subscribe(ctx.socket.id, roomId, ctx.socket.user, ctx.data.listening === true);
+        subscribe(ctx.socket.id, roomId, ctx.socket.user,
+            typeof ctx.data.listening === 'boolean' ? ctx.data.listening : undefined);
         return { ...snapshot(await loadRoom(roomId), canControl), sources: musicSources() };
     });
 }
@@ -59,6 +61,8 @@ export async function musicAction(ctx: Context<any>) {
         if (cached && Date.now() - cached.time < 60000) return cached.result;
         const room = await loadRoom(roomId);
         const action = text(ctx.data.action, 30);
+        const requester = ['add', 'playlist'].includes(action)
+            ? await User.findById(ctx.socket.user).select('username').lean() : null;
         if (['next', 'pause', 'resume', 'seek', 'vote'].includes(action)) {
             assert(room.current && room.current.entryId === ctx.data.entryId, '歌曲已切换，请刷新后操作');
         }
@@ -66,7 +70,7 @@ export async function musicAction(ctx: Context<any>) {
         switch (action) {
             case 'add': {
                 const track = await getTrack(provider(ctx.data.provider), text(ctx.data.id, 2048));
-                enqueue(room, [track], ctx.socket.user);
+                enqueue(room, [{ ...track, requestedByName: requester?.username || '用户' }], ctx.socket.user);
                 if (!room.current || room.current.idle) {
                     await nextTrack(room);
                     assert(room.current, '歌曲暂不可完整播放，请换一首或使用本地曲库');
@@ -75,7 +79,7 @@ export async function musicAction(ctx: Context<any>) {
             }
             case 'playlist': {
                 const tracks = await getPlaylist(provider(ctx.data.provider), text(ctx.data.id, 2048));
-                enqueue(room, tracks, ctx.socket.user);
+                enqueue(room, tracks.map((track) => ({ ...track, requestedByName: requester?.username || '用户' })), ctx.socket.user);
                 if (!room.current || room.current.idle) await nextTrack(room);
                 room.notice = '已添加 ' + tracks.length + ' 首（每次最多 50 首）';
                 break;

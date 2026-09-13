@@ -9,6 +9,10 @@ if not env.exists():
     env.write_text('FIORA_JWT_SECRET=' + secrets.token_hex(32) + '\n')
     env.chmod(0o600)
 cookie = base / 'secrets/netease-cookie.txt'
+if 'FIORA_MUSIC_AUTH_TOKEN=' not in env.read_text():
+    with env.open('a') as output:
+        output.write('\nFIORA_MUSIC_AUTH_TOKEN=' + secrets.token_hex(32) + '\n')
+(base / 'data/music-auth').mkdir(parents=True, exist_ok=True, mode=0o700)
 if not cookie.exists():
     cookie.write_text('')
     cookie.chmod(0o600)
@@ -33,4 +37,3 @@ if not library.exists():
             'lyrics': '[00:00.00]欢迎来到一起听\n[00:08.00]每段聊天，都有自己的音乐\n[00:16.00]点歌优先，后续加入队列\n[00:24.00]音量只影响你自己\n[00:32.00]这是一段用于审核的合成测试音'})
     library.write_text(json.dumps(tracks, ensure_ascii=False, indent=2))
 print('Review data prepared in /opt/fiora-review; existing data preserved.')
-

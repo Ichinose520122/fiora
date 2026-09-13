@@ -29,7 +29,9 @@ interface Session {
     setSource: (value: MusicProvider) => void;
     search: () => Promise<void>;
     act: (action: string, data?: any) => Promise<boolean>;
-    command: (command: string) => Promise<boolean>;
+    command: (command: string) => string;
+    panelTab: string;
+    setPanelTab: (tab: string) => void;
 }
 const Context = createContext<Session>(null as any);
 export const useMusic = () => useContext(Context);
@@ -48,6 +50,7 @@ export function MusicSessionProvider({ children }: { children: React.ReactNode }
     });
     const [error, setError] = useState('');
     const [panel, setPanel] = useState(false);
+    const [panelTab, setPanelTab] = useState('search');
     const [keywords, setKeywords] = useState('');
     const [selectedSource, setSource] = useState<MusicProvider>('netease');
     const [searchResults, setSearchResults] = useState<MusicTrack[]>([]);
@@ -226,40 +229,25 @@ export function MusicSessionProvider({ children }: { children: React.ReactNode }
         }
         return result?.tracks || [];
     }
-    async function command(input: string) {
-        const parts = input.trim().split(/\s+/);
-        parts.shift();
+    function command(input: string) {
+        const parts = input.trim().split(/\s+/).slice(1);
         const sub = parts[0] || '';
-        const rest = parts.slice(1).join(' ');
-        if (!sub || sub === 'help' || sub === 'list') { setPanel(true); return true; }
-        if (sub === 'join') { join(); return true; }
-        if (sub === 'leave') { leave(); return true; }
-        if (['pause', 'resume', 'next', 'vote'].includes(sub)) return act(sub);
-        if (sub === 'search') { setKeywords(rest); setPanel(true); await doSearch(selectedSource, rest); return true; }
-        if (sub === 'playlist') {
-            if (!rest) { Message.info('用法：/music playlist 歌单ID或链接'); return false; }
-            join(); return act('playlist', { provider: selectedSource, id: rest });
+        if (sub === 'login') { setPanelTab('account'); setPanel(true); return '/music login'; }
+        if (sub === 'join') join();
+        else if (sub === 'leave' || sub === 'stop') leave();
+        else if (sub === 'list') { setPanelTab('queue'); setPanel(true); }
+        else if (!sub || sub === 'help') { setPanelTab('search'); setPanel(true); }
+        else if (!['pause', 'resume', 'next', 'vote', 'search', 'cookie', 'captcha', 'phone', 'password'].includes(sub)) join();
+        // The server executes commands and publishes system replies through sendMessage.
+        if (sub === 'search' || sub === 'playlist') {
+            if (!['local', 'netease', 'qq'].includes(parts[1])) parts.splice(1, 0, selectedSource);
+        } else if (sub && !['help', 'login', 'join', 'leave', 'stop', 'list', 'pause', 'resume', 'next', 'vote', 'local', 'netease', 'qq', 'cookie', 'captcha', 'phone', 'password'].includes(sub)) {
+            parts.unshift(selectedSource);
         }
-        let source = selectedSource;
-        let query = parts.join(' ');
-        if (['local', 'netease', 'qq'].includes(sub)) {
-            source = sub as MusicProvider; query = rest; setSource(source);
-        }
-        if (!query) { setPanel(true); return true; }
-        // Literal IDs and complete links are resolved by the server; never fetch user URLs.
-        if (source === 'netease' && (/^\d+$/.test(query) || /^https?:/.test(query))) {
-            join(); return act('add', { provider: source, id: query });
-        }
-        const tracks = await doSearch(source, query);
-        if (focus !== identity.current.focus) return false;
-        if (!tracks.length) { Message.info('没有找到歌曲，试试其他关键词或音乐源'); return false; }
-        join();
-        const ok = await act('add', { provider: source, id: tracks[0].id });
-        if (ok) Message.success('已点歌：' + tracks[0].title);
-        return ok;
+        return '/music ' + parts.join(' ');
     }
     const value: Session = { room, listening, playing, volume, position, error, sources, panel, keywords,
-        selectedSource, searchResults, busy, open: (query) => {
+        selectedSource, searchResults, busy, panelTab, setPanelTab, open: (query) => {
             if (!focus || !userId) { Message.info('先选择一个群聊或私聊'); return; }
             if (typeof query === 'string') setKeywords(query);
             setPanel(true);

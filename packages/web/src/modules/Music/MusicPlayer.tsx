@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { parseLyrics } from '@fiora/utils/music';
 import { useMusic } from './MusicSession';
 import Style from './Music.less';
@@ -9,10 +9,12 @@ export function formatTime(value: number) {
 export default function MusicPlayer() {
     const music = useMusic();
     const track = music.room?.current;
+    const lyrics = useMemo(() => parseLyrics(track?.lyrics), [track?.lyrics]);
+    const translation = useMemo(() => parseLyrics(track?.translatedLyrics), [track?.translatedLyrics]);
     if (!music.room) return null;
-    const lyrics = parseLyrics(track?.lyrics);
     let index = -1;
     lyrics.forEach((line, i) => { if (line.time <= music.position) index = i; });
+    const translated = index >= 0 ? translation.find((line) => Math.abs(line.time - lyrics[index].time) < 0.2)?.text : '';
     return (
         <section className={Style.player} aria-label="一起听播放器">
             <div className={Style.disc + ' ' + (music.playing ? Style.spinning : '')} aria-hidden="true">
@@ -20,20 +22,27 @@ export default function MusicPlayer() {
                 <i />
             </div>
             <div className={Style.trackInfo}>
-                <div className={Style.eyebrow}>一起听 · {music.room.listeners} 人{track?.idle ? ' · 空闲歌单' : ''}</div>
+                <div className={Style.eyebrow}>一起听 · {music.room.listeners} 人 · {music.room.paused ? '已暂停' : track ? '播放中' : '等待点歌'}</div>
                 <strong className={Style.title}>{track?.title || '让音乐陪你聊天'}</strong>
-                <span className={Style.artist}>{track ? track.artist : '点一首歌，邀请 TA 一起听'}</span>
+                <span className={Style.artist} title={track?.album}>{track ? track.artist + (track.album ? ' · ' + track.album : '') : '输入 /music 歌名 开始点歌'}</span>
+                {track && <span className={Style.requester}>点歌：{track.idle ? '空闲歌单' : track.requestedByName || '用户点播'}</span>}
                 <div className={Style.lyrics} aria-live="off">
-                    <div>{index > 0 ? lyrics[index - 1].text : ''}</div>
                     <p>{lyrics[index]?.text || (track ? '纯音乐 / 暂无歌词' : '每个聊天，都有自己的歌单')}</p>
-                    <div>{lyrics[index + 1]?.text || ''}</div>
+                    <div>{translated || lyrics[index + 1]?.text || ''}</div>
                 </div>
                 <div className={Style.progressRow}>
                     <span>{formatTime(music.position)}</span>
                     <progress value={music.position} max={track?.duration || 1} aria-label="播放进度" />
                     <span>{formatTime(track?.duration || 0)}</span>
                 </div>
-                <div className={Style.controls}>
+                {(music.error || music.room.notice) && <div className={Style.notice} role="status">{music.error || music.room.notice}</div>}
+            </div>
+            <aside className={Style.hudQueue} aria-label="点歌队列预览">
+                <span>待播 · {music.room.queue.length} 首</span>
+                {music.room.queue.length ? music.room.queue.slice(0, 3).map((item, order) =>
+                    <div key={item.entryId} title={item.title + ' — ' + item.artist}>{order + 1}. {item.title}</div>) : <div>暂无点歌</div>}
+            </aside>
+                <div className={Style.controls + ' ' + Style.playerControls}>
                     <button type="button" onClick={music.error || !music.listening ? music.join : music.leave}>
                         {music.error ? '加入 / 重试播放' : music.listening ? '退出一起听' : '加入一起听'}
                     </button>
@@ -50,8 +59,6 @@ export default function MusicPlayer() {
                         <span>{Math.round(music.volume * 100)}%</span>
                     </label>
                 </div>
-                {(music.error || music.room.notice) && <div className={Style.notice} role="status">{music.error || music.room.notice}</div>}
-            </div>
         </section>
     );
 }

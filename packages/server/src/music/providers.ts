@@ -20,8 +20,10 @@ function normalize(track: any, provider: MusicProvider): MusicTrack {
     return { id: String(track.id).slice(0, 120), provider,
         title: String(track.title || '未命名歌曲').slice(0, 200),
         artist: String(track.artist || '未知歌手').slice(0, 200), duration,
+        album: String(track.album || '').slice(0, 200),
         cover: safeMediaUrl(track.cover), url: safeMediaUrl(track.url, provider === 'local'),
-        lyrics: typeof track.lyrics === 'string' ? track.lyrics.slice(0, 100000) : '' };
+        lyrics: typeof track.lyrics === 'string' ? track.lyrics.slice(0, 100000) : '',
+        translatedLyrics: typeof track.translatedLyrics === 'string' ? track.translatedLyrics.slice(0, 100000) : '' };
 }
 async function request(base: string | undefined, endpoint: string, params: any = {}) {
     assert(base, '该音乐源尚未配置，请先使用本地曲库');
@@ -60,12 +62,13 @@ function neteaseTrack(item: any): MusicTrack {
     return normalize({ id: item.id, title: item.name,
         artist: (item.ar || item.artists || []).map((artist: any) => artist.name).join(' / '),
         duration: (item.dt || item.duration) / 1000,
+        album: (item.al || item.album || {}).name,
         cover: (item.al || item.album || {}).picUrl }, 'netease');
 }
 export async function searchMusic(provider: MusicProvider, keywords: string): Promise<MusicTrack[]> {
     if (provider === 'local') {
         const tracks = await localTracks();
-        return tracks.filter((track) => (track.title + ' ' + track.artist).toLowerCase().includes(keywords.toLowerCase())).slice(0, 50);
+        return tracks.filter((track) => track.id === keywords || (track.title + ' ' + track.artist).toLowerCase().includes(keywords.toLowerCase())).slice(0, 50);
     }
     assert(keywords.trim(), '请输入歌曲名称');
     if (provider === 'netease') {
@@ -130,7 +133,8 @@ export async function resolveTrack(track: MusicTrack): Promise<MusicTrack> {
         const lyric = await request(process.env.NeteaseMusicApi, '/lyric', { id: track.id }).catch(() => ({}));
         const url = safeMediaUrl(item.url);
         assert(url, '无效的播放地址');
-        return { ...track, url, lyrics: String(lyric.lrc?.lyric || '').slice(0, 100000) };
+        return { ...track, url, lyrics: String(lyric.lrc?.lyric || '').slice(0, 100000),
+            translatedLyrics: String(lyric.tlyric?.lyric || '').slice(0, 100000) };
     }
     const result = await request(process.env.QQMusicApi, '/resolve', { id: track.id });
     assert(!result.trial, '此歌曲仅有试听');
@@ -138,4 +142,3 @@ export async function resolveTrack(track: MusicTrack): Promise<MusicTrack> {
     assert(resolved.url, '歌曲暂不可播放');
     return { ...track, ...resolved };
 }
-

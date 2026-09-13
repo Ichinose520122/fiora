@@ -66,7 +66,6 @@ function ChatInput() {
     const [commandText, setCommandText] = useState('');
     const [commandIndex, setCommandIndex] = useState(0);
     const [commandHidden, setCommandHidden] = useState(false);
-    const [commandBusy, setCommandBusy] = useState(false);
     const suggestions = commandHidden ? [] : commandSuggestions(commandText);
     const action = useAction();
     const isLogin = useIsLogin();
@@ -428,7 +427,6 @@ function ChatInput() {
     }
 
     async function sendTextMessage() {
-        if (commandBusy) return null;
         if (!connect) {
             return Message.error('发送消息失败, 您当前处于离线状态');
         }
@@ -440,15 +438,16 @@ function ChatInput() {
         }
 
         if (/^\/music(?:\s|$)/.test(message)) {
-            setCommandBusy(true);
-            try {
-                const ok = await music.command(message);
-                if (ok && $input.current?.value.trim() === message) {
-                    $input.current.value = '';
-                    setCommandText('');
-                    setExpressions([]);
-                }
-            } finally { setCommandBusy(false); }
+            // Submission consumes the draft even if execution fails. Never clear
+            // a new message typed while the previous command is still pending.
+            $input.current!.value = '';
+            setCommandText('');
+            setCommandHidden(false);
+            setCommandIndex(0);
+            setExpressions([]);
+            const command = music.command(message);
+            const id = addSelfMessage('text', xss(message));
+            await handleSendMessage(id, 'text', command);
             return null;
         }
 
@@ -514,7 +513,7 @@ function ChatInput() {
                 setCommandIndex((commandIndex + (e.key === 'ArrowDown' ? 1 : suggestions.length - 1)) % suggestions.length);
                 return;
             }
-            if (e.key === 'Tab' || (e.key === 'Enter' && /^\/(?:m|mu|mus|musi)$/.test(commandText))) {
+            if (e.key === 'Tab') {
                 e.preventDefault();
                 completeCommand(suggestions[commandIndex % suggestions.length].value);
                 return;
@@ -706,7 +705,7 @@ function ChatInput() {
                 <input
                     className={Style.input}
                     type="text"
-                    placeholder={commandBusy ? '正在点歌…' : '说点什么吧，输入 / 补全命令'}
+                    placeholder="说点什么吧，输入 / 补全命令"
                     maxLength={2048}
                     ref={$input}
                     onKeyDown={handleInputKeyDown}

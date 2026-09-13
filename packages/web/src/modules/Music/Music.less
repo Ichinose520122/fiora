@@ -1,45 +1,53 @@
 .player {
-    flex-shrink: 0; display: flex; gap: 22px; padding: 20px 24px 16px;
-    min-height: 190px; box-sizing: border-box;
-    background: linear-gradient(120deg, rgba(246,250,255,.97), rgba(235,244,242,.92));
-    border-bottom: 1px solid rgba(109,139,153,.2); color: #263c50;
+    flex-shrink: 0; display: grid; grid-template-columns: 68px minmax(0, 1fr) 135px;
+    column-gap: 12px; row-gap: 5px; padding: 10px 16px 9px; box-sizing: border-box;
+    background: rgba(255,255,255,.12); border-bottom: 1px solid #ffffff22;
+    color: var(--primary-text-color-10); text-shadow: 0 1px 2px #00000012;
 }
 .disc {
-    flex-shrink: 0; position: relative; width: 126px; height: 126px; margin: 14px 0 0;
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    position: relative; width: 68px; height: 68px; align-self: center; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
     background: repeating-radial-gradient(circle, #222833 0px, #222833 2px, #39404b 3px, #202631 4px);
-    box-shadow: 0 8px 18px #28364a35; animation: recordSpin 16s linear infinite; animation-play-state: paused;
-    img { width: 78px; height: 78px; border-radius: 50%; object-fit: cover; }
-    span { width: 78px; height: 78px; border-radius: 50%; background: #94b4b5; color: white; font-size: 45px; text-align: center; line-height: 78px; }
-    i { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #e4eced; border: 3px solid #263545; }
+    box-shadow: 0 3px 9px #00000028; animation: recordSpin 16s linear infinite; animation-play-state: paused;
+    img, span { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+    span { background: #94b4b5; color: white; font-size: 27px; text-align: center; line-height: 44px; }
+    i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #e4eced; border: 2px solid #263545; }
 }
 .spinning { animation-play-state: running; }
 @keyframes recordSpin { to { transform: rotate(360deg); } }
-.trackInfo { min-width: 0; flex: 1; }
-.eyebrow { color: #6e8b99; font-size: 11px; letter-spacing: 1px; margin-bottom: 5px; }
-.title { display: block; font-size: 18px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; line-height: 25px; }
-.artist { color: #70838f; font-size: 12px; }
-.lyrics { margin: 9px 0 6px; height: 57px; overflow: hidden; line-height: 19px;
-    div { color: #91a1a9; font-size: 11px; height: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    p { margin: 0; color: #387e83; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trackInfo { min-width: 0; }
+.eyebrow { color: var(--primary-text-color-7); font-size: 10px; line-height: 13px; }
+.title { display: block; font-size: 15px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; line-height: 21px; }
+.artist, .requester { color: var(--primary-text-color-8); font-size: 11px; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 14px; vertical-align: top; }
+.requester { margin-left: 8px; }
+.lyrics { margin: 3px 0; height: 30px; overflow: hidden; line-height: 15px;
+    div { color: var(--primary-text-color-7); font-size: 10px; height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    p { margin: 0; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
-.progressRow { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #80939e;
-    progress { height: 4px; flex: 1; min-width: 0; border: 0; accent-color: #529695; }
-    progress::-webkit-progress-bar { background: #dbe5e7; border-radius: 4px; }
-    progress::-webkit-progress-value { background: #529695; border-radius: 4px; }
+.progressRow { display: flex; align-items: center; gap: 6px; font-size: 9px; color: var(--primary-text-color-7);
+    progress { height: 3px; flex: 1; min-width: 0; border: 0; accent-color: #76bfbc; }
+    progress::-webkit-progress-bar { background: #ffffff30; border-radius: 4px; }
+    progress::-webkit-progress-value { background: #76bfbc; border-radius: 4px; }
+}
+.hudQueue { min-width: 0; padding: 5px 0 0 10px; border-left: 1px solid #ffffff22;
+    span { font-size: 10px; color: var(--primary-text-color-7); }
+    div { font-size: 11px; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.playerControls { grid-column: 1 / -1; margin: 0; gap: 4px; }
 .player button, .panel button {
-    border: 1px solid #c9dadd; background: #ffffffb8; border-radius: 7px; padding: 6px 9px;
-    color: #3f6e79; cursor: pointer; font-size: 12px;
-    &:hover { background: #e6f2f1; border-color: #79aba9; }
+    border: 1px solid #ffffff40; background: #ffffff26; border-radius: 5px; padding: 4px 7px;
+    color: inherit; cursor: pointer; font-size: 11px; line-height: 16px;
+    &:hover { background: #ffffff50; }
     &:disabled { opacity: .5; cursor: default; }
     &:focus-visible { outline: 2px solid #378a90; }
 }
-.volume { display: flex; gap: 5px; align-items: center; color: #6e838e; font-size: 11px;
-    input { width: 60px; accent-color: #529695; } span { width: 29px; }
+.panel button { border-color: #c9dadd; background: #ffffffb8; color: #3f6e79; padding: 6px 9px; font-size: 12px; }
+.volume { display: flex; gap: 4px; align-items: center; color: var(--primary-text-color-8); font-size: 10px; margin-left: auto;
+    input { width: 52px; accent-color: #76bfbc; } span { width: 27px; }
 }
-.notice { margin: 8px 0 0; font-size: 12px; color: #a26832; }
+.notice { margin: 6px 0 0; font-size: 12px; color: #a26832; }
+.player .notice { color: var(--primary-text-color-9); font-size: 11px; text-shadow: none; }
 .dialog { max-width: 94vw; }
 .panel { color: #324e60; padding: 0 4px; input, select { border: 1px solid #cbdadd; padding: 9px; border-radius: 7px; color: #324e60; min-width: 0; background: #fff; } }
 .hint { font-size: 12px; color: #7a8f9b; line-height: 1.7; }
@@ -59,13 +67,27 @@
 }
 .import { min-height: 220px; font-size: 13px; line-height: 1.7; input { width: 100%; box-sizing: border-box; } }
 .sidebarButton { width: 40px; height: 40px; background: transparent; color: var(--primary-text-color-7); border: 0; font-size: 29px; cursor: pointer; border-radius: 8px; &:hover { background: #ffffff20; } }
-@media (max-width: 700px) {
-    .player { padding: 10px 12px; gap: 12px; min-height: 168px; }
-    .disc { width: 66px; height: 66px; margin-top: 18px; img, span { width: 43px; height: 43px; font-size: 28px; line-height: 43px; } }
-    .title { font-size: 15px; }
-    .controls { gap: 4px; button { padding: 5px 7px; font-size: 11px; } }
-    .lyrics { height: 38px; div:first-child { display: none; } }
-    .volume input { width: 58px; }
+.tabs { flex-wrap: wrap; }
+.account { min-height: 230px; font-size: 13px; }
+.accountForm { max-width: 390px; display: grid; gap: 13px;
+    label { display: grid; gap: 6px; min-width: 0; }
+    input { width: 100%; box-sizing: border-box; }
+    button[type=submit] { justify-self: start; background: #4d9394; color: #fff; }
+}
+.phoneRow { display: grid; grid-template-columns: 65px minmax(0, 1fr); gap: 10px; }
+.codeRow { display: flex; gap: 8px; input { flex: 1; } button { flex-shrink: 0; } }
+@media (max-width: 1100px) {
+    .player { grid-template-columns: 60px minmax(0, 1fr); padding: 8px 10px; gap: 5px 10px; }
+    .hudQueue { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; border: 0; padding: 0;
+        span { flex-shrink: 0; } div { min-width: 0; line-height: 16px; font-size: 10px; }
+        div:not(:nth-child(2)) { display: none; }
+    }
+    .disc { width: 60px; height: 60px; img, span { width: 39px; height: 39px; line-height: 39px; } }
+    .title { font-size: 14px; }
+}
+@media (max-width: 500px) {
+    .playerControls { button { padding: 3px 5px; font-size: 10px; } }
+    .volume input { width: 45px; }
+    .requester { margin-left: 0; margin-right: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .disc { animation: none; } }
-

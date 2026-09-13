@@ -79,11 +79,12 @@ export async function publish(room: MusicRoomState) {
             }
         }));
 }
-export function subscribe(socketId: string, roomId: string, userId: string, listening: boolean) {
+export function subscribe(socketId: string, roomId: string, userId: string, listening?: boolean) {
     const socket = musicIo?.sockets.sockets.get(socketId);
     assert(socket && socket.data.user === userId, '连接已失效');
     const existing = subscribers.get(socketId);
-    subscribers.set(socketId, { socket: socket!, roomId, userId, listening });
+    subscribers.set(socketId, { socket: socket!, roomId, userId,
+        listening: typeof listening === 'boolean' ? listening : !!(existing?.roomId === roomId && existing.listening) });
     return existing?.roomId;
 }
 export function unsubscribe(socketId: string) {

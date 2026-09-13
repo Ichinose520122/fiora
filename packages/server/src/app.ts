@@ -24,6 +24,7 @@ import * as systemRoutes from './routes/system';
 import * as notificationRoutes from './routes/notification';
 import * as historyRoutes from './routes/history';
 import * as musicRoutes from './routes/music';
+import * as musicAccountRoutes from './routes/musicAccount';
 import { installMusic } from './music/service';
 import musicFiles from './music/files';
 import registerRoutes from './middlewares/registerRoutes';
@@ -122,6 +123,7 @@ const routes = {
     ...notificationRoutes,
     ...historyRoutes,
     ...musicRoutes,
+    ...musicAccountRoutes,
 } as unknown as Routes;
 Object.keys(routes).forEach((key) => {
     if (key.startsWith('_')) {

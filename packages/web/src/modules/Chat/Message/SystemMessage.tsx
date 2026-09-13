@@ -9,7 +9,7 @@ interface SystemMessageProps {
 function SystemMessage(props: SystemMessageProps) {
     const { message, username } = props;
     return (
-        <div className="system">
+        <div className="system" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
             <span style={{ color: getPerRandomColor(username) }}>
                 {username}
             </span>

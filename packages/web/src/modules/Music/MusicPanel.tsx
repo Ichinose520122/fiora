@@ -4,9 +4,11 @@ import Dialog from '../../components/Dialog';
 import { useMusic } from './MusicSession';
 import { formatTime } from './MusicPlayer';
 import Style from './Music.less';
+import MusicAccount from './MusicAccount';
 export default function MusicPanel() {
     const music = useMusic();
-    const [tab, setTab] = useState('search');
+    const tab = music.panelTab;
+    const setTab = music.setPanelTab;
     const [playlist, setPlaylist] = useState('');
     const [pending, setPending] = useState(false);
     if (!music.panel) return null;
@@ -29,14 +31,15 @@ export default function MusicPanel() {
             <div className={Style.panel}>
                 <p className={Style.hint}>当前聊天独立队列 · 第一首立即播放，后续点歌按顺序排队</p>
                 <div className={Style.tabs}>
-                    {[['search', '搜索 / 点歌'], ['queue', '播放队列'], ['playlist', '导入歌单']].map(([id, name]) =>
+                    {[['search', '搜索 / 点歌'], ['queue', '播放队列'], ['playlist', '导入歌单'], ['account', '网易云账号']].map(([id, name]) =>
                         <button type="button" key={id} className={tab === id ? Style.active : ''} onClick={() => setTab(id)}>{name}{id === 'queue' ? ' (' + (music.room?.queue.length || 0) + ')' : ''}</button>)}
                 </div>
-                {tab !== 'queue' && <label className={Style.source}>音乐来源
+                {['search', 'playlist'].includes(tab) && <label className={Style.source}>音乐来源
                     <select aria-label="音乐来源" value={music.selectedSource} onChange={(event) => music.setSource(event.target.value as MusicProvider)}>
                         {music.sources.map((item) => <option key={item.id} value={item.id}>{item.name}{item.enabled ? '' : ' · 未配置'}</option>)}
                     </select>
                 </label>}
+                {tab === 'account' && <MusicAccount />}
                 {tab === 'search' && <>
                     <form className={Style.search} onSubmit={(event) => { event.preventDefault(); music.search(); }}>
                         <input aria-label="搜索歌曲" placeholder={music.selectedSource === 'local' ? '搜索本地曲库，留空查看全部' : '歌曲名 / 歌手'} value={music.keywords} onChange={(event) => music.setKeywords(event.target.value)} />
@@ -78,4 +81,3 @@ export default function MusicPanel() {
         </Dialog>
     );
 }
-
