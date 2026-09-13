@@ -37,14 +37,34 @@ export default function MusicPanel() {
     }
 
     async function importList(
-        action: 'playlist' | 'idle',
+        action: 'playlist' | 'idle' | 'savePlaylist',
         provider = music.selectedSource,
         id = playlist,
     ) {
         if (pending) return;
         setPending(true);
-        music.join();
+        if (action !== 'savePlaylist') {
+            music.join();
+        }
         await music.act(action, { provider, id });
+        setPending(false);
+    }
+
+    async function refreshSaved(item: SavedMusicPlaylist) {
+        if (pending) return;
+        setPending(true);
+        await music.act('refreshSavedPlaylist', {
+            key: item.key,
+        });
+        setPending(false);
+    }
+
+    async function removeSaved(item: SavedMusicPlaylist) {
+        if (pending) return;
+        setPending(true);
+        await music.act('removeSavedPlaylist', {
+            key: item.key,
+        });
         setPending(false);
     }
 
@@ -64,7 +84,11 @@ export default function MusicPanel() {
 
     function savedLabel(item: SavedMusicPlaylist) {
         const mode =
-            item.mode === 'idle' ? '空闲歌单' : '加入队列';
+            item.mode === 'idle'
+                ? '空闲歌单'
+                : item.mode === 'saved'
+                  ? '仅保存'
+                  : '加入队列';
         return `${sourceNames[item.provider]} · ${item.trackCount} 首 · ${mode}`;
     }
 
@@ -300,7 +324,7 @@ export default function MusicPanel() {
                 {tab === 'playlist' && (
                     <div className={Style.import}>
                         <p>
-                            粘贴平台歌单 ID 或网易云完整歌单链接。歌单会分页读取完整曲目，不再限制 50 首。
+                            粘贴平台歌单 ID 或网易云完整歌单链接。网易云歌单会按完整 trackIds 保存；支持仅保存、更新和移除。
                         </p>
                         <input
                             aria-label="歌单链接"
@@ -321,6 +345,20 @@ export default function MusicPanel() {
                             >
                                 加入点歌队列
                             </button>
+
+                            {music.room?.canControl && (
+                                <button
+                                    type="button"
+                                    disabled={
+                                        pending || !source?.enabled
+                                    }
+                                    onClick={() =>
+                                        importList('savePlaylist')
+                                    }
+                                >
+                                    仅保存
+                                </button>
+                            )}
 
                             {music.room?.canControl && (
                                 <button
@@ -415,6 +453,31 @@ export default function MusicPanel() {
                                                     }
                                                 >
                                                     设为空闲
+                                                </button>
+                                            )}
+                                            {music.room?.canControl && (
+                                                <button
+                                                    type="button"
+                                                    disabled={pending}
+                                                    onClick={() =>
+                                                        refreshSaved(item)
+                                                    }
+                                                >
+                                                    更新
+                                                </button>
+                                            )}
+                                            {music.room?.canControl && (
+                                                <button
+                                                    type="button"
+                                                    disabled={pending}
+                                                    className={
+                                                        Style.dangerButton
+                                                    }
+                                                    onClick={() =>
+                                                        removeSaved(item)
+                                                    }
+                                                >
+                                                    移除
                                                 </button>
                                             )}
                                         </div>

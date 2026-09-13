@@ -86,7 +86,7 @@ function rememberPlaylist(
     source: MusicProvider,
     id: string,
     trackCount: number,
-    mode: 'queue' | 'idle',
+    mode: 'queue' | 'idle' | 'saved',
 ) {
     if (!Array.isArray(room.savedPlaylists)) {
         room.savedPlaylists = [];
@@ -353,6 +353,108 @@ export async function musicAction(
                 if (!room.current) {
                     await nextTrack(room);
                 }
+                break;
+            }
+
+            case 'savePlaylist': {
+                assert(
+                    canControl,
+                    '只有群主或管理员可以保存歌单',
+                );
+
+                const source = provider(
+                    ctx.data.provider,
+                );
+                const playlistId = text(
+                    ctx.data.id,
+                    2048,
+                );
+                const tracks = await getPlaylist(
+                    source,
+                    playlistId,
+                );
+
+                rememberPlaylist(
+                    room,
+                    source,
+                    playlistId,
+                    tracks.length,
+                    'saved',
+                );
+
+                room.notice =
+                    '已保存 ' +
+                    tracks.length +
+                    ' 首，不影响播放队列和空闲歌单';
+                break;
+            }
+
+            case 'refreshSavedPlaylist': {
+                assert(
+                    canControl,
+                    '只有群主或管理员可以更新已保存歌单',
+                );
+
+                const key = text(
+                    ctx.data.key,
+                    2200,
+                );
+                const saved =
+                    room.savedPlaylists.find(
+                        (item) => item.key === key,
+                    );
+
+                assert(
+                    saved,
+                    '已保存歌单不存在',
+                );
+
+                const tracks = await getPlaylist(
+                    saved!.provider,
+                    saved!.id,
+                );
+
+                rememberPlaylist(
+                    room,
+                    saved!.provider,
+                    saved!.id,
+                    tracks.length,
+                    saved!.mode || 'saved',
+                );
+
+                room.notice =
+                    '已更新保存的歌单，共 ' +
+                    tracks.length +
+                    ' 首';
+                break;
+            }
+
+            case 'removeSavedPlaylist': {
+                assert(
+                    canControl,
+                    '只有群主或管理员可以移除已保存歌单',
+                );
+
+                const key = text(
+                    ctx.data.key,
+                    2200,
+                );
+                const index =
+                    room.savedPlaylists.findIndex(
+                        (item) => item.key === key,
+                    );
+
+                assert(
+                    index >= 0,
+                    '已保存歌单不存在',
+                );
+
+                room.savedPlaylists.splice(
+                    index,
+                    1,
+                );
+                room.notice =
+                    '已移除保存的歌单';
                 break;
             }
 

@@ -5,8 +5,14 @@ const { musicToken } = require('./music-token.cjs');
 const auth = createMusicAuth({ api, token: musicToken(),
     accountFile: process.env.MusicAccountFile || '/music-auth/account.json',
     legacyCookieFile: '/secrets/netease-cookie.txt' });
-const routes = { '/search': 'search', '/song/detail': 'song_detail', '/song/url/v1': 'song_url_v1',
-    '/lyric': 'lyric', '/playlist/track/all': 'playlist_track_all' };
+const routes = {
+    '/search': 'search',
+    '/song/detail': 'song_detail',
+    '/song/url/v1': 'song_url_v1',
+    '/lyric': 'lyric',
+    '/playlist/detail': 'playlist_detail',
+    '/playlist/track/all': 'playlist_track_all',
+};
 http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') {

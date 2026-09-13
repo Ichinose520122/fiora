@@ -83,6 +83,21 @@ function normalize(
     };
 }
 
+function unresolvedNeteaseTrack(id: string): MusicTrack {
+    return {
+        id: String(id).slice(0, 120),
+        provider: 'netease',
+        title: `网易云歌曲 ${id}`,
+        artist: '详情将在播放时重新获取',
+        duration: 1,
+        album: '',
+        cover: '',
+        url: '',
+        lyrics: '',
+        translatedLyrics: '',
+    };
+}
+
 async function request(
     base: string | undefined,
     endpoint: string,
@@ -98,8 +113,8 @@ async function request(
             base!.replace(/\/$/, '') + endpoint,
             {
                 params,
-                timeout: 10000,
-                maxContentLength: 2 * 1024 * 1024,
+                timeout: 15000,
+                maxContentLength: 8 * 1024 * 1024,
                 maxRedirects: 0,
             },
         );
@@ -335,6 +350,7 @@ async function pagedPlaylist(
     let offset = 0;
     const tracks: MusicTrack[] = [];
     const seen = new Set<string>();
+    let emptyPages = 0;
 
     for (;;) {
         const result = await request(base, endpoint, {
@@ -351,9 +367,13 @@ async function pagedPlaylist(
             [];
 
         if (!Array.isArray(songs) || songs.length === 0) {
-            break;
+            emptyPages += 1;
+            if (emptyPages >= 1) break;
+            offset += pageSize;
+            continue;
         }
 
+        emptyPages = 0;
         let added = 0;
 
         for (const item of songs) {
@@ -367,15 +387,85 @@ async function pagedPlaylist(
             }
         }
 
-        // Some third-party APIs ignore offset. Stop rather than looping forever.
-        if (songs.length < pageSize || added === 0) {
-            break;
-        }
-
-        offset += songs.length;
+        // The provider may filter some songs from a page. A short page is not
+        // necessarily the final page, so always advance by the requested page size.
+        // If the provider ignores offset and returns only duplicates, stop safely.
+        if (added === 0) break;
+        offset += pageSize;
     }
 
     return tracks;
+}
+
+async function getNeteasePlaylist(
+    value: string,
+): Promise<MusicTrack[]> {
+    const id = extractMusicId(value, true);
+
+    const detail = await request(
+        process.env.NeteaseMusicApi,
+        '/playlist/detail',
+        {
+            id,
+            s: 0,
+        },
+    );
+
+    const rawIds = detail.playlist?.trackIds;
+    assert(
+        Array.isArray(rawIds) && rawIds.length > 0,
+        '歌单为空或无权访问',
+    );
+
+    const orderedIds = rawIds
+        .map((item: any) => String(item?.id || '').trim())
+        .filter((item: string) => /^\d+$/.test(item));
+
+    assert(
+        orderedIds.length > 0,
+        '歌单为空或无权访问',
+    );
+
+    const details = new Map<string, MusicTrack>();
+    const batchSize = 100;
+
+    for (
+        let start = 0;
+        start < orderedIds.length;
+        start += batchSize
+    ) {
+        const batch = orderedIds.slice(
+            start,
+            start + batchSize,
+        );
+
+        try {
+            const result = await request(
+                process.env.NeteaseMusicApi,
+                '/song/detail',
+                {
+                    ids: batch.join(','),
+                },
+            );
+
+            for (const item of result.songs || []) {
+                try {
+                    const track = neteaseTrack(item);
+                    details.set(track.id, track);
+                } catch (_) {
+                    // Keep the track ID below and retry metadata when it is played.
+                }
+            }
+        } catch (_) {
+            // Keep all IDs from this batch. Missing metadata is resolved lazily.
+        }
+    }
+
+    return orderedIds.map(
+        (trackId) =>
+            details.get(trackId) ||
+            unresolvedNeteaseTrack(trackId),
+    );
 }
 
 export async function getPlaylist(
@@ -387,21 +477,7 @@ export async function getPlaylist(
     }
 
     if (provider === 'netease') {
-        const tracks = await pagedPlaylist(
-            '/playlist/track/all',
-            process.env.NeteaseMusicApi,
-            {
-                id: extractMusicId(id, true),
-            },
-            neteaseTrack,
-        );
-
-        assert(
-            tracks.length,
-            '歌单为空或无权访问',
-        );
-
-        return tracks;
+        return getNeteasePlaylist(id);
     }
 
     const tracks = await pagedPlaylist(
@@ -436,6 +512,13 @@ export async function resolveTrack(
     }
 
     if (track.provider === 'netease') {
+        // Refresh metadata at play time. This is important for playlist entries
+        // preserved from trackIds when song/detail was filtered or temporarily failed.
+        const metadata = await getTrack(
+            'netease',
+            track.id,
+        );
+
         const result = await request(
             process.env.NeteaseMusicApi,
             '/song/url/v1',
@@ -463,6 +546,7 @@ export async function resolveTrack(
 
         return {
             ...track,
+            ...metadata,
             url,
             lyrics: String(
                 lyric.lrc?.lyric || '',

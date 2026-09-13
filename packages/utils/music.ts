@@ -22,7 +22,7 @@ export interface SavedMusicPlaylist {
     provider: MusicProvider;
     id: string;
     trackCount: number;
-    mode: 'queue' | 'idle';
+    mode: 'queue' | 'idle' | 'saved';
     updatedAt: number;
 }
 
