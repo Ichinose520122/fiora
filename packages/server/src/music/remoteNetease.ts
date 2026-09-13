@@ -1,5 +1,6 @@
 import assert from 'assert';
 import axios from 'axios';
+import musicAuthToken from './authToken';
 
 function apiToken() {
     const value = (process.env.NeteaseMusicApiToken || '').trim();
@@ -64,9 +65,13 @@ export async function requestNetease(
         fallback.replace(/\/$/, '') !==
             primary.replace(/\/$/, '')
     ) {
-        // The Hong Kong local adapter remains private on the Docker network, so
-        // it does not need to share the Aliyun gateway token.
-        attempts.push({ base: fallback, token: '' });
+        // The local fallback uses Fiora's shared internal music token. This keeps
+        // fallback working after the integrated music-api image enables auth on
+        // normal API routes too.
+        attempts.push({
+            base: fallback,
+            token: musicAuthToken(),
+        });
     }
 
     let lastError: unknown;
