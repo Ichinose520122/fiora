@@ -35,6 +35,10 @@ function convertSystemMessage(message: any) {
             return;
         }
         switch (content.command) {
+            case 'music': {
+                message.content = typeof content.value === 'string' ? content.value : '无效的音乐回复';
+                break;
+            }
             case 'roll': {
                 message.content = `掷出了${content.value}点 (上限${content.top}点)`;
                 break;

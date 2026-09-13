@@ -3,7 +3,7 @@ name: Build Fiora Docker image
 on:
   push:
     branches:
-      - ichinose-custom
+      - music
   workflow_dispatch:
 
 permissions:
@@ -38,6 +38,17 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/ichinose520122/fiora:custom
+          tags: ghcr.io/ichinose520122/fiora:music
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build and publish integrated music service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile.netease
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/ichinose520122/fiora:music-api
+          cache-from: type=gha,scope=music-api
+          cache-to: type=gha,mode=max,scope=music-api

@@ -57,7 +57,7 @@ function Linkman(props: LinkmanProps) {
         }
 
         action.setFocus(id);
-        if (isMobile) {
+        if (isMobile || window.innerWidth <= 500) {
             action.setStatus('functionBarAndLinkmanListVisible', false);
         }
     }

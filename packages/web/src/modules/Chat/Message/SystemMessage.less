@@ -1,0 +1,90 @@
+.system {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.musicSystem {
+    color: #202124 !important;
+    line-height: 1.55;
+    font-weight: 500;
+    text-shadow: none !important;
+}
+
+.username {
+    display: inline-block;
+    margin-right: 7px;
+    color: #2f5d62 !important;
+}
+
+.searchTitle {
+    color: #315f67;
+    font-weight: 700;
+}
+
+.searchResults {
+    display: grid;
+    gap: 4px;
+    margin: 7px 0 4px;
+}
+
+.searchItem {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.index {
+    color: #71868b;
+    font-size: 11px;
+}
+
+.songName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #202124 !important;
+}
+
+.songId {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid rgba(58, 116, 120, .26);
+    border-radius: 6px;
+    padding: 2px 7px;
+    background: rgba(99, 171, 166, .16);
+    color: #315f67 !important;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(99, 171, 166, .29);
+    }
+
+    &:disabled {
+        opacity: .65;
+        cursor: default;
+    }
+}
+
+.searchHint {
+    color: #71868b !important;
+    font-size: 10px;
+}
+
+@media (max-width: 500px) {
+    .searchItem {
+        grid-template-columns: 16px minmax(0, 1fr);
+    }
+
+    .songId {
+        grid-column: 2;
+        justify-self: start;
+        max-width: 120px;
+    }
+}

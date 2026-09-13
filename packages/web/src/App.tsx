@@ -17,6 +17,8 @@ import UserInfo from './modules/UserInfo';
 import GroupInfo from './modules/GroupInfo';
 import { ShowUserOrGroupInfoContext } from './context';
 import Chat from './modules/Chat/Chat';
+import { MusicSessionProvider } from './modules/Music/MusicSession';
+import MusicPanel from './modules/Music/MusicPanel';
 import globalStyles from './globalStyles';
 import InviteInfo from './modules/InviteInfo';
 
@@ -25,7 +27,7 @@ import InviteInfo from './modules/InviteInfo';
  */
 function getWidthPercent() {
     let width = 0.6;
-    if (isMobile) {
+    if (isMobile || window.innerWidth <= 500) {
         width = 1;
     } else if (window.innerWidth < 1000) {
         width = 0.9;
@@ -44,7 +46,7 @@ function getWidthPercent() {
  */
 function getHeightPercent() {
     let height = 0.8;
-    if (isMobile) {
+    if (isMobile || window.innerWidth <= 500) {
         height = 1;
     } else if (window.innerHeight < 1000) {
         height = 0.9;
@@ -158,9 +160,12 @@ function App() {
                 <ShowUserOrGroupInfoContext.Provider
                     value={(contextValue as unknown) as null}
                 >
-                    <Sidebar />
-                    <FunctionBarAndLinkmanList />
-                    <Chat />
+                    <MusicSessionProvider>
+                        <Sidebar />
+                        <FunctionBarAndLinkmanList />
+                        <Chat />
+                        <MusicPanel />
+                    </MusicSessionProvider>
                 </ShowUserOrGroupInfoContext.Provider>
             </div>
             <LoginAndRegister />

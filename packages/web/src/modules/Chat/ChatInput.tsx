@@ -24,6 +24,8 @@ import { State } from '../../state/reducer';
 import { sendMessage } from '../../service';
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
+import { useMusic } from '../Music/MusicSession';
+import { commandSuggestions } from '../Music/commands';
 
 const expressionList = css`
     display: flex;
@@ -60,6 +62,11 @@ let searchExpressionTimer: number = 0;
 let inputIME = false;
 
 function ChatInput() {
+    const music = useMusic();
+    const [commandText, setCommandText] = useState('');
+    const [commandIndex, setCommandIndex] = useState(0);
+    const [commandHidden, setCommandHidden] = useState(false);
+    const suggestions = commandHidden ? [] : commandSuggestions(commandText);
     const action = useAction();
     const isLogin = useIsLogin();
     const connect = useSelector((state: State) => state.connect);
@@ -108,6 +115,12 @@ function ChatInput() {
     useEffect(() => {
         setExpressions([]);
     }, [enableSearchExpression]);
+
+    useEffect(() => {
+        setCommandText('');
+        setCommandHidden(false);
+        if ($input.current) $input.current.value = '';
+    }, [focus]);
 
     if (!isLogin) {
         return (
@@ -343,6 +356,10 @@ function ChatInput() {
         }
 
         switch (key) {
+            case 'music': {
+                music.open();
+                break;
+            }
             case 'image': {
                 handleSendImage();
                 break;
@@ -409,7 +426,7 @@ function ChatInput() {
         return null;
     }
 
-    function sendTextMessage() {
+    async function sendTextMessage() {
         if (!connect) {
             return Message.error('发送消息失败, 您当前处于离线状态');
         }
@@ -417,6 +434,20 @@ function ChatInput() {
         // @ts-ignore
         const message = $input.current.value.trim();
         if (message.length === 0) {
+            return null;
+        }
+
+        if (/^\/music(?:\s|$)/.test(message)) {
+            // Submission consumes the draft even if execution fails. Never clear
+            // a new message typed while the previous command is still pending.
+            $input.current!.value = '';
+            setCommandText('');
+            setCommandHidden(false);
+            setCommandIndex(0);
+            setExpressions([]);
+            const command = music.command(message);
+            const id = addSelfMessage('text', xss(message));
+            await handleSendMessage(id, 'text', command);
             return null;
         }
 
@@ -445,6 +476,7 @@ function ChatInput() {
 
         // @ts-ignore
         $input.current.value = '';
+        setCommandText('');
         setExpressions([]);
         return null;
     }
@@ -474,6 +506,20 @@ function ChatInput() {
     }
 
     async function handleInputKeyDown(e: any) {
+        if (inputIME || e.nativeEvent?.isComposing) return;
+        if (suggestions.length > 0) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                setCommandIndex((commandIndex + (e.key === 'ArrowDown' ? 1 : suggestions.length - 1)) % suggestions.length);
+                return;
+            }
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                completeCommand(suggestions[commandIndex % suggestions.length].value);
+                return;
+            }
+            if (e.key === 'Escape') { setCommandHidden(true); return; }
+        }
         if (e.key === 'Tab') {
             e.preventDefault();
         } else if (e.key === 'Enter' && !inputIME) {
@@ -545,9 +591,8 @@ function ChatInput() {
         if (!at.enable || linkman.type !== 'group') {
             return [];
         }
-        return linkman.onlineMembers.filter((member) => {
-            const regex = new RegExp(`^${at.content}`);
-            if (regex.test(member.user.username)) {
+        return (linkman.onlineMembers || []).filter((member) => {
+            if (member.user.username.startsWith(at.content)) {
                 return true;
             }
             return false;
@@ -582,6 +627,12 @@ function ChatInput() {
         handleSendMessage(id, 'code', code);
         toggleCodeEditorDialog(false);
         return null;
+    }
+
+    function completeCommand(value: string) {
+        if ($input.current) { $input.current.value = value; $input.current.focus(); }
+        setCommandText(value);
+        setCommandIndex(0);
     }
 
     function handleClickExpressionImage(
@@ -631,6 +682,7 @@ function ChatInput() {
                             <MenuItem key="image">发送图片</MenuItem>
                             <MenuItem key="code">发送代码</MenuItem>
                             <MenuItem key="file">发送文件</MenuItem>
+                            <MenuItem key="music">一起听 · 音乐</MenuItem>
                         </Menu>
                     </div>
                 }
@@ -653,10 +705,15 @@ function ChatInput() {
                 <input
                     className={Style.input}
                     type="text"
-                    placeholder="说点什么吧..."
+                    placeholder="说点什么吧，输入 / 补全命令"
                     maxLength={2048}
                     ref={$input}
                     onKeyDown={handleInputKeyDown}
+                    onChange={(event) => {
+                        setCommandText(event.target.value);
+                        setCommandIndex(0);
+                        setCommandHidden(false);
+                    }}
                     onPaste={handlePaste}
                     onCompositionStart={() => {
                         inputIME = true;
@@ -709,6 +766,19 @@ function ChatInput() {
                         </div>
                     ))}
             </div>
+
+            {suggestions.length > 0 && (
+                <div className={Style.commandPanel} role="listbox" aria-label="聊天命令补全">
+                    <p>↑ ↓ 选择 · Tab 补全 · Enter 执行</p>
+                    {suggestions.map((item, index) => (
+                        <button type="button" role="option" aria-selected={index === commandIndex}
+                            key={item.value} className={index === commandIndex ? Style.selectedCommand : ''}
+                            onMouseDown={(event) => event.preventDefault()} onClick={() => completeCommand(item.value)}>
+                            <strong>{item.value}</strong><span>{item.description}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {codeEditorDialog && (
                 <CodeEditorAsync

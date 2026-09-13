@@ -209,38 +209,6 @@ function Expression(props: ExpressionProps) {
             >
                 <TabPane tab="默认表情" key="default">
                     <div className={Style.panelScroll}>
-                        {favoriteExpressions.length > 0 && (
-                            <section className={Style.favoriteSection}>
-                                <p className={Style.sectionTitle}>我的表情</p>
-                                <div className={Style.imageGrid}>
-                                    {favoriteExpressions.map((expression) => (
-                                        <div
-                                            className={Style.imageGridItem}
-                                            key={expression}
-                                        >
-                                            <img
-                                                src={expression}
-                                                alt="收藏表情"
-                                                onClick={() =>
-                                                    onSelectImage(expression)
-                                                }
-                                            />
-                                            <button
-                                                type="button"
-                                                className={Style.removeFavorite}
-                                                onClick={() =>
-                                                    handleRemoveFavorite(
-                                                        expression,
-                                                    )
-                                                }
-                                            >
-                                                ×
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
                         <div className={Style.defaultExpression}>
                             {expressions.default.map((expression, index) => (
                                 <div
@@ -384,6 +352,42 @@ function Expression(props: ExpressionProps) {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                </TabPane>
+                <TabPane tab="收藏表情" key="favorites">
+                    <div className={Style.panelScroll}>
+                        {favoriteExpressions.length > 0 ? (
+                            <section className={Style.favoriteSection}>
+                                <p className={Style.sectionTitle}>我的表情</p>
+                                <div className={Style.imageGrid}>
+                                    {favoriteExpressions.map((expression) => (
+                                        <div
+                                            className={Style.imageGridItem}
+                                            key={expression}
+                                        >
+                                            <img
+                                                src={expression}
+                                                alt="收藏表情"
+                                                onClick={() =>
+                                                    onSelectImage(expression)
+                                                }
+                                            />
+                                            <button
+                                                type="button"
+                                                className={Style.removeFavorite}
+                                                onClick={() =>
+                                                    handleRemoveFavorite(
+                                                        expression,
+                                                    )
+                                                }
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        ) : (<div className={Style.centerMessage}>还没有收藏表情，在聊天图片菜单中添加收藏吧。</div>)}
                     </div>
                 </TabPane>
             </Tabs>

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import Style from './Chat.less';
 import HeaderBar from './HeaderBar';
 import MessageList from './MessageList';
+import MusicPlayer from '../Music/MusicPlayer';
 import ChatInput from './ChatInput';
 import GroupManagePanel from './GroupManagePanel';
 import { State, GroupMember } from '../../state/reducer';
@@ -165,6 +166,7 @@ function Chat() {
                 onlineStatusKnown={linkman.onlineStatusKnown}
                 onClickFunction={handleClickFunction}
             />
+            <MusicPlayer />
             <MessageList />
             <ChatInput />
 
