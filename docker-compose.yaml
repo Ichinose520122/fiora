@@ -55,7 +55,7 @@ services:
       - fiora-internal
 
   fiora:
-    image: ghcr.io/ichinose520122/fiora:music
+    image: ghcr.io/ichinose520122/fiora:ichinose-custom
     build: .
     restart: unless-stopped
     depends_on:
