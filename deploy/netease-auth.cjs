@@ -38,6 +38,9 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
             Buffer.byteLength(received) === Buffer.byteLength(token) &&
             crypto.timingSafeEqual(Buffer.from(received), Buffer.from(token));
     }
+    function hasSessionCookie(cookie) {
+        return typeof cookie === 'string' && /(?:^|;\s*)MUSIC_U=/.test(cookie);
+    }
     async function body(req) {
         let value = '';
         for await (const chunk of req) {
@@ -67,13 +70,34 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
             const data = await body(req);
             if (url.pathname === '/auth/status') {
                 const account = await readAccount();
-                if (!account.cookie) result(res, { ok: true, loggedIn: false });
-                else {
+                if (!hasSessionCookie(account.cookie)) {
+                    result(res, { ok: true, loggedIn: false });
+                } else {
                     try {
                         const status = await api.login_status({ cookie: account.cookie });
                         const profile = status.body?.data?.profile;
-                        result(res, { ok: true, loggedIn: !!profile, nickname: String(profile?.nickname || '').slice(0, 80) });
-                    } catch (_) { result(res, { ok: true, loggedIn: false, unverified: true, nickname: account.nickname }); }
+                        if (profile) {
+                            const nickname = String(profile.nickname || account.nickname || '').slice(0, 80);
+                            if (nickname && nickname !== account.nickname) {
+                                await save({ ...account, nickname }).catch(() => {});
+                            }
+                            result(res, { ok: true, loggedIn: true, nickname });
+                        } else {
+                            result(res, {
+                                ok: true,
+                                loggedIn: true,
+                                unverified: true,
+                                nickname: String(account.nickname || '').slice(0, 80),
+                            });
+                        }
+                    } catch (_) {
+                        result(res, {
+                            ok: true,
+                            loggedIn: true,
+                            unverified: true,
+                            nickname: String(account.nickname || '').slice(0, 80),
+                        });
+                    }
                 }
             } else if (url.pathname === '/auth/send-code') {
                 validate(data);
@@ -93,15 +117,33 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
                 await serial(async () => {
                     let account;
                     try {
-                        const response = await api.login_cellphone({ phone: data.phone, countrycode: data.countryCode, captcha: data.captcha });
+                        const response = await api.login_cellphone({
+                            phone: data.phone,
+                            countrycode: data.countryCode,
+                            captcha: data.captcha,
+                        });
                         const payload = response.body;
-                        if (payload?.code !== 200 || !payload.profile || typeof payload.cookie !== 'string' ||
-                            !/(?:^|;\s*)MUSIC_U=/.test(payload.cookie)) throw response;
-                        account = { cookie: payload.cookie, nickname: String(payload.profile.nickname || '').slice(0, 80) };
-                    } catch (error) { result(res, { ok: false, error: failure(error, 'login_failed') }); return; }
+                        if (payload?.code !== 200 || !hasSessionCookie(payload.cookie)) throw response;
+                        account = {
+                            cookie: payload.cookie,
+                            nickname: String(
+                                payload.profile?.nickname ||
+                                payload.account?.userName ||
+                                payload.account?.nickname ||
+                                ''
+                            ).slice(0, 80),
+                        };
+                    } catch (error) {
+                        result(res, { ok: false, error: failure(error, 'login_failed') });
+                        return;
+                    }
                     try { await save(account); }
                     catch (_) { result(res, { ok: false, error: 'storage_failed' }); return; }
-                    result(res, { ok: true, nickname: account.nickname });
+                    result(res, {
+                        ok: true,
+                        nickname: account.nickname,
+                        unverified: !account.nickname,
+                    });
                 });
             } else if (url.pathname === '/auth/logout') {
                 await serial(() => save({ cookie: '', nickname: '' }));
