@@ -1,4 +1,30 @@
 services:
+  netease:
+    image: ghcr.io/ichinose520122/fiora:music-api
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.netease
+    restart: unless-stopped
+    environment:
+      MusicAuthTokenFile: /music-internal/token
+      MusicAccountFile: /music-auth/account.json
+    volumes:
+      - music_internal:/music-internal
+      - music_account:/music-auth
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health',{signal:AbortSignal.timeout(3000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
+    networks:
+      - fiora-internal
+
   mongodb:
     image: mongo:6.0
     restart: unless-stopped
@@ -29,13 +55,15 @@ services:
       - fiora-internal
 
   fiora:
-    image: ghcr.io/ichinose520122/fiora:custom
+    image: ghcr.io/ichinose520122/fiora:music
     build: .
     restart: unless-stopped
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      netease:
         condition: service_healthy
     environment:
       Host: 0.0.0.0
@@ -48,10 +76,16 @@ services:
       AllowOrigin: https://${FIORA_DOMAIN:?FIORA_DOMAIN is required}
       DisableRegister: ${DisableRegister:-false}
       TrustProxyHeaders: ${FIORA_TRUST_PROXY_HEADERS:-false}
+      NeteaseMusicApi: http://netease:3000
+      MusicAuthTokenFile: /music-internal/token
+      MusicDirectory: /music
+      Administrator: ${FIORA_ADMINISTRATOR:-}
       ALIYUN_OSS: "false"
     expose:
       - "9200"
     volumes:
+      - music_internal:/music-internal:ro
+      - ./music:/music:ro
       - ./uploads/Avatar:/usr/app/fiora/packages/server/public/Avatar
       - ./uploads/BackgroundImage:/usr/app/fiora/packages/server/public/BackgroundImage
       - ./uploads/FileMessage:/usr/app/fiora/packages/server/public/FileMessage
@@ -65,6 +99,8 @@ services:
           - fiora
 
 volumes:
+  music_internal:
+  music_account:
   mongodb_data:
   mongodb_config:
   redis_data:

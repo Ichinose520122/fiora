@@ -1,13 +1,19 @@
 const http = require('http');
 const api = require('@neteasecloudmusicapienhanced/api');
 const { createMusicAuth } = require('./netease-auth.cjs');
-const auth = createMusicAuth({ api, token: process.env.MusicAuthToken,
+const { musicToken } = require('./music-token.cjs');
+const auth = createMusicAuth({ api, token: musicToken(),
     accountFile: process.env.MusicAccountFile || '/music-auth/account.json',
     legacyCookieFile: '/secrets/netease-cookie.txt' });
 const routes = { '/search': 'search', '/song/detail': 'song_detail', '/song/url/v1': 'song_url_v1',
     '/lyric': 'lyric', '/playlist/track/all': 'playlist_track_all' };
 http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
+    if (req.method === 'GET' && url.pathname === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ ok: true }));
+        return;
+    }
     if (await auth.handle(req, res, url)) return;
     const method = routes[url.pathname];
     if (!method || req.method !== 'GET') { res.writeHead(404); res.end(); return; }

@@ -1,8 +1,9 @@
 import assert from 'assert';
 import axios from 'axios';
+import musicAuthToken from '../music/authToken';
 
 const cooldown = new Map<string, { until: number; count: number; reset: number }>();
-function configured() { return !!process.env.NeteaseMusicApi && !!process.env.MusicAuthToken; }
+function configured() { return !!process.env.NeteaseMusicApi && !!musicAuthToken(); }
 function authorize(ctx: Context<any>) {
     assert(ctx.socket.user, '请先登录聊天室');
     assert(ctx.socket.isAdmin, '只有站点管理员可以管理服务器的网易云账号');
@@ -26,7 +27,7 @@ function credentials(ctx: Context<any>) {
 async function request(endpoint: string, data = {}) {
     try {
         const response = await axios.post(process.env.NeteaseMusicApi!.replace(/\/$/, '') + '/auth/' + endpoint, data, {
-            headers: { 'X-Music-Auth': process.env.MusicAuthToken }, timeout: 15000,
+            headers: { 'X-Music-Auth': musicAuthToken() }, timeout: 15000,
             maxRedirects: 0, maxContentLength: 32768,
         });
         const result = response.data;

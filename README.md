@@ -55,3 +55,6 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## License
 
 Fiora is [MIT licensed](./LICENSE)
+# 音乐分支部署
+
+音乐服务已并入主 `docker-compose.yaml`。保留现有 `.env`，在项目根目录运行 `docker compose up -d --build` 即可一起部署。网易云账号在音乐面板中登录，无需再单独配置适配器。详见 [整合部署说明](deploy/MUSIC-INTEGRATED.md)。
