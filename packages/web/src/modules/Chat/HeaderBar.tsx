@@ -36,6 +36,7 @@ type Props = {
 };
 
 function HeaderBar(props: Props) {
+    const compact = isMobile || window.innerWidth <= 500;
     const {
         id,
         name,
@@ -69,7 +70,7 @@ function HeaderBar(props: Props) {
 
     return (
         <div className={Style.headerBar} {...aero}>
-            {isMobile && (
+            {compact && (
                 <div className={Style.buttonContainer}>
                     <IconButton
                         width={40}
@@ -103,7 +104,7 @@ function HeaderBar(props: Props) {
                         )}
                     </span>
                 )}
-                {isMobile && (
+                {compact && (
                     <span className={Style.status}>
                         <span
                             className={`${Style.statusDot} ${

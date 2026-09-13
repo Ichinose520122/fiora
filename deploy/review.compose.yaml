@@ -1,0 +1,50 @@
+name: fiora-review
+x-review-logging: &review-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "2"
+services:
+  netease:
+    logging: *review-logging
+    image: fiora-review-netease:4.40.1
+    restart: unless-stopped
+    volumes: ["../secrets:/secrets:ro"]
+  mongodb:
+    logging: *review-logging
+    image: public.ecr.aws/docker/library/mongo:6.0
+    restart: unless-stopped
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25", "--bind_ip_all"]
+    volumes: ["../data/mongodb:/data/db"]
+  redis:
+    logging: *review-logging
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["../data/redis:/data"]
+  web:
+    logging: *review-logging
+    image: fiora-review:latest
+    restart: unless-stopped
+    ports: ["9200:9200"]
+    depends_on: [mongodb, redis]
+    environment:
+      Host: 0.0.0.0
+      Port: 9200
+      Database: mongodb://mongodb:27017/fiora_review
+      RedisHost: redis
+      RedisPort: 6379
+      JwtSecret: ${FIORA_JWT_SECRET:?required}
+      InviteCode: ${FIORA_INVITE_CODE:-review-music-2026}
+      AllowOrigin: http://172.16.24.3:9200
+      MusicDirectory: /music
+      NeteaseMusicApi: http://netease:3000
+      ALIYUN_OSS: "false"
+    volumes:
+      - ../music:/music:ro
+      - ../data/uploads/Avatar:/usr/app/fiora/packages/server/public/Avatar
+      - ../data/uploads/BackgroundImage:/usr/app/fiora/packages/server/public/BackgroundImage
+      - ../data/uploads/FileMessage:/usr/app/fiora/packages/server/public/FileMessage
+      - ../data/uploads/GroupAvatar:/usr/app/fiora/packages/server/public/GroupAvatar
+      - ../data/uploads/ImageMessage:/usr/app/fiora/packages/server/public/ImageMessage
+      - ../data/uploads/QQExpression:/usr/app/fiora/packages/server/public/QQExpression

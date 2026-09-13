@@ -17,6 +17,8 @@ import Admin from './Admin';
 
 import Style from './Sidebar.less';
 import useAero from '../../hooks/useAero';
+import { useMusic } from '../Music/MusicSession';
+import MusicStyle from '../Music/Music.less';
 
 const SelfInfoAsync = loadable(
     () =>
@@ -29,6 +31,7 @@ const SettingAsync = loadable(
 );
 
 function Sidebar() {
+    const music = useMusic();
     const sidebarVisible = useSelector(
         (state: State) => state.status.sidebarVisible,
     );
@@ -93,6 +96,9 @@ function Sidebar() {
                     />
                 )}
                 <div className={Style.buttons}>
+                    {isLogin && renderTooltip('一起听 · 音乐', (
+                        <button type="button" className={MusicStyle.sidebarButton} aria-label="打开音乐面板" onClick={() => music.open()}>♫</button>
+                    ))}
                     {isLogin &&
                         isAdmin &&
                         renderTooltip(

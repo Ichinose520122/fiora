@@ -1,0 +1,9 @@
+FROM fiora-review:latest
+WORKDIR /usr/app/fiora
+COPY packages/server/src packages/server/src
+COPY packages/database/mongoose packages/database/mongoose
+COPY packages/utils/music.ts packages/utils/music.ts
+COPY packages/web/src packages/web/src
+COPY packages/web/build/webpack.review.js packages/web/build/webpack.review.js
+RUN cd packages/web && ../../node_modules/.bin/webpack --config build/webpack.review.js && cp -r dist/fiora/. ../server/public/
+WORKDIR /usr/app/fiora/packages/server

@@ -261,8 +261,8 @@ export const initialState: State = {
         voiceSwitch: localStorage.voiceSwitch,
         selfVoiceSwitch: localStorage.selfVoiceSwitch,
         tagColorMode: localStorage.tagColorMode,
-        sidebarVisible: !isMobile,
-        functionBarAndLinkmanListVisible: !isMobile,
+        sidebarVisible: !isMobile && window.innerWidth > 500,
+        functionBarAndLinkmanListVisible: !isMobile && window.innerWidth > 500,
         enableSearchExpression: localStorage.enableSearchExpression,
     },
 };

@@ -23,6 +23,9 @@ import * as messageRoutes from './routes/message';
 import * as systemRoutes from './routes/system';
 import * as notificationRoutes from './routes/notification';
 import * as historyRoutes from './routes/history';
+import * as musicRoutes from './routes/music';
+import { installMusic } from './music/service';
+import musicFiles from './music/files';
 import registerRoutes from './middlewares/registerRoutes';
 import ensureQQExpressionCache, {
     qqExpressionCacheRoot,
@@ -63,6 +66,8 @@ app.use(async (ctx, next) => {
         ctx.body = { message: 'QQ 表情缓存暂时不可用' };
     }
 });
+
+app.use(musicFiles);
 
 // serve index.html
 app.use(async (ctx, next) => {
@@ -116,6 +121,7 @@ const routes = {
     ...systemRoutes,
     ...notificationRoutes,
     ...historyRoutes,
+    ...musicRoutes,
 } as unknown as Routes;
 Object.keys(routes).forEach((key) => {
     if (key.startsWith('_')) {
@@ -175,5 +181,7 @@ io.on('connection', async (socket) => {
         }),
     );
 });
+
+installMusic(io);
 
 export default httpServer;

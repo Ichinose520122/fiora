@@ -1,6 +1,19 @@
 @import '../../styles/variable.less';
 
+.commandPanel {
+    position: absolute; bottom: 100%; left: 14px; right: 14px; z-index: 20;
+    background: #fff; color: #405565; border: 1px solid #d8e3e8; border-radius: 10px;
+    box-shadow: 0 -6px 24px #24364a18; padding: 8px; max-height: 280px; overflow: auto;
+    p { margin: 2px 8px 7px; color: #8b9ba6; font-size: 11px; }
+    button { display: flex; align-items: center; gap: 14px; padding: 9px; width: 100%; text-align: left;
+        border: 0; background: transparent; color: #405565; cursor: pointer; border-radius: 6px;
+        strong { min-width: 95px; font-size: 12px; } span { font-size: 12px; color: #8297a4; }
+    }
+    button.selectedCommand { background: #e7f3f2; }
+}
+
 .chatInput {
+    flex-shrink: 0;
     height: 70px;
     background-color: rgba(255, 255, 255, 0.5);
     display: flex;
@@ -46,6 +59,7 @@
 }
 
 .form {
+    min-width: 0;
     flex: 1;
     display: flex;
     position: relative;
@@ -53,6 +67,7 @@
 }
 
 .input {
+    min-width: 0;
     flex: 1;
     padding: 0px 8px;
     height: 32px;

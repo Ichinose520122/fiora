@@ -1,0 +1,6 @@
+FROM fiora-review:latest
+WORKDIR /api
+RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund @neteasecloudmusicapienhanced/api@4.40.1 && npm cache clean --force
+COPY deploy/netease.cjs /api/server.cjs
+CMD ["node", "/api/server.cjs"]
+
