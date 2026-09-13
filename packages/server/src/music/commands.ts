@@ -2,6 +2,7 @@ import assert from 'assert';
 import { randomBytes } from 'crypto';
 import { musicAction, musicGetState, musicSearch } from '../routes/music';
 import { MusicProvider, MusicSnapshot, MusicTrack } from '@fiora/utils/music';
+import { getTrack } from './providers';
 
 const sources = ['local', 'netease', 'qq'];
 const help = '音乐指令：/music 歌名 · /music search 关键词 · /music list · /music join · /music leave · /music vote · /music login';
@@ -49,18 +50,41 @@ export async function executeMusicCommand(ctx: Context<any>, input: string): Pro
                 .map((track, index) => `\n${index + 1}. ${song(track)} [${track.id}]`).join('') + '\n使用 /music 音乐来源 ID 点歌'
                 : '没有找到歌曲，请换一个关键词或音乐来源';
         }
-        let track: MusicTrack | undefined;
+
+        let requestedTrack: MusicTrack | undefined;
         let id = query;
+
         if (action === 'add' && !(source === 'netease' && (/^\d+$/.test(query) || /^https?:/.test(query)))) {
             const found = await musicSearch(context({ provider: source, keywords: query }));
-            track = found.tracks[0];
-            assert(track, '没有找到歌曲，请换一个关键词或音乐来源');
-            id = track!.id;
+            requestedTrack = found.tracks[0];
+            assert(requestedTrack, '没有找到歌曲，请换一个关键词或音乐来源');
+            id = requestedTrack.id;
         }
-        const result: MusicSnapshot = await musicAction(context({ action, requestId, provider: source, id }));
+
+        // 数字 ID / 网易云完整链接不会经过上面的搜索。
+        // 在执行 action 前先解析出“本次用户实际点的歌”，后面的 system 回复只使用它，
+        // 不再拿当前正在播放的 result.current 作为歌名兜底。
+        if (action === 'add' && !requestedTrack) {
+            requestedTrack = await getTrack(source, id);
+        }
+
+        const result: MusicSnapshot = await musicAction(context({
+            action,
+            requestId,
+            provider: source,
+            id,
+        }));
+
         if (action === 'playlist') return result.notice || '已将歌单加入点歌队列';
-        const added = [...result.queue].reverse().find((item) => item.id === id && item.provider === source) || result.current;
-        return added ? `点歌 ${song(added)}${added.entryId === result.current?.entryId ? '，开始播放' : '，已加入队列'}` : '点歌已处理';
+
+        if (requestedTrack) {
+            const queued = result.queue.some(
+                (item) => item.id === requestedTrack!.id && item.provider === requestedTrack!.provider,
+            );
+            return `点歌 ${song(requestedTrack)}${queued ? '，已加入队列' : '，开始播放'}`;
+        }
+
+        return '点歌已处理';
     } catch (error) {
         return '音乐指令未完成：' + (error instanceof assert.AssertionError ? error.message : '服务暂时不可用，请稍后重试');
     }

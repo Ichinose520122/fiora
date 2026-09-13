@@ -12,82 +12,141 @@ export default function MusicPlayer() {
     const music = useMusic();
     const track = music.room?.current;
     const lyrics = useMemo(() => parseLyrics(track?.lyrics), [track?.lyrics]);
-    const translation = useMemo(() => parseLyrics(track?.translatedLyrics), [track?.translatedLyrics]);
+    const translation = useMemo(
+        () => parseLyrics(track?.translatedLyrics),
+        [track?.translatedLyrics],
+    );
+
     if (!music.room) return null;
 
     let index = -1;
-    lyrics.forEach((line, i) => { if (line.time <= music.position) index = i; });
-    const translated = index >= 0
-        ? translation.find((line) => Math.abs(line.time - lyrics[index].time) < 0.2)?.text
-        : '';
+    lyrics.forEach((line, i) => {
+        if (line.time <= music.position) index = i;
+    });
+
+    const translated =
+        index >= 0
+            ? translation.find(
+                  (line) => Math.abs(line.time - lyrics[index].time) < 0.2,
+              )?.text
+            : '';
+
+    const currentLyric =
+        lyrics[index]?.text ||
+        (track ? '纯音乐 / 暂无歌词' : '点一首歌，让音乐陪你聊天');
+    const secondLyric =
+        translated ||
+        lyrics[index + 1]?.text ||
+        (track ? '' : '搜索歌曲或输入 /music 歌名');
 
     return (
         <section className={Style.player} aria-label="一起听播放器">
-            <div className={Style.disc + ' ' + (music.playing ? Style.spinning : '')} aria-hidden="true">
-                {track?.cover ? <img src={track.cover} alt="" /> : <span>♪</span>}
+            <div
+                className={`${Style.disc} ${
+                    music.playing ? Style.spinning : ''
+                }`}
+                aria-hidden="true"
+            >
+                {track?.cover ? (
+                    <img src={track.cover} alt="" />
+                ) : (
+                    <span>♪</span>
+                )}
                 <i />
             </div>
 
             <div className={Style.trackInfo}>
-                <div className={Style.playerMeta}>
-                    <span className={Style.eyebrow}>
-                        一起听 · {music.room.listeners} 人 · {music.room.paused ? '已暂停' : track ? '播放中' : '等待点歌'}
+                <div className={Style.songLine}>
+                    <strong>{track?.title || '让音乐陪你聊天'}</strong>
+                    <span className={Style.artist}>
+                        {track?.artist || '等待点歌'}
                     </span>
-                    {track && <span className={Style.requester}>
-                        {track.idle ? '空闲歌单' : `点歌：${track.requestedByName || '用户点播'}`}
-                    </span>}
                 </div>
 
-                <strong className={Style.title}>{track?.title || '让音乐陪你聊天'}</strong>
-                <span className={Style.artist} title={track?.album}>
-                    {track
-                        ? track.artist + (track.album ? ' · ' + track.album : '')
-                        : '输入 /music 歌名 开始点歌'}
-                </span>
-
-                <div className={Style.lyrics} aria-live="off">
-                    <p>{lyrics[index]?.text || (track ? '纯音乐 / 暂无歌词' : '每个聊天，都有自己的歌单')}</p>
-                    <div>{translated || lyrics[index + 1]?.text || ''}</div>
+                <div className={Style.lyricViewport} aria-live="off">
+                    <div
+                        key={`${track?.entryId || 'idle'}-${index}`}
+                        className={Style.lyricSlide}
+                    >
+                        <p title={currentLyric}>{currentLyric}</p>
+                        <span title={secondLyric}>{secondLyric}</span>
+                    </div>
                 </div>
 
-                <div className={Style.progressRow}>
-                    <span>{formatTime(music.position)}</span>
-                    <progress value={music.position} max={track?.duration || 1} aria-label="播放进度" />
-                    <span>{formatTime(track?.duration || 0)}</span>
-                </div>
+                {(music.error || music.room.notice) && (
+                    <div className={Style.playerNotice} role="status">
+                        {music.error || music.room.notice}
+                    </div>
+                )}
+            </div>
 
-                {(music.error || music.room.notice) &&
-                    <div className={Style.notice} role="status">{music.error || music.room.notice}</div>}
-
-                <div className={Style.controls + ' ' + Style.playerControls}>
-                    <button type="button" onClick={music.error || !music.listening ? music.join : music.leave}>
-                        {music.error ? '重试播放' : music.listening ? '退出' : '加入'}
+            <div className={Style.playerActions}>
+                <div className={Style.actionButtons}>
+                    <button
+                        type="button"
+                        onClick={
+                            music.error || !music.listening
+                                ? music.join
+                                : music.leave
+                        }
+                    >
+                        {music.error
+                            ? '重试'
+                            : music.listening
+                              ? '退出'
+                              : '加入'}
                     </button>
-                    {track && music.room.canControl &&
-                        <button type="button" onClick={() => music.act(music.room!.paused ? 'resume' : 'pause')}>
+
+                    {track && music.room.canControl && (
+                        <button
+                            type="button"
+                            onClick={() =>
+                                music.act(
+                                    music.room!.paused
+                                        ? 'resume'
+                                        : 'pause',
+                                )
+                            }
+                        >
                             {music.room.paused ? '继续' : '暂停'}
-                        </button>}
-                    {track &&
-                        <button type="button" disabled={!music.listening} onClick={() => music.act('vote')}>
-                            切歌 {music.room.votes.length}/{music.room.votesNeeded}
-                        </button>}
-                    <button type="button" onClick={() => music.open()}>
-                        点歌 · {music.room.queue.length}
+                        </button>
+                    )}
+
+                    {track && (
+                        <button
+                            type="button"
+                            disabled={!music.listening}
+                            onClick={() => music.act('vote')}
+                            title={`切歌投票 ${music.room.votes.length}/${music.room.votesNeeded}`}
+                        >
+                            切歌
+                        </button>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={() => music.open()}
+                        title={`待播 ${music.room.queue.length} 首`}
+                    >
+                        点歌
                     </button>
-                    <label className={Style.volume}>
-                        音量
-                        <input
-                            aria-label="个人音量"
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={music.volume}
-                            onChange={(event) => music.setVolume(Number(event.target.value))}
-                        />
-                        <span>{Math.round(music.volume * 100)}%</span>
-                    </label>
                 </div>
+
+                <label className={Style.volume}>
+                    <span>音量</span>
+                    <input
+                        aria-label="个人音量"
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={music.volume}
+                        onChange={(event) =>
+                            music.setVolume(Number(event.target.value))
+                        }
+                    />
+                    <b>{Math.round(music.volume * 100)}%</b>
+                </label>
             </div>
         </section>
     );
