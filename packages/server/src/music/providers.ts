@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import {
+    requestNetease,
+    upgradeNeteaseMediaUrl,
+} from './remoteNetease';
+import {
     MusicProvider,
     MusicTrack,
 } from '@fiora/utils/music';
@@ -229,8 +233,7 @@ export async function searchMusic(
     assert(keywords.trim(), '请输入歌曲名称');
 
     if (provider === 'netease') {
-        const result = await request(
-            process.env.NeteaseMusicApi,
+        const result = await requestNetease(
             '/search',
             {
                 keywords,
@@ -315,8 +318,7 @@ export async function getTrack(
     }
 
     if (provider === 'netease') {
-        const result = await request(
-            process.env.NeteaseMusicApi,
+        const result = await requestNetease(
             '/song/detail',
             {
                 ids: extractMusicId(id),
@@ -402,8 +404,7 @@ async function getNeteasePlaylist(
 ): Promise<MusicTrack[]> {
     const id = extractMusicId(value, true);
 
-    const detail = await request(
-        process.env.NeteaseMusicApi,
+    const detail = await requestNetease(
         '/playlist/detail',
         {
             id,
@@ -440,8 +441,7 @@ async function getNeteasePlaylist(
         );
 
         try {
-            const result = await request(
-                process.env.NeteaseMusicApi,
+            const result = await requestNetease(
                 '/song/detail',
                 {
                     ids: batch.join(','),
@@ -519,8 +519,7 @@ export async function resolveTrack(
             track.id,
         );
 
-        const result = await request(
-            process.env.NeteaseMusicApi,
+        const result = await requestNetease(
             '/song/url/v1',
             {
                 id: track.id,
@@ -535,13 +534,14 @@ export async function resolveTrack(
             '此歌曲暂不可完整播放（需登录、会员或仅有试听）',
         );
 
-        const lyric = await request(
-            process.env.NeteaseMusicApi,
+        const lyric = await requestNetease(
             '/lyric',
             { id: track.id },
         ).catch(() => ({}));
 
-        const url = safeMediaUrl(item.url);
+        const url = safeMediaUrl(
+            upgradeNeteaseMediaUrl(item.url),
+        );
         assert(url, '无效的播放地址');
 
         return {
