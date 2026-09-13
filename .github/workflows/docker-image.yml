@@ -3,7 +3,7 @@ name: Build Fiora Docker image
 on:
   push:
     branches:
-      - music
+      - ichinose-custom
   workflow_dispatch:
 
 permissions:
@@ -38,7 +38,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/ichinose520122/fiora:music
+          tags: ghcr.io/ichinose520122/fiora:ichinose-custom
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
