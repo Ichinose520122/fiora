@@ -228,6 +228,7 @@ export default function MusicPanel() {
                             ))}
                         </div>
 
+
                         <p className={Style.hint}>
                             快捷点歌：/music 歌名 · /music local 歌名 · /music search 关键词
                         </p>
@@ -384,6 +385,18 @@ export default function MusicPanel() {
                             )}
                         </div>
 
+                        <label className={Style.controls}>
+                            空闲播放模式
+                            <select
+                                aria-label="空闲播放模式"
+                                value={music.room?.idleMode || 'sequential'}
+                                disabled={!music.room?.canControl || music.busy}
+                                onChange={(event) => music.act('idleMode', { mode: event.target.value })}
+                            >
+                                <option value="sequential">顺序播放</option>
+                                <option value="random">随机播放</option>
+                            </select>
+                        </label>
                         <p className={Style.hint}>
                             空闲歌单{' '}
                             {music.room?.idlePlaylist.length || 0}{' '}

@@ -1,4 +1,5 @@
 export const chatCommands = [
+    { value: '/pixiv ', description: '发送 Pixiv 作品 ID / 链接，多图全部发送' },
     { value: '/music ', description: '点歌：歌名、ID 或完整链接' },
     { value: '/music search ', description: '搜索歌曲并选择' },
     { value: '/music local ', description: '从本地曲库点歌' },

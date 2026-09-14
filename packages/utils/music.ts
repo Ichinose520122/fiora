@@ -32,6 +32,8 @@ export interface MusicRoomState {
     current: MusicTrack | null;
     queue: MusicTrack[];
     idlePlaylist: MusicTrack[];
+    idleMode: 'sequential' | 'random';
+    idleCursor: number;
     savedPlaylists: SavedMusicPlaylist[];
     paused: boolean;
     position: number;

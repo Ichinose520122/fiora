@@ -6,7 +6,7 @@ import {
     MusicSnapshot,
 } from '@fiora/utils/music';
 import getLinkmanAccess from '../utils/linkmanAccess';
-import { newRoom, RoomSerial } from './room';
+import { newRoom, RoomSerial, idleTrackOrder } from './room';
 import { resolveTrack } from './providers';
 
 export const roomSerial = new RoomSerial();
@@ -40,6 +40,8 @@ export async function loadRoom(id: string) {
         if (!Array.isArray(room.idlePlaylist)) {
             room.idlePlaylist = [];
         }
+        if (room.idleMode !== 'random') room.idleMode = 'sequential';
+        if (!Number.isInteger(room.idleCursor) || room.idleCursor < 0) room.idleCursor = 0;
 
         // Resume explicitly after server restart; never silently skip the saved queue.
         if (room.current) {
@@ -94,6 +96,7 @@ export function snapshot(
 
 export async function nextTrack(room: MusicRoomState) {
     const fromQueue = room.queue.length > 0;
+    const idleOrder = idleTrackOrder(room);
 
     // Bound playback-resolution attempts for one transition only. This does not
     // limit queue or playlist size; later ticks continue from the remaining queue.
@@ -110,13 +113,14 @@ export async function nextTrack(room: MusicRoomState) {
     while (attempts-- > 0) {
         let candidate = room.queue.shift();
 
-        if (!candidate && room.idlePlaylist.length) {
+        if (!candidate && idleOrder.length) {
+            const index = idleOrder.shift()!;
             candidate = {
-                ...room.idlePlaylist.shift()!,
+                ...room.idlePlaylist[index],
                 idle: true,
                 entryId: Date.now() + '-' + attempts,
             };
-            room.idlePlaylist.push(candidate);
+            room.idleCursor = (index + 1) % room.idlePlaylist.length;
         }
 
         if (!candidate) break;

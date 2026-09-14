@@ -13,6 +13,8 @@ export function newRoom(roomId: string): MusicRoomState {
         current: null,
         queue: [],
         idlePlaylist: [],
+        idleMode: 'sequential',
+        idleCursor: 0,
         savedPlaylists: [],
         paused: false,
         position: 0,
@@ -20,6 +22,24 @@ export function newRoom(roomId: string): MusicRoomState {
         votes: [],
         notice: '',
     };
+}
+
+// Keep the imported order intact so switching back to sequential is predictable.
+export function idleTrackOrder(room: MusicRoomState, random = Math.random) {
+    const length = room.idlePlaylist.length;
+    const order = Array.from({ length }, (_, i) => (room.idleCursor + i) % length);
+    if (room.idleMode === 'random') {
+        for (let i = order.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(random() * (i + 1));
+            [order[i], order[j]] = [order[j], order[i]];
+        }
+        const first = room.idlePlaylist[order[0]];
+        if (order.length > 1 && first?.id === room.current?.id &&
+            first?.provider === room.current?.provider) {
+            order.push(order.shift()!);
+        }
+    }
+    return order;
 }
 
 export function queuedTrack(

@@ -17,7 +17,7 @@ export default function MusicPlayer() {
         [track?.translatedLyrics],
     );
 
-    if (!music.room) return null;
+    if (!music.room || !track) return null;
 
     let index = -1;
     lyrics.forEach((line, i) => {
@@ -33,11 +33,11 @@ export default function MusicPlayer() {
 
     const currentLyric =
         lyrics[index]?.text ||
-        (track ? '纯音乐 / 暂无歌词' : '点一首歌，让音乐陪你聊天');
+        '纯音乐 / 暂无歌词';
     const secondLyric =
         translated ||
         lyrics[index + 1]?.text ||
-        (track ? '' : '搜索歌曲或输入 /music 歌名');
+        '';
 
     return (
         <section className={Style.player} aria-label="一起听播放器">
@@ -57,7 +57,7 @@ export default function MusicPlayer() {
 
             <div className={Style.trackInfo}>
                 <div className={Style.songLine}>
-                    <strong>{track?.title || '让音乐陪你聊天'}</strong>
+                    <strong>{track.title}</strong>
                     <span className={Style.artist}>
                         {track?.artist || '等待点歌'}
                     </span>

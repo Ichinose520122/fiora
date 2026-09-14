@@ -308,7 +308,9 @@ export async function searchExpression(keywords: string) {
  * @param content 消息内容
  */
 export async function sendMessage(to: string, type: string, content: string) {
-    return fetch('sendMessage', { to, type, content });
+    return fetch('sendMessage', { to, type, content }, {
+        timeout: type === 'text' && /^\/\s*pixiv(?:\s|$)/i.test(content.trim()) ? 180000 : 30000,
+    });
 }
 
 /**

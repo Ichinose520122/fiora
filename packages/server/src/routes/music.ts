@@ -341,6 +341,7 @@ export async function musicAction(
                 );
 
                 room.idlePlaylist = tracks;
+                room.idleCursor = 0;
 
                 rememberPlaylist(
                     room,
@@ -458,12 +459,19 @@ export async function musicAction(
                 break;
             }
 
+            case 'idleMode':
+                assert(canControl, '只有群主或管理员可以修改空闲歌单播放模式');
+                assert(['sequential', 'random'].includes(ctx.data.mode), '无效的播放模式');
+                room.idleMode = ctx.data.mode;
+                break;
+
             case 'clearIdle':
                 assert(
                     canControl,
                     '只有群主或管理员可以修改空闲歌单',
                 );
                 room.idlePlaylist = [];
+                room.idleCursor = 0;
                 break;
 
             case 'next':

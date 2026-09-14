@@ -225,10 +225,13 @@ function ChatInput() {
         }
         const [error, message] = await sendMessage(linkmanId, type, content);
         if (error) {
-            action.deleteMessage(focus, localId, true);
+            action.deleteMessage(linkmanId, localId, true);
         } else {
+            const { additionalMessages = [] } = message;
+            delete message.additionalMessages;
             message.loading = false;
-            action.updateMessage(focus, localId, message);
+            action.updateMessage(linkmanId, localId, message);
+            additionalMessages.forEach((item: any) => action.addLinkmanMessage(linkmanId, item));
         }
     }
 
@@ -437,7 +440,7 @@ function ChatInput() {
             return null;
         }
 
-        if (/^\/music(?:\s|$)/.test(message)) {
+        if (/^\/(?:music|\s*pixiv)(?:\s|$)/i.test(message)) {
             // Submission consumes the draft even if execution fails. Never clear
             // a new message typed while the previous command is still pending.
             $input.current!.value = '';
@@ -445,7 +448,7 @@ function ChatInput() {
             setCommandHidden(false);
             setCommandIndex(0);
             setExpressions([]);
-            const command = music.command(message);
+            const command = /^\/music(?:\s|$)/.test(message) ? music.command(message) : message;
             const id = addSelfMessage('text', xss(message));
             await handleSendMessage(id, 'text', command);
             return null;

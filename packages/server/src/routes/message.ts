@@ -27,6 +27,7 @@ import {
 import client from '../../../config/client';
 import getLinkmanAccess from '../utils/linkmanAccess';
 import { executeMusicCommand } from '../music/commands';
+import { preparePixivImages } from '../utils/pixiv';
 
 const { isValid } = Types.ObjectId;
 
@@ -114,11 +115,26 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
     );
 
     let messageContent = content;
+    let pixivImages: string[] | undefined;
     if (type === 'text') {
         assert(messageContent.length <= 2048, '消息长度过长');
 
         const rollRegex = /^-roll( ([0-9]*))?$/;
-        if (/^\/music(?:\s|$)/.test(messageContent.trim())) {
+        if (/^\/\s*pixiv(?:\s|$)/i.test(messageContent.trim())) {
+            try {
+                pixivImages = await preparePixivImages(messageContent.trim(), ctx.socket.user);
+                type = 'image';
+                [messageContent] = pixivImages;
+            } catch (error) {
+                type = 'system';
+                messageContent = JSON.stringify({
+                    command: 'pixiv',
+                    value: 'Pixiv 发图未完成：' + (error instanceof AssertionError ? error.message : '服务暂时不可用，请稍后重试'),
+                });
+            }
+            // Downloads can take time; membership must still hold before publishing.
+            await getLinkmanAccess(ctx.socket.user, to);
+        } else if (/^\/music(?:\s|$)/.test(messageContent.trim())) {
             type = 'system';
             messageContent = JSON.stringify({
                 command: 'music',
@@ -174,76 +190,85 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         throw new AssertionError({ message: '用户不存在' });
     }
 
-    const message = await Message.create({
-        from: ctx.socket.user,
-        to,
-        type,
-        content: messageContent,
-    } as MessageDocument);
+    const batch = pixivImages || [messageContent];
+    const sent: any[] = [];
+    const createdAt = Date.now();
+    for (let index = 0; index < batch.length; index += 1) {
+        const message = await Message.create({
+            from: ctx.socket.user,
+            to,
+            type,
+            content: batch[index],
+            createTime: new Date(createdAt + index),
+        } as MessageDocument);
 
-    const messageData = {
-        _id: message._id,
-        createTime: message.createTime,
-        from: user.toObject(),
-        to,
-        type,
-        content: message.content,
-    };
-    if (type === 'inviteV2') {
-        await handleInviteV2Message(messageData);
-    }
+        const messageData = {
+            _id: message._id,
+            createTime: message.createTime,
+            from: user.toObject(),
+            to,
+            type,
+            content: message.content,
+        };
+        if (type === 'inviteV2') {
+            await handleInviteV2Message(messageData);
+        }
 
-    if (toGroup) {
-        ctx.socket.emit(toGroup._id.toString(), 'message', messageData);
+        if (toGroup) {
+            ctx.socket.emit(toGroup._id.toString(), 'message', messageData);
 
-        const notifications = await Notification.find({
-            user: {
-                $in: toGroup.members,
-            },
-        });
-        const notificationTokens: string[] = [];
-        notifications.forEach((notification) => {
-            // Messages sent by yourself don’t push notification to yourself
-            if (
-                notification.user._id.toString() === ctx.socket.user.toString()
-            ) {
-                return;
+            const notifications = await Notification.find({
+                user: {
+                    $in: toGroup.members,
+                },
+            });
+            const notificationTokens: string[] = [];
+            notifications.forEach((notification) => {
+                // Messages sent by yourself don’t push notification to yourself
+                if (
+                    notification.user._id.toString() === ctx.socket.user.toString()
+                ) {
+                    return;
+                }
+                notificationTokens.push(notification.token);
+            });
+            if (index === 0 && notificationTokens.length) {
+                pushNotification(
+                    notificationTokens,
+                    messageData as unknown as MessageDocument,
+                    toGroup.name,
+                );
             }
-            notificationTokens.push(notification.token);
-        });
-        if (notificationTokens.length) {
-            pushNotification(
-                notificationTokens,
-                messageData as unknown as MessageDocument,
-                toGroup.name,
-            );
-        }
-    } else {
-        const targetSockets = await Socket.find({ user: toUser?._id });
-        const targetSocketIdList =
-            targetSockets?.map((socket) => socket.id) || [];
-        if (targetSocketIdList.length) {
-            ctx.socket.emit(targetSocketIdList, 'message', messageData);
+        } else {
+            const targetSockets = await Socket.find({ user: toUser?._id });
+            const targetSocketIdList =
+                targetSockets?.map((socket) => socket.id) || [];
+            if (targetSocketIdList.length) {
+                ctx.socket.emit(targetSocketIdList, 'message', messageData);
+            }
+
+            const selfSockets = await Socket.find({ user: ctx.socket.user });
+            const selfSocketIdList = selfSockets?.map((socket) => socket.id) || [];
+            if (selfSocketIdList.length) {
+                ctx.socket.emit(selfSocketIdList, 'message', messageData);
+            }
+
+            const notificationTokens = await Notification.find({ user: toUser });
+            if (index === 0 && notificationTokens.length) {
+                pushNotification(
+                    notificationTokens.map(({ token }) => token),
+                    messageData as unknown as MessageDocument,
+                );
+            }
         }
 
-        const selfSockets = await Socket.find({ user: ctx.socket.user });
-        const selfSocketIdList = selfSockets?.map((socket) => socket.id) || [];
-        if (selfSocketIdList.length) {
-            ctx.socket.emit(selfSocketIdList, 'message', messageData);
+        if (index === batch.length - 1) {
+            await createOrUpdateHistory(ctx.socket.user.toString(), to, message._id);
         }
 
-        const notificationTokens = await Notification.find({ user: toUser });
-        if (notificationTokens.length) {
-            pushNotification(
-                notificationTokens.map(({ token }) => token),
-                messageData as unknown as MessageDocument,
-            );
-        }
+        sent.push(messageData);
     }
-
-    await createOrUpdateHistory(ctx.socket.user.toString(), to, message._id);
-
-    return messageData;
+    return batch.length > 1 ? { ...sent[0], additionalMessages: sent.slice(1) } : sent[0];
 }
 
 /**

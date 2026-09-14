@@ -12,7 +12,7 @@ const RequestTimeoutText = '请求超时, 请检查网络后重试';
 export default function fetch<T = any>(
     event: string,
     data = {},
-    { toast = true } = {},
+    { toast = true, timeout = RequestTimeout } = {},
 ): Promise<[string | null, T | null]> {
     if (isSeal) {
         Message.error(SEAL_TEXT);
@@ -41,7 +41,7 @@ export default function fetch<T = any>(
                 Message.error(RequestTimeoutText);
             }
             finish([RequestTimeoutText, null]);
-        }, RequestTimeout);
+        }, timeout);
         socket.on('disconnect', onDisconnect);
 
         socket.emit(event, data, (res: any) => {

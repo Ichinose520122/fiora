@@ -35,6 +35,10 @@ function convertSystemMessage(message: any) {
             return;
         }
         switch (content.command) {
+            case 'pixiv': {
+                message.content = typeof content.value === 'string' ? content.value : '无效的 Pixiv 回复';
+                break;
+            }
             case 'music': {
                 message.content = typeof content.value === 'string' ? content.value : '无效的音乐回复';
                 break;
