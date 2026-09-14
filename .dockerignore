@@ -12,6 +12,7 @@
 uploads
 backups
 music
+**/pixiv-auth
 r2.env
 deploy/netease.env
 packages/app

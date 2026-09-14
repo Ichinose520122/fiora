@@ -81,6 +81,7 @@ services:
       NeteaseMusicApiFallback: ${NETEASE_API_FALLBACK:-}
       MusicAuthTokenFile: /music-internal/token
       MusicDirectory: /music
+      PixivAccountFile: /pixiv-auth/account.json
       Administrator: ${FIORA_ADMINISTRATOR:-}
       ALIYUN_OSS: "false"
     expose:
@@ -88,6 +89,7 @@ services:
     volumes:
       - music_internal:/music-internal:ro
       - ./music:/music:ro
+      - pixiv_account:/pixiv-auth
       - ./uploads/Avatar:/usr/app/fiora/packages/server/public/Avatar
       - ./uploads/BackgroundImage:/usr/app/fiora/packages/server/public/BackgroundImage
       - ./uploads/FileMessage:/usr/app/fiora/packages/server/public/FileMessage
@@ -103,6 +105,7 @@ services:
 volumes:
   music_internal:
   music_account:
+  pixiv_account:
   mongodb_data:
   mongodb_config:
   redis_data:

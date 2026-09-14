@@ -28,6 +28,7 @@ import client from '../../../config/client';
 import getLinkmanAccess from '../utils/linkmanAccess';
 import { executeMusicCommand } from '../music/commands';
 import { preparePixivImages } from '../utils/pixiv';
+import { pixivDirectImage } from '@fiora/utils/pixiv';
 
 const { isValid } = Types.ObjectId;
 
@@ -120,7 +121,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(messageContent.length <= 2048, '消息长度过长');
 
         const rollRegex = /^-roll( ([0-9]*))?$/;
-        if (/^\/\s*pixiv(?:\s|$)/i.test(messageContent.trim())) {
+        if (/^\/\s*pixiv(?:\s|$)/i.test(messageContent.trim()) || pixivDirectImage(messageContent)) {
             try {
                 pixivImages = await preparePixivImages(messageContent.trim(), ctx.socket.user);
                 type = 'image';

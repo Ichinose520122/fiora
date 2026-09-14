@@ -16,6 +16,7 @@ lerna-debug.log
 !.env.example
 /r2.env
 /music/
+**/pixiv-auth/
 /deploy/netease.env
 
 backups/

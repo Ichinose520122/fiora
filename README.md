@@ -279,9 +279,24 @@ QQ 音乐保留了自定义 API 入口，但没有随本部署提供 QQ 服务�
 
 ### Pixiv
 
-公开作品支持 ID 和链接，多图按页发送。图片由**聊天服务器**下载并保存在 `uploads/ImageMessage`，所以聊天服务器必须能访问 Pixiv 和 `i.pximg.net`，与阿里云音乐接口无关。
+支持 `/pixiv 作品ID` 和 `/pixiv 作品页链接`，多图按页全部发送。`/pixiv https://i.pximg.net/...jpg` 只发送链接对应的那张图片；也可以把完整的 HTTPS 图片直链单独粘贴到聊天框发送。直链保留原本的页码和清晰度，不会转换成整组作品。支持 JPG、PNG、GIF、WebP。
 
-当前不含 Pixiv 账号登录。单张上限 20 MB，整组上限 100 MB / 200 张；不可访问或超过限制会返回 system 提示，不会悄悄只发一部分。
+图片由**聊天服务器**下载并保存在 `uploads/ImageMessage`，聊天服务器必须能访问 Pixiv 和 `i.pximg.net`，与阿里云音乐接口无关。客户端读取本站保存的图片，避免直接外链的防盗链限制。
+
+需要登录才能访问的作品，可由站点管理员连接一个站点共用的 Pixiv 账号：
+
+1. 在浏览器登录 [Pixiv 官网](https://www.pixiv.net/)。
+2. 按 F12，打开 **Application（应用）→ Cookies → https://www.pixiv.net**，复制 `PHPSESSID` 的 Value。Firefox 在“存储”面板查找。
+3. 在聊天室侧栏打开 **管理员控制台 → Pixiv 账号**，粘贴到密码输入框，点击 **验证并保存**。请使用 HTTPS，不要把凭据发在聊天、日志或 GitHub。
+4. 保存成功后，所有用户的作品 ID / 作品页请求会使用该账号。可点击 **验证已保存状态** 检查是否过期，失效后重新导入。**移除登录** 仅删除聊天服务器保存的凭据，不会退出浏览器中的 Pixiv。
+
+采用网页登录状态导入，无需提交 Pixiv 密码。此接入使用 Pixiv 网页接口，接口或风控变化可能需要调整；账号本身没有查看权限、作品删除、网络不可达的问题不会因登录而自动解决。
+
+Docker Compose 已包含 `PixivAccountFile: /pixiv-auth/account.json` 和 `pixiv_account:/pixiv-auth` 持久卷，重建主站容器后登录状态仍保留。凭据存放在静态文件目录之外，不回传给客户端，也不发送给图片 CDN。
+
+**已有部署升级：** 本次只需要更新主站，阿里云网易云服务无需变更。拉取新代码和主站镜像后，确认自己的 Compose 中 `fiora.environment` 有上述路径、`fiora.volumes` 有上述挂载，且顶层 `volumes` 声明了 `pixiv_account:`；然后执行 `docker compose up -d --no-deps --force-recreate fiora`。自定义 Compose 请保留现有网易云地址、令牌和其他配置。
+
+单张上限 20 MB，整组上限 100 MB / 200 张；不可访问或超过限制会返回 system 提示，不会悄悄只发一部分。
 
 ## 6. 更新与备份
 
@@ -316,6 +331,7 @@ docker compose --env-file deploy/netease.env -p fiora-music -f deploy/netease.co
 | 主站 `mongodb_data`、`mongodb_config` | 用户、聊天记录、群聊与音乐房间状态 |
 | 主站 `redis_data` | Redis 持久化状态 |
 | 主站 `uploads/` | 头像、背景、文件、图片（含 Pixiv）与 QQ 表情缓存 |
+| 主站 `pixiv_account` 卷 | Pixiv 登录凭据，备份需保密 |
 | 主站 `music/` | 本地音频及曲库配置 |
 | 主站 `music_internal` | 本地音乐服务自动生成的内部密钥 |
 | 音乐服务所在主机的 `music_account` | 网易云登录信息；远程模式需备份国内服务的数据卷 |
@@ -358,7 +374,7 @@ sh scripts/backup-r2.sh
 | 健康检查正常但登录失败 | `/health` 只检查进程；确认是本项目 music-api，检查国内服务日志与平台风控 |
 | 搜索正常但某首无法播放 | 登录状态、会员 / 版权 / 试听限制；尝试其他歌曲，确认浏览器能访问音乐 CDN |
 | 没声音 | 点击“加入 / 重试”，检查个人音量、标签页静音与浏览器自动播放限制 |
-| Pixiv 下载失败 | 检查聊天服务器访问 Pixiv 的网络、作品是否公开、体积限制 |
+| Pixiv 下载失败 | 检查聊天服务器网络、作品访问权限和体积；需要登录时在管理员控制台连接 Pixiv 并验证状态。已有 pximg 直链可单独发送 |
 | 上传或账号重建后丢失 | 核对是否换了部署目录、Compose 项目名或数据卷挂载；不要直接删除旧卷 |
 | 构建被系统终止 | 查看内存占用，优先使用已发布镜像；Docker 构建仍需要访问镜像仓库和 npm / Yarn 软件源 |
 

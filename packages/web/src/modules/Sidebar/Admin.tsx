@@ -9,6 +9,7 @@ import Input from '../../components/Input';
 import Button from '../../components/Button';
 import Message from '../../components/Message';
 import UserTag from '../../components/UserTag';
+import PixivAccount from './PixivAccount';
 import {
     getSealList,
     resetUserPassword,
@@ -187,6 +188,7 @@ function Admin(props: AdminProps) {
             onClose={onClose}
         >
             <div className={Common.container}>
+                {visible && <PixivAccount />}
                 <div className={Common.block}>
                     <p className={Common.title}>创建小洛克账号</p>
                     <div className={Style.inputBlock}>

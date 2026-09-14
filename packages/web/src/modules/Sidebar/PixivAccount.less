@@ -1,0 +1,32 @@
+.account {
+    color: var(--primary-text-color-10);
+    font-size: 13px;
+    line-height: 1.7;
+    p { margin: 8px 0; }
+    details { margin-bottom: 12px; }
+    summary { cursor: pointer; }
+    input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 8px 10px;
+        color: inherit;
+        background: rgba(128, 128, 128, 0.12);
+        border: 1px solid rgba(128, 128, 128, 0.3);
+        border-radius: 4px;
+    }
+}
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    button {
+        border: 0;
+        border-radius: 4px;
+        padding: 8px 12px;
+        background: var(--primary-color-8_5);
+        color: var(--primary-text-color-10);
+        cursor: pointer;
+        &:disabled { opacity: 0.5; cursor: default; }
+    }
+}
