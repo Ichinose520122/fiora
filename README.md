@@ -373,6 +373,17 @@ sh scripts/backup-r2.sh
 
 旧文档站和临时审核部署文件已清理，部署说明统一以本 README 为准。网页 / 服务端源码测试与开发配置保留；GitHub Actions 提供 Docker 镜像构建和 CodeQL 分析。
 
-## 致谢与许可
+## 贡献者与 AI 协作
+
+| 贡献者 / 工具 | 参与内容 |
+| --- | --- |
+| [yinxin630 及 Fiora 原项目贡献者](https://github.com/yinxin630/fiora/graphs/contributors) | 原项目设计、开发与维护 |
+| [Ichinose520122](https://github.com/Ichinose520122) | 本分支需求、定制方向、审核、部署与维护 |
+| ChatGPT（OpenAI） | AI 协作：需求梳理、方案讨论与文档辅助 |
+| Codex（OpenAI） | AI 协作：代码实现、问题排查、针对性验证与仓库整理 |
+
+感谢 ChatGPT 和 Codex 在本项目定制过程中的协助。AI 工具署名用于记录协作，项目的最终审核、发布和维护由维护者负责。
+
+## 许可与依赖致谢
 
 基于 [yinxin630/fiora](https://github.com/yinxin630/fiora)，遵循 [MIT License](LICENSE)，保留原作者版权声明。网易云接口使用 [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api)。
