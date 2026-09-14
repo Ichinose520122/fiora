@@ -13,13 +13,13 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
     async function readAccount() {
         try {
             return JSON.parse(await fs.promises.readFile(accountFile, 'utf8'));
-        } catch (error) {
-            if (error.code !== 'ENOENT') throw error;
+        } catch (accountError) {
+            if (accountError.code !== 'ENOENT') throw accountError;
             let cookie = '';
             try {
                 cookie = (await fs.promises.readFile(legacyCookieFile, 'utf8')).trim();
-            } catch (error) {
-                if (error.code !== 'ENOENT') throw error;
+            } catch (legacyError) {
+                if (legacyError.code !== 'ENOENT') throw legacyError;
             }
             return { cookie, nickname: '' };
         }
@@ -29,8 +29,9 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
             recursive: true,
             mode: 0o700,
         });
-        const temporary =
-            accountFile + '.' + crypto.randomBytes(8).toString('hex') + '.tmp';
+        const temporary = `${accountFile}.${crypto
+            .randomBytes(8)
+            .toString('hex')}.tmp`;
         try {
             await fs.promises.writeFile(temporary, JSON.stringify(account), {
                 mode: 0o600,
@@ -61,11 +62,33 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
     function hasSessionCookie(cookie) {
         return typeof cookie === 'string' && /(?:^|;\s*)MUSIC_U=/.test(cookie);
     }
+    function normalizeSessionCookie(value) {
+        if (
+            typeof value !== 'string' ||
+            value.length > 4096 ||
+            /[\r\n]/.test(value)
+        ) {
+            throw new Error('invalid_cookie');
+        }
+        const source = value.trim();
+        const match = /(?:^|;\s*)MUSIC_U=([^;\s]+)/.exec(source);
+        let sessionToken = '';
+        if (match) {
+            [, sessionToken] = match;
+        }
+        else if (/^[^=;\s]+$/.test(source)) sessionToken = source;
+        if (sessionToken.length < 20 || sessionToken.length > 2048) {
+            throw new Error('invalid_cookie');
+        }
+        return `MUSIC_U=${sessionToken}`;
+    }
     async function body(req) {
         let value = '';
+        // The request object is an async iterator in Node's HTTP server.
+        // eslint-disable-next-line no-restricted-syntax
         for await (const chunk of req) {
             value += chunk;
-            if (Buffer.byteLength(value) > 4096) throw new Error('invalid_body');
+            if (Buffer.byteLength(value) > 8192) throw new Error('invalid_body');
         }
         const data = JSON.parse(value || '{}');
         if (!data || typeof data !== 'object' || Array.isArray(data)) {
@@ -85,9 +108,9 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
     }
     function failure(error, fallback) {
         const code = error?.body?.code || error?.code;
-        if ([405, 415, 8821].includes(Number(code))) return 'challenge';
+        if ([405, 415, 460, 8821].includes(Number(code))) return 'challenge';
         if ([509].includes(Number(code))) return 'rate_limit';
-        if ([502, 503].includes(Number(code)) && fallback === 'login_failed') {
+        if ([503].includes(Number(code)) && fallback === 'login_failed') {
             return 'invalid_code';
         }
         return fallback;
@@ -139,7 +162,7 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
                 }
             } else if (url.pathname === '/auth/send-code') {
                 validate(data);
-                const key = data.countryCode + ':' + data.phone;
+                const key = `${data.countryCode}:${data.phone}`;
                 const now = Date.now();
                 sent.forEach((until, id) => {
                     if (until <= now) sent.delete(id);
@@ -153,13 +176,18 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
                     const response = await api.captcha_sent({
                         phone: data.phone,
                         ctcode: data.countryCode,
+                        platform: 'mobile',
                     });
                     if (response.body?.code !== 200) throw response;
                     result(res, { ok: true });
                 } catch (error) {
+                    const reason = failure(error, 'send_failed');
+                    if (reason !== 'rate_limit') {
+                        sent.delete(key);
+                    }
                     result(res, {
                         ok: false,
-                        error: failure(error, 'send_failed'),
+                        error: reason,
                     });
                 }
             } else if (url.pathname === '/auth/login') {
@@ -177,6 +205,7 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
                             phone: data.phone,
                             countrycode: data.countryCode,
                             captcha: data.captcha,
+                            platform: 'mobile',
                         });
                         const payload = response.body;
                         if (
@@ -211,6 +240,36 @@ function createMusicAuth({ api, token, accountFile, legacyCookieFile }) {
                         ok: true,
                         nickname: account.nickname,
                         unverified: !account.nickname,
+                    });
+                });
+            } else if (url.pathname === '/auth/cookie') {
+                await serial(async () => {
+                    let account;
+                    try {
+                        const cookie = normalizeSessionCookie(data.cookie);
+                        const status = await api.login_status({ cookie });
+                        const profile = status.body?.data?.profile;
+                        if (!profile) {
+                            result(res, { ok: false, error: 'invalid_cookie' });
+                            return;
+                        }
+                        account = {
+                            cookie,
+                            nickname: String(profile.nickname || '').slice(0, 80),
+                        };
+                    } catch (_) {
+                        result(res, { ok: false, error: 'invalid_cookie' });
+                        return;
+                    }
+                    try {
+                        await save(account);
+                    } catch (_) {
+                        result(res, { ok: false, error: 'storage_failed' });
+                        return;
+                    }
+                    result(res, {
+                        ok: true,
+                        nickname: account.nickname,
                     });
                 });
             } else if (url.pathname === '/auth/logout') {

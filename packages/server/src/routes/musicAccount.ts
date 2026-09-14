@@ -21,6 +21,13 @@ function checkLimit(key: string, interval: number, maximum: number) {
     assert(item.count < maximum, '本小时操作次数已达上限，请稍后再试');
     item.until = now + interval; item.count += 1; cooldown.set(key, item);
 }
+function releaseLimit(key: string) {
+    const item = cooldown.get(key);
+    if (!item) return;
+    item.until = 0;
+    item.count = Math.max(0, item.count - 1);
+    if (!item.count) cooldown.delete(key);
+}
 function credentials(ctx: Context<any>) {
     const { phone, countryCode = '86' } = ctx.data || {};
     assert(typeof countryCode === 'string' && /^\d{1,4}$/.test(countryCode), '请输入有效的国家区号');
@@ -30,7 +37,7 @@ function credentials(ctx: Context<any>) {
 }
 async function request(endpoint: string, data = {}) {
     try {
-        const response = await axios.post(process.env.NeteaseMusicApi!.replace(/\/$/, '') + '/auth/' + endpoint, data, {
+        const response = await axios.post(`${process.env.NeteaseMusicApi!.replace(/\/$/, '')}/auth/${endpoint}`, data, {
             headers: { 'X-Music-Auth': neteaseApiToken() }, timeout: 15000,
             maxRedirects: 0, maxContentLength: 32768,
         });
@@ -38,10 +45,11 @@ async function request(endpoint: string, data = {}) {
         // Only fixed error codes cross the service boundary. Never relay cookies or SDK errors.
         const messages: Record<string, string> = {
             rate_limit: '验证码发送过于频繁，请稍后再试',
-            challenge: '网易云要求额外验证，请在官方客户端完成验证后重试',
+            challenge: '网易云拦截了短信登录，请在官方网页登录后改用 MUSIC_U 登录',
             invalid_code: '验证码错误或已过期，请重新输入',
             send_failed: '验证码发送失败，请检查手机号或稍后重试',
             login_failed: '网易云登录失败，请确认账号已注册并重试',
+            invalid_cookie: 'MUSIC_U 无效或已过期，请重新从官方网页获取',
             storage_failed: '登录信息保存失败，请联系管理员检查存储',
         };
         assert(result?.ok, messages[result?.error] || '网易云账号服务暂时不可用，请稍后重试');
@@ -61,8 +69,19 @@ export async function musicAccountStatus(ctx: Context<any>) {
 export async function musicSendCode(ctx: Context<any>) {
     authorize(ctx);
     const input = credentials(ctx);
-    checkLimit('send:' + ctx.socket.user, 60000, 6);
-    await request('send-code', input);
+    const limitKey = `send:${ctx.socket.user}`;
+    checkLimit(limitKey, 60000, 6);
+    try {
+        await request('send-code', input);
+    } catch (error) {
+        if (
+            !(error instanceof assert.AssertionError) ||
+            error.message !== '验证码发送过于频繁，请稍后再试'
+        ) {
+            releaseLimit(limitKey);
+        }
+        throw error;
+    }
     return { ok: true, retryAfter: 60 };
 }
 export async function musicLogin(ctx: Context<any>) {
@@ -70,8 +89,17 @@ export async function musicLogin(ctx: Context<any>) {
     const input = credentials(ctx);
     const { captcha } = ctx.data;
     assert(typeof captcha === 'string' && /^\d{4,8}$/.test(captcha), '请输入短信验证码');
-    checkLimit('login:' + ctx.socket.user, 2000, 20);
+    checkLimit(`login:${ctx.socket.user}`, 2000, 20);
     const result = await request('login', { ...input, captcha });
+    return { ok: true, nickname: typeof result.nickname === 'string' ? result.nickname.slice(0, 80) : '' };
+}
+export async function musicLoginWithCookie(ctx: Context<any>) {
+    authorize(ctx);
+    const { cookie } = ctx.data || {};
+    assert(typeof cookie === 'string' && cookie.trim(), '请输入 MUSIC_U');
+    assert(cookie.length <= 4096 && !/[\r\n]/.test(cookie), 'MUSIC_U 格式错误');
+    checkLimit(`cookie:${ctx.socket.user}`, 2000, 20);
+    const result = await request('cookie', { cookie: cookie.trim() });
     return { ok: true, nickname: typeof result.nickname === 'string' ? result.nickname.slice(0, 80) : '' };
 }
 export async function musicLogout(ctx: Context<any>) {
