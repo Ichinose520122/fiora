@@ -11,7 +11,7 @@ Object.assign(dependencies, original.devDependencies, original.dependencies);
 for (const name of Object.keys(dependencies)) {
     if (name.startsWith('@fiora/') || name === 'lerna') delete dependencies[name];
 }
-fs.writeFileSync('package.json', JSON.stringify({name:'fiora-review', private:true, dependencies}, null, 2));
+fs.writeFileSync('package.json', JSON.stringify({name:'fiora-docker', private:true, dependencies}, null, 2));
 if (process.argv.includes('--links')) {
     fs.mkdirSync('node_modules/@fiora', {recursive:true});
     for (const name of names) {

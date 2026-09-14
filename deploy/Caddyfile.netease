@@ -1,0 +1,3 @@
+{$NETEASE_DOMAIN} {
+    reverse_proxy netease:3000
+}

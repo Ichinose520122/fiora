@@ -12,6 +12,11 @@ lerna-debug.log
 
 .env
 .env.local
+.env.*
+!.env.example
+/r2.env
+/music/
+/deploy/netease.env
 
 backups/
 uploads/*

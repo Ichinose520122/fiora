@@ -76,7 +76,9 @@ services:
       AllowOrigin: https://${FIORA_DOMAIN:?FIORA_DOMAIN is required}
       DisableRegister: ${DisableRegister:-false}
       TrustProxyHeaders: ${FIORA_TRUST_PROXY_HEADERS:-false}
-      NeteaseMusicApi: http://netease:3000
+      NeteaseMusicApi: ${NETEASE_API_URL:-http://netease:3000}
+      NeteaseMusicApiToken: ${NETEASE_API_TOKEN:-}
+      NeteaseMusicApiFallback: ${NETEASE_API_FALLBACK:-}
       MusicAuthTokenFile: /music-internal/token
       MusicDirectory: /music
       Administrator: ${FIORA_ADMINISTRATOR:-}

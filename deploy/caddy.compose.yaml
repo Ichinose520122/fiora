@@ -1,0 +1,25 @@
+# Optional HTTPS gateway for a new chat host. Existing Caddy users keep their proxy.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      FIORA_DOMAIN: ${FIORA_DOMAIN:?FIORA_DOMAIN is required}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - caddy-proxy
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  caddy-proxy:
+    external: true

@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "An interesting chat application power by socket.io, koa, mongodb and react",
   "license": "MIT",
-  "bin": "index.ts",
   "scripts": {
     "start": "npx lerna run start --stream",
     "dev:server": "npx lerna run dev:server --stream",
@@ -13,13 +12,10 @@
     "build:android": "cd packages/app && yarn build:android && cd ../../",
     "build:ios": "cd packages/app && yarn build:ios && cd ../../",
     "script": "npx lerna run script --stream",
-    "dev:docs": "npx lerna run dev:docs --stream",
-    "build:docs": "npx lerna run build:docs --stream",
-    "deploy:docs": "npx lerna run deploy:docs --stream",
     "lint": "eslint ./ --ext js,jsx,ts,tsx --ignore-pattern .eslintignore --cache --fix",
     "test": "jest",
     "ts-check": "tsc --noEmit",
-    "install": "npx lerna bootstrap && yarn link"
+    "install": "npx lerna bootstrap"
   },
   "engines": {
     "node": ">= 14"
@@ -30,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yinxin630/fiora"
+    "url": "https://github.com/Ichinose520122/fiora"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^4.2.4",

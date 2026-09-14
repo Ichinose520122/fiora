@@ -56,7 +56,11 @@ export async function requestNetease(
     if (primary) {
         attempts.push({
             base: primary,
-            token: apiToken(),
+            token: apiToken() || (
+                primary.replace(/\/$/, '') === 'http://netease:3000'
+                    ? musicAuthToken()
+                    : ''
+            ),
         });
     }
 

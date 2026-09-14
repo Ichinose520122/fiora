@@ -1,4 +1,0 @@
-FROM fiora-review-netease:4.40.1
-COPY deploy/netease.cjs /api/server.cjs
-COPY deploy/netease-auth.cjs /api/netease-auth.cjs
-COPY deploy/music-token.cjs /api/music-token.cjs

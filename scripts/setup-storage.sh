@@ -3,10 +3,11 @@ set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 
-for directory in Avatar BackgroundImage FileMessage GroupAvatar ImageMessage; do
+for directory in Avatar BackgroundImage FileMessage GroupAvatar ImageMessage QQExpression; do
     mkdir -p "$project_root/uploads/$directory"
 done
 
 mkdir -p "$project_root/backups"
+mkdir -p "$project_root/music"
 
 echo "Storage directories are ready under $project_root"

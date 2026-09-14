@@ -16,7 +16,7 @@ aws_cli_image=${AWS_CLI_IMAGE:-amazon/aws-cli:2}
 if [ "${SKIP_LOCAL_BACKUP:-false}" = "true" ]; then
     backup_directory=${BACKUP_DIRECTORY:?BACKUP_DIRECTORY is required when SKIP_LOCAL_BACKUP=true}
 else
-    backup_directory=$("$script_dir/backup-local.sh")
+    backup_directory=$(sh "$script_dir/backup-local.sh")
 fi
 
 backup_directory=$(CDPATH= cd -- "$backup_directory" && pwd)

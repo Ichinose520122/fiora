@@ -1,0 +1,4 @@
+{$FIORA_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy fiora:9200
+}
