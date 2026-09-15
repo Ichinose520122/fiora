@@ -146,6 +146,7 @@ export type Message = {
     createTime: number;
     percent?: number;
     loading?: boolean;
+    failed?: boolean;
     from: {
         _id: string;
         username: string;
@@ -216,6 +217,7 @@ export type User = {
     tag: string;
     isAdmin: boolean;
     notificationTokens: string[];
+    expressions?: string[];
     createTime: number;
 };
 

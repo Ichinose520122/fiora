@@ -1,4 +1,4 @@
-import { Text, View } from 'native-base';
+import { Text, View } from '../../components/NativeUI';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import Avatar from '../../components/Avatar';

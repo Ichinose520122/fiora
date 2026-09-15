@@ -1,6 +1,6 @@
 # Fiora · Ichinose Custom
 
-基于 [Fiora](https://github.com/yinxin630/fiora) 的自用聊天站，维护分支为 **`ichinose-custom`**。服务端与网页使用 Docker Compose 部署，手机 App 源码保留在 `packages/app`，供后续开发。
+基于 [Fiora](https://github.com/yinxin630/fiora) 的自用聊天站，维护分支为 **`ichinose-custom`**。服务端与网页使用 Docker Compose 部署，原生 Android App 源码位于 `packages/app`，构建与进度见 [App 说明](packages/app/README.md)。
 
 支持群聊、私聊、表情收藏、图片与文件消息，以及每个聊天独立的“一起听”房间：点歌队列、空闲歌单顺序 / 随机播放、歌词、旋转封面和个人音量。聊天框支持命令补全与 `/pixiv` 发图。
 
@@ -384,7 +384,7 @@ sh scripts/backup-r2.sh
 - `deploy/`：国内 music-api、可选 Caddy、Docker 构建辅助与网易云登录适配。
 - `packages/web`、`server`、`config`、`database`、`utils`、`assets`：网页与后端依赖，Docker 构建必需。
 - `packages/bin`：容器内管理员和维护工具。
-- `packages/app`：保留的旧版手机 App；不参与 Docker 构建，本次未验证其构建及新功能兼容性。
+- `packages/app`：原生 Android App，已接入音乐、Pixiv 与收藏表情；不参与 Docker 构建。见 [App 构建说明](packages/app/README.md)，实际 APK 编译及真机验收仍待完成。
 - `scripts/`：存储初始化、本地备份和 R2 备份。
 
 旧文档站和临时审核部署文件已清理，部署说明统一以本 README 为准。网页 / 服务端源码测试与开发配置保留；GitHub Actions 提供 Docker 镜像构建和 CodeQL 分析。

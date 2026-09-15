@@ -1,21 +1,8 @@
 import Toast from '../components/Toast';
 import socket from '../socket';
-
-export default function fetch<T = any>(
-    event: string,
-    data: any = {},
-    { toast = true } = {},
-): Promise<[string | null, T | null]> {
-    return new Promise((resolve) => {
-        socket.emit(event, data, (res: any) => {
-            if (typeof res === 'string') {
-                if (toast) {
-                    Toast.danger(res);
-                }
-                resolve([res, null]);
-            } else {
-                resolve([null, res]);
-            }
-        });
-    });
+import { socketRequest } from './socketRequest';
+export default async function fetch<T = any>(event: string, data: any = {}, { toast = true, timeout = 30000 } = {}): Promise<[string | null, T | null]> {
+    const result = await socketRequest<T>(socket, event, data, timeout);
+    if (result[0] && toast) Toast.danger(result[0]);
+    return result;
 }

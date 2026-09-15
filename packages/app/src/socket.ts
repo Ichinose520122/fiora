@@ -1,4 +1,6 @@
 import IO from 'socket.io-client';
+import { serverUrl } from './config';
+import { socketRequest } from './utils/socketRequest';
 import Toast from './components/Toast';
 import action from './state/action';
 import store from './state/store';
@@ -30,7 +32,7 @@ import {
 } from './types/redux';
 import getFriendId from './utils/getFriendId';
 import platform from './utils/platform';
-import { getStorageValue } from './utils/storage';
+import { getStorageValue, setStorageValue } from './utils/storage';
 
 const { dispatch } = store;
 
@@ -38,74 +40,43 @@ const options = {
     transports: ['websocket'],
 };
 
-const host = 'http://10.132.67.127:9200';
+const host = serverUrl;
 const socket = IO(host, options);
 
-function fetch<T = any>(
-    event: string,
-    data: any = {},
-    { toast = true } = {},
-): Promise<[string | null, T | null]> {
-    return new Promise((resolve) => {
-        socket.emit(event, data, (res: any) => {
-            if (typeof res === 'string') {
-                if (toast) {
-                    Toast.danger(res);
-                }
-                resolve([res, null]);
-            } else {
-                resolve([null, res]);
-            }
-        });
-    });
+async function fetch<T = any>(event: string, data: any = {}, { toast = true } = {}): Promise<[string | null, T | null]> {
+    const result = await socketRequest<T>(socket, event, data);
+    if (result[0] && toast) Toast.danger(result[0]);
+    return result;
 }
 
 async function guest() {
-    const [err, res] = await fetch('guest', {});
-    if (!err) {
-        dispatch({
-            type: SetGuestActionType,
-            linkmans: [res],
-        } as SetGuestAction);
-    }
+    action.logout();
 }
 
 socket.on('connect', async () => {
-    dispatch({
-        type: ConnectActionType,
-        value: true,
-    } as ConnectAction);
-
-    const token = await getStorageValue('token');
-
-    if (token) {
-        const [err, res] = await fetch(
-            'loginByToken',
-            {
-                token,
-                ...platform,
-            },
-            { toast: false },
-        );
-        if (err) {
-            guest();
-        } else {
-            const user = res;
-            action.setUser(user);
-
-            const linkmanIds = [
-                ...user.groups.map((g: Group) => g._id),
-                ...user.friends.map((f: Friend) => f._id),
-            ];
-            const [err2, linkmans] = await fetch('getLinkmansLastMessagesV2', {
-                linkmans: linkmanIds,
-            });
-            if (!err2) {
-                action.setLinkmansLastMessages(linkmans);
-            }
+    const connection = socket.id;
+    try {
+        const token = await getStorageValue('token');
+        if (!socket.connected || connection !== socket.id) return;
+        if (!token) { await guest(); action.connect(); return; }
+        const [err, res] = await fetch('loginByToken', { token, ...platform }, { toast: false });
+        if (!socket.connected || connection !== socket.id) return;
+        if (err || !res) { await guest(); action.connect(); return; }
+        if (res.token) await setStorageValue('token', res.token);
+        if (!socket.connected || connection !== socket.id) return;
+        action.setUser(res);
+        // Only refresh music and other authenticated data after token login succeeds.
+        action.connect();
+        const [historyError, linkmans] = await fetch('getLinkmansLastMessagesV2', {
+            linkmans: store.getState().linkmans.map((linkman) => linkman._id),
+        });
+        if (!historyError && linkmans && connection === socket.id && store.getState().user?._id === res._id) {
+            action.setLinkmansLastMessages(linkmans);
         }
-    } else {
-        guest();
+    } catch {
+        if (socket.connected && connection === socket.id) {
+            await guest(); action.connect(); Toast.warning('无法恢复登录，请重新登录');
+        }
     }
 });
 socket.on('disconnect', () => {
@@ -116,6 +87,7 @@ socket.on('disconnect', () => {
 });
 socket.on('message', (message: Message) => {
     const state = store.getState() as State;
+    if (!state.user?._id) return;
     const linkman = state.linkmans.find((x) => x._id === message.to);
     if (linkman) {
         dispatch({

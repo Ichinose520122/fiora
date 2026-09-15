@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, View, TouchableOpacity } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 
 import Time from '../../utils/time';
 import action from '../../state/action';
@@ -49,7 +49,7 @@ export default function Linkman({
         action.setFocus(id);
         Actions.chat({ title: formatLinkmanName(linkman) });
 
-        if (id && lastMessageId) {
+        if (id && /^[a-f0-9]{24}$/i.test(lastMessageId)) {
             fetch('updateHistory', { linkmanId: id, messageId: lastMessageId });
         }
     }

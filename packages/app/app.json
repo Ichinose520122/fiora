@@ -1,28 +1,51 @@
 {
   "expo": {
-    "privacy": "public",
-    "name": "fiora",
+    "name": "Fiora",
     "icon": "./icon.png",
-    "version": "1.1.4",
+    "version": "2.0.0",
     "description": "App for fiora. An online chatroom",
-    "slug": "fiora",
+    "slug": "nekopara-fiora",
     "scheme": "fiora",
     "ios": {
-      "bundleIdentifier": "com.suisuijiang.fiora",
-      "buildNumber": "1.1.4",
+      "bundleIdentifier": "cc.nekopara.chat",
+      "buildNumber": "2.0.0",
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["wxp"],
-        "CFBundleLocalizations" : ["zh_CN"],
+        "LSApplicationQueriesSchemes": [
+          "wxp"
+        ],
+        "CFBundleLocalizations": [
+          "zh_CN"
+        ],
         "CFBundleDevelopmentRegion": "zh_CN"
       }
     },
     "android": {
-      "package": "com.suisuijiang.fiora",
-      "versionCode": 10,
-      "useNextNotificationsApi": true
+      "package": "cc.nekopara.chat",
+      "versionCode": 20,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "updates": {
       "enabled": false
-    }
+    },
+    "extra": {
+      "serverUrl": "https://chat.nekopara.cc"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "选择聊天图片",
+          "cameraPermission": "拍摄聊天图片",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "enableBackgroundPlayback": true
+        }
+      ]
+    ]
   }
 }

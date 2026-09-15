@@ -1,7 +1,7 @@
-import { View, Text, Button } from 'native-base';
+import { View, Text, Button } from '../../components/NativeUI';
 import React from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 import Avatar from '../../components/Avatar';
 import PageContainer from '../../components/PageContainer';
 import { useFocusLinkman, useSelfId } from '../../hooks/useStore';
@@ -12,7 +12,8 @@ import { Group } from '../../types/redux';
 function GroupProfile() {
     const linkman = useFocusLinkman() as Group;
     const self = useSelfId();
-    const isGroupCreator = linkman.creator === self;
+    const isGroupCreator = linkman?.creator === self;
+    if (!linkman || linkman.type !== 'group') return <PageContainer><Text>此群聊已不可用</Text></PageContainer>;
 
     function getOS(os: string) {
         return os === 'Windows Server 2008 R2 / 7' ? 'Windows 7' : os;

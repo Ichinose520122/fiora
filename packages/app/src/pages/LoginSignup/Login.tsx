@@ -1,6 +1,6 @@
 import React from 'react';
-import { Container } from 'native-base';
-import { Actions } from 'react-native-router-flux';
+import { Container } from '../../components/NativeUI';
+import { Actions } from '../../navigation';
 
 import fetch from '../../utils/fetch';
 import platform from '../../utils/platform';
@@ -18,6 +18,7 @@ export default function Login() {
             ...platform,
         });
         if (!err) {
+            await setStorageValue('token', res.token);
             const user = res;
             action.setUser(user);
 
@@ -33,7 +34,7 @@ export default function Login() {
             }
 
             Actions.pop();
-            await setStorageValue('token', res.token);
+
         }
     }
     return (

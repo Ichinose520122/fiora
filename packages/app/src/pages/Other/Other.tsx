@@ -9,14 +9,16 @@ import {
     Text,
     Toast,
     View,
-} from 'native-base';
+} from '../../components/NativeUI';
 import React, { useEffect, useState } from 'react';
 import { Linking, StyleSheet } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 import PageContainer from '../../components/PageContainer';
 
-import { useIsLogin } from '../../hooks/useStore';
+import { useIsAdmin, useIsLogin } from '../../hooks/useStore';
 import socket from '../../socket';
+import PixivAccount from './PixivAccount';
+import { serverUrl } from '../../config';
 import action from '../../state/action';
 import { getStorageValue, removeStorageValue } from '../../utils/storage';
 import appInfo from '../../../app.json';
@@ -30,6 +32,8 @@ function getIsNight() {
 
 function Other() {
     const isLogin = useIsLogin();
+    const isAdmin = useIsAdmin();
+    const [showPixiv, setShowPixiv] = useState(false);
     const [isNight, setIsNight] = useState(getIsNight());
     const [showPrivacyPolicy, togglePrivacyPolicy] = useState(false);
 
@@ -89,11 +93,13 @@ function Other() {
                     </Text>
                 </View>
                 <List style={styles.list}>
+                    {isAdmin && <ListItem onPress={() => setShowPixiv(true)}><Body><Text style={styles.listItemTitle}>Pixiv 账号</Text></Body></ListItem>}
+                    {isAdmin && showPixiv && <PixivAccount close={() => setShowPixiv(false)} />}
                     <ListItem
                         icon
                         onPress={() =>
                             Linking.openURL(
-                                'https://github.com/yinxin630/fiora-app',
+                                'https://github.com/Ichinose520122/fiora',
                             )
                         }
                     >
@@ -128,7 +134,7 @@ function Other() {
                     <ListItem
                         icon
                         onPress={() =>
-                            Linking.openURL('https://fiora.suisuijiang.com')
+                            Linking.openURL(serverUrl)
                         }
                     >
                         <Body>

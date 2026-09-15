@@ -1,7 +1,7 @@
-import { View, Text } from 'native-base';
+import { View, Text } from '../../components/NativeUI';
 import React from 'react';
 import { StyleSheet, TouchableNativeFeedback } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 import Toast from '../../components/Toast';
 import { getLinkmanHistoryMessages, joinGroup } from '../../service';
 import action from '../../state/action';

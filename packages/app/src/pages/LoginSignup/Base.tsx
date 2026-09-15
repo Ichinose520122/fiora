@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput } from 'react-native';
-import { Form, Label, Button, View } from 'native-base';
-import { Actions } from 'react-native-router-flux';
+import { Form, Label, Button, View } from '../../components/NativeUI';
+import { Actions } from '../../navigation';
 
 import PageContainer from '../../components/PageContainer';
 
@@ -9,7 +9,8 @@ type Props = {
     buttonText: string;
     jumpText: string;
     jumpPage: string;
-    onSubmit: (username: string, password: string) => void;
+    invite?: boolean;
+    onSubmit: (username: string, password: string, inviteCode?: string) => Promise<void>;
 };
 
 export default function Base({
@@ -17,17 +18,28 @@ export default function Base({
     jumpText,
     jumpPage,
     onSubmit,
+    invite = false,
 }: Props) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [inviteCode, setInviteCode] = useState('');
+    const [busy, setBusy] = useState(false);
+    const submitting = useRef(false);
 
-    const $username = useRef<TextInput>();
-    const $password = useRef<TextInput>();
+    const $username = useRef<TextInput>(null);
+    const $password = useRef<TextInput>(null);
 
-    function handlePress() {
+    async function handlePress() {
+        if (submitting.current) return;
+        if (!username.trim() || !password || (invite && !inviteCode.trim())) {
+            Alert.alert('请填写用户名、密码及所需邀请码'); return;
+        }
         $username.current!.blur();
         $password.current!.blur();
-        onSubmit(username, password);
+        submitting.current = true; setBusy(true);
+        try { await onSubmit(username.trim(), password, inviteCode.trim()); }
+        catch { Alert.alert('登录信息保存失败，请重试'); }
+        finally { submitting.current = false; setBusy(false); }
     }
 
     function handleJump() {
@@ -49,7 +61,7 @@ export default function Base({
                         clearButtonMode="while-editing"
                         onChangeText={setUsername}
                         autoCapitalize="none"
-                        autoCompleteType="username"
+                        autoComplete="username"
                     />
                     <Label style={styles.label}>密码</Label>
                     <TextInput
@@ -60,18 +72,20 @@ export default function Base({
                         clearButtonMode="while-editing"
                         onChangeText={setPassword}
                         autoCapitalize="none"
-                        autoCompleteType="password"
+                        autoComplete="password"
                     />
+                    {invite && <><Label style={styles.label}>邀请码</Label><TextInput value={inviteCode} onChangeText={setInviteCode} style={styles.input} autoCapitalize="none" autoCorrect={false} /></>}
                 </Form>
                 <Button
                     primary
                     block
                     style={styles.button}
+                    disabled={busy}
                     onPress={handlePress}
                 >
-                    <Text style={styles.buttonText}>{buttonText}</Text>
+                    <Text style={styles.buttonText}>{busy ? '处理中…' : buttonText}</Text>
                 </Button>
-                <Button transparent style={styles.signup} onPress={handleJump}>
+                <Button disabled={busy} transparent style={styles.signup} onPress={handleJump}>
                     <Text style={styles.signupText}>{jumpText}</Text>
                 </Button>
             </View>

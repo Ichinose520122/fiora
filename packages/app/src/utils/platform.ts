@@ -16,6 +16,6 @@ export default {
             ? '开发版'
             : packageInfo.expo.version
     } on ${os} ${
-        isiOS ? Constants.platform?.ios?.systemVersion : Constants.systemVersion
-    } ${isiOS ? Constants.platform?.ios?.model : ''}`,
+        Platform.Version
+    } `,
 };

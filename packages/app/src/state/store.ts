@@ -1,11 +1,5 @@
-import { createStore } from 'redux';
+import { createStore, Reducer } from 'redux';
 import reducer from './reducer';
-
-const store = createStore(
-    // @ts-ignore
-    reducer,
-    // @ts-ignore
-    window.__REDUX_DEVTOOLS_EXTENSION__ &&
-        window.__REDUX_DEVTOOLS_EXTENSION__(),
-);
+import { State, ActionTypes } from '../types/redux';
+const store = createStore(reducer as Reducer<State, ActionTypes>);
 export default store;

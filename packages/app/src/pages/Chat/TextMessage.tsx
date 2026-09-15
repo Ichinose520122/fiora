@@ -1,4 +1,4 @@
-import { View, Text } from 'native-base';
+import { View, Text } from '../../components/NativeUI';
 import React from 'react';
 import { TouchableOpacity, Linking, StyleSheet } from 'react-native';
 import Expression from '../../components/Expression';

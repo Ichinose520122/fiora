@@ -1,17 +1,19 @@
-import { View, Icon } from 'native-base';
+import { View, Icon } from '../../components/NativeUI';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Actions } from 'react-native-router-flux';
-import { useFocusLinkman } from '../../hooks/useStore';
+import { Actions } from '../../navigation';
+import { useFocusLinkman, useSelfId } from '../../hooks/useStore';
 
 function ChatRightButton() {
     const linkman = useFocusLinkman();
+    const self = useSelfId();
 
     function handleClick() {
-        if (linkman?.type === 'group') {
+        if (!linkman) return;
+        if (linkman.type === 'group') {
             Actions.push('groupProfile');
         } else {
-            Actions.push('userInfo', { user: linkman });
+            Actions.push('userInfo', { user: { _id: linkman._id.replace(self, ''), username: linkman.name, avatar: linkman.avatar, tag: '' } });
         }
     }
 

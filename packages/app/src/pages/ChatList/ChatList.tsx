@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
-import { Header, Item, Icon, Input } from 'native-base';
-import { Actions } from 'react-native-router-flux';
+import { Header, Item, Icon, Input } from '../../components/NativeUI';
+import { Actions } from '../../navigation';
 import Linkman from './Linkman';
 import { useLinkmans } from '../../hooks/useStore';
 import { Linkman as LinkmanType } from '../../types/redux';
@@ -17,7 +17,7 @@ export default function ChatList() {
     async function handleSearch() {
         const result = await search(searchKeywords);
         updateSearchKeywords('');
-        Actions.push('searchResult', result);
+        if (result) Actions.push('searchResult', result);
     }
 
     function renderLinkman(linkman: LinkmanType) {

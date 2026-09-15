@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-props-no-spreading */
-import { View } from 'native-base';
+import { View } from '../../components/NativeUI';
 import React from 'react';
 import { Dimensions, StyleSheet, TouchableOpacity } from 'react-native';
 import Image from '../../components/Image';
@@ -23,8 +23,8 @@ function ImageMessage({
     const maxWidth = ScreenWidth - 130 - 16;
     const maxHeight = 200;
     let scale = 1;
-    let width = 0;
-    let height = 0;
+    let width = 160;
+    let height = 120;
     const parseResult = /width=([0-9]+)&height=([0-9]+)/.exec(message.content);
     if (parseResult) {
         width = parseInt(parseResult[1], 10);
@@ -51,7 +51,7 @@ function ImageMessage({
         >
             <TouchableOpacity
                 onPress={handleImageClick}
-                {...(couldDelete ? { onLongPress } : {})}
+                {...({ onLongPress })}
             >
                 <Image
                     src={message.content}

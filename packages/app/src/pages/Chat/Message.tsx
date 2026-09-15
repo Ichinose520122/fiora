@@ -6,10 +6,12 @@ import {
     Dimensions,
     TouchableOpacity,
 } from 'react-native';
-import Triangle from '@react-native-toolkit/triangle';
+import { Alert } from 'react-native';
+import fetch from '../../utils/fetch';
+import Toast from '../../components/Toast';
 
-import { ActionSheet } from 'native-base';
-import { Actions } from 'react-native-router-flux';
+import { ActionSheet } from '../../components/NativeUI';
+import { Actions } from '../../navigation';
 import Time from '../../utils/time';
 import Avatar from '../../components/Avatar';
 import { Message as MessageType } from '../../types/redux';
@@ -119,7 +121,15 @@ function Message({
                         message={message}
                         openImageViewer={openImageViewer}
                         couldDelete={couldDelete}
-                        onLongPress={handleDeleteMessage}
+                        onLongPress={() => {
+                            const options = [];
+                            if (message.from._id === self && !message.loading && !message.failed) options.push({ text: '收藏表情', onPress: async () => {
+                                const [, data] = await fetch<string[]>('addExpression', { messageId: message._id });
+                                if (data) { action.updateUserProperty('expressions', data); Toast.success('已收藏'); }
+                            } });
+                            if (couldDelete) options.push({ text: '撤回', onPress: handleDeleteMessage });
+                            Alert.alert('图片', undefined, [...options, { text: '取消', style: 'cancel' }]);
+                        }}
                     />
                 );
             }
@@ -187,7 +197,9 @@ function Message({
                         {formatTime()}
                     </Text>
                 </View>
-                {couldDelete ? (
+                {message.loading && <Text style={{ fontSize: 11, color: '#637087' }}>发送中…</Text>}
+                {message.failed && <Text style={{ fontSize: 11, color: '#b54255' }}>发送失败，请重新发送</Text>}
+                {couldDelete && message.type !== 'image' ? (
                     <TouchableOpacity onLongPress={handleDeleteMessage}>
                         <View
                             style={[
@@ -222,13 +234,7 @@ function Message({
                         isSelf ? styles.triangleSelf : styles.triangleOther,
                     ]}
                 >
-                    <Triangle
-                        type="isosceles"
-                        mode={isSelf ? 'right' : 'left'}
-                        base={10}
-                        height={5}
-                        color={isSelf ? primaryColor8 : 'white'}
-                    />
+                    <View style={{ width: 0, height: 0, borderTopWidth: 5, borderBottomWidth: 5, borderTopColor: 'transparent', borderBottomColor: 'transparent', ...(isSelf ? { borderLeftWidth: 5, borderLeftColor: primaryColor8 } : { borderRightWidth: 5, borderRightColor: 'white' }) }} />
                 </View>
             </View>
         </View>

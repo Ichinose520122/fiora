@@ -1,6 +1,6 @@
 import React from 'react';
-import { Container, Toast } from 'native-base';
-import { Actions } from 'react-native-router-flux';
+import { Container, Toast } from '../../components/NativeUI';
+import { Actions } from '../../navigation';
 
 import fetch from '../../utils/fetch';
 import platform from '../../utils/platform';
@@ -11,10 +11,11 @@ import { setStorageValue } from '../../utils/storage';
 import { Friend, Group } from '../../types/redux';
 
 export default function Signup() {
-    async function handleSubmit(username: string, password: string) {
+    async function handleSubmit(username: string, password: string, inviteCode = '') {
         const [err, res] = await fetch('register', {
             username,
             password,
+            inviteCode,
             ...platform,
         });
         if (!err) {
@@ -23,6 +24,7 @@ export default function Signup() {
                 type: 'success',
             });
 
+            await setStorageValue('token', res.token);
             const user = res;
             action.setUser(user);
 
@@ -38,12 +40,12 @@ export default function Signup() {
             }
 
             Actions.chatlist();
-            await setStorageValue('token', res.token);
+
         }
     }
     return (
         <Container>
-            <Base
+            <Base invite
                 buttonText="注册"
                 jumpText="已有账号? 去登陆"
                 jumpPage="login"

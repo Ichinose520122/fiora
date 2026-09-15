@@ -6,11 +6,14 @@ import {
     Dimensions,
 } from 'react-native';
 import Constants from 'expo-constants';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 
 import { isiOS } from '../../utils/platform';
 
 import MessageList from './MessageList';
+import { MusicSessionProvider } from '../../modules/Music/MusicSession';
+import MusicPlayer from '../../modules/Music/MusicPlayer';
+import MusicPanel from '../../modules/Music/MusicPanel';
 import Input from './Input';
 import PageContainer from '../../components/PageContainer';
 import { Friend, Group, Linkman } from '../../types/redux';
@@ -62,11 +65,14 @@ const keyboardOffset = (() => {
 })();
 
 export default function Chat() {
+    return <MusicSessionProvider><ChatContent /></MusicSessionProvider>;
+}
+function ChatContent() {
     const isLogin = useIsLogin();
     const self = useSelfId();
     const { focus } = useStore();
     const linkman = useFocusLinkman();
-    const $messageList = useRef<ScrollView>();
+    const $messageList = useRef<ScrollView>(null);
 
     async function fetchGroupOnlineMembers() {
         let onlineMembers: Group['members'] = [];
@@ -97,13 +103,13 @@ export default function Chat() {
     }, [focus, isLogin]);
 
     useEffect(() => {
-        if (Actions.currentScene !== 'chat') {
+        if (!linkman || Actions.currentScene !== 'chat') {
             return;
         }
         Actions.refresh({
             title: formatLinkmanName(linkman as Linkman),
         });
-    }, [(linkman as Group).members, (linkman as Friend).isOnline]);
+    }, [(linkman as Group)?.members, (linkman as Friend)?.isOnline]);
 
     async function intervalUpdateHistory() {
         if (isLogin && linkman) {
@@ -111,6 +117,7 @@ export default function Chat() {
                 const lastMessageId =
                     linkman.messages[linkman.messages.length - 1]._id;
                 if (lastMessageId !== lastMessageIdCache) {
+                    if (!/^[a-f0-9]{24}$/i.test(lastMessageId)) return;
                     lastMessageIdCache = lastMessageId;
                     await fetch('updateHistory', {
                         linkmanId: focus,
@@ -123,7 +130,7 @@ export default function Chat() {
     useEffect(() => {
         const timer = setInterval(intervalUpdateHistory, 1000 * 5);
         return () => clearInterval(timer);
-    }, [focus]);
+    }, [focus, isLogin, linkman?.messages]);
 
     function scrollToEnd(time = 0) {
         if (time > 200) {
@@ -151,10 +158,12 @@ export default function Chat() {
                 behavior={isiOS ? 'padding' : 'height'}
                 keyboardVerticalOffset={keyboardOffset}
             >
+                <MusicPlayer />
                 {/* 
                 // @ts-ignore */}
                 <MessageList $scrollView={$messageList} />
                 <Input onHeightChange={handleInputHeightChange} />
+                <MusicPanel />
             </KeyboardAvoidingView>
         </PageContainer>
     );

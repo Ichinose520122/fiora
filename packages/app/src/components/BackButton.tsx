@@ -1,7 +1,7 @@
-import { View, Icon, Text } from 'native-base';
+import { View, Icon, Text } from './NativeUI';
 import React from 'react';
 import { TouchableOpacity } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../navigation';
 
 type Props = {
     text?: string;

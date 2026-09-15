@@ -1,9 +1,10 @@
 import { Friend, Group, Linkman } from '../types/redux';
 
 export function formatLinkmanName(linkman: Linkman) {
-    if (linkman!.type === 'group' && (linkman as Group).members.length > 0) {
+    if (!linkman) return '聊天';
+    if (linkman!.type === 'group' && ((linkman as Group).members || []).length > 0) {
         return `${(linkman as Group).name} (${
-            (linkman as Group).members.length
+            ((linkman as Group).members || []).length
         })`;
     }
     if (

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button, Text, View } from 'native-base';
+import { Button, Text, View } from '../../components/NativeUI';
 import { StyleSheet } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 import { useFocusLinkman, useLinkmans } from '../../hooks/useStore';

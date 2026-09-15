@@ -1,5 +1,6 @@
-import { Text } from 'native-base';
+import { Text } from '../../components/NativeUI';
 import React from 'react';
+import { serverUrl } from '../../config';
 import { Linking, StyleSheet, TouchableOpacity } from 'react-native';
 import Dialog from 'react-native-dialog';
 import { removeStorageValue, setStorageValue } from '../../utils/storage';
@@ -13,7 +14,7 @@ type Props = {
 
 function PrivacyPolicy({ visible, onClose }: Props) {
     function handleClickPrivacyPolicy() {
-        Linking.openURL('https://fiora.suisuijiang.com/PrivacyPolicy.html');
+        Linking.openURL(`${serverUrl}/PrivacyPolicy.html`);
     }
 
     async function handleAgree() {

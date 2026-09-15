@@ -1,4 +1,4 @@
-import { Toast } from 'native-base';
+import { Toast } from './NativeUI';
 
 export default {
     success(message: string) {

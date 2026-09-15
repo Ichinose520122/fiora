@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Dimensions, StyleSheet } from 'react-native';
-import { Spinner } from 'native-base';
+import { Spinner } from './NativeUI';
 import { useStore } from '../hooks/useStore';
 
 const { width: ScreenWidth, height: ScreenHeight } = Dimensions.get('window');

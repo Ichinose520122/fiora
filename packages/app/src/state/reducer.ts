@@ -1,4 +1,4 @@
-import produce from 'immer';
+import { produce } from 'immer';
 import deepmerge from 'deepmerge';
 import {
     State,
@@ -67,7 +67,7 @@ export function mergeLinkmans(
 const initialState = {
     linkmans: [],
     focus: '',
-    connect: true,
+    connect: false,
     ui: {
         ready: false,
         loading: '', // 全局loading文本内容, 为空则不展示
@@ -102,7 +102,7 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
         }
         case SetGuestActionType: {
             action.linkmans.forEach((linkman) => {
-                linkman.messages.forEach(convertMessage);
+                linkman.messages = linkman.messages.map(convertMessage);
             });
             state.linkmans = action.linkmans;
             return state;
@@ -215,13 +215,15 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
             const targetLinkman = state.linkmans.find(
                 (linkman) => linkman._id === action.linkmanId,
             );
-            if (targetLinkman) {
+            if (targetLinkman && !targetLinkman.messages.some((item) => item._id === action.message._id)) {
                 if (state.focus !== targetLinkman._id) {
                     targetLinkman.unread += 1;
                 }
-                targetLinkman.messages.push(convertMessage(action.message));
+                if (!targetLinkman.messages.some((item) => item._id === action.message._id)) {
+                    targetLinkman.messages.push(convertMessage(action.message));
+                }
                 if (targetLinkman.messages.length > 500) {
-                    targetLinkman.messages.slice(250);
+                    targetLinkman.messages.splice(0, 250);
                 }
             }
             return state;
@@ -231,9 +233,8 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
                 (linkman) => linkman._id === action.linkmanId,
             );
             if (targetLinkman) {
-                targetLinkman.messages.unshift(
-                    ...action.messages.map(convertMessage),
-                );
+                const existing = new Set(targetLinkman.messages.map((message) => message._id));
+                targetLinkman.messages.unshift(...action.messages.filter((message) => !existing.has(message._id)).map(convertMessage));
             }
             return state;
         }
@@ -246,6 +247,8 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
                     (message) => message._id === action.messageId,
                 );
                 if (targetMessage) {
+                    const duplicate = targetLinkman.messages.findIndex((message) => message._id === action.message._id && message._id !== action.messageId);
+                    if (duplicate >= 0) targetLinkman.messages.splice(duplicate, 1);
                     Object.assign(
                         targetMessage,
                         convertMessage(action.message),
@@ -264,7 +267,7 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
                 );
                 if (targetMessage) {
                     targetMessage.deleted = true;
-                    convertMessage(targetMessage);
+                    Object.assign(targetMessage, convertMessage(targetMessage));
                 }
             }
             return state;

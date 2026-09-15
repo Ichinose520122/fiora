@@ -1,4 +1,4 @@
-import { View, Text } from 'native-base';
+import { View, Text } from '../../components/NativeUI';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Message } from '../../types/redux';
@@ -31,9 +31,11 @@ export default SystemMessage;
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        flexWrap: 'wrap',
     },
     text: {
         fontSize: 14,
+        flexShrink: 1,
     },
 });

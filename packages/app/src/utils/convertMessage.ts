@@ -34,6 +34,11 @@ function convertSystemMessage(message: Message) {
             };
         }
         switch (content?.command) {
+            case 'music':
+            case 'pixiv': {
+                message.content = typeof content.value === 'string' ? content.value : '操作已处理';
+                break;
+            }
             case 'roll': {
                 message.content = `掷出了${content.value}点 (上限${content.top}点)`;
                 break;
@@ -73,7 +78,8 @@ function convertMessageHtml(message: Message) {
 }
 
 export default function convertMessage(message: Message) {
-    convertSystemMessage(message);
-    convertMessageHtml(message);
-    return message;
+    const copy = { ...message, ...(message.from ? { from: { ...message.from } } : {}) };
+    convertSystemMessage(copy);
+    convertMessageHtml(copy);
+    return copy;
 }

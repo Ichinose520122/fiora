@@ -16,3 +16,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Generated native projects and build output
+/android/
+/ios/
+/dist-android/
+/dist/
+*.jks
+*.keystore
+.env

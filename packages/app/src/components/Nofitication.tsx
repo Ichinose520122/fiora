@@ -1,120 +1,49 @@
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
-import { useState, useEffect } from 'react';
-import { Platform, AppState } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { useEffect, useState } from 'react';
+import { AppState, Platform } from 'react-native';
+import { Actions } from '../navigation';
 import { setNotificationToken } from '../service';
 import action from '../state/action';
-import { State, User } from '../types/redux';
-import { isiOS } from '../utils/platform';
-import { useIsLogin, useStore } from '../hooks/useStore';
+import { useSelfId, useStore } from '../hooks/useStore';
 import store from '../state/store';
 
-function enableNotification() {
-    Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
+export default function Notification() {
+    const userId = useSelfId();
+    const { connect } = useStore();
+    const [token, setToken] = useState('');
+    useEffect(() => {
+        Notifications.setNotificationHandler({ handleNotification: async () => ({
+            shouldShowBanner: AppState.currentState !== 'active',
+            shouldShowList: true,
+            shouldPlaySound: AppState.currentState !== 'active',
             shouldSetBadge: false,
-        }),
-    });
-}
-function disableNotification() {
-    Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-            shouldShowAlert: false,
-            shouldPlaySound: false,
-            shouldSetBadge: false,
-        }),
-    });
-}
-
-function Nofitication() {
-    const isLogin = useIsLogin();
-    const state = useStore();
-    const notificationTokens = (state.user as User)?.notificationTokens || [];
-    const { connect } = state;
-
-    const [notificationToken, updateNotificationToken] = useState('');
-
-    async function registerForPushNotificationsAsync() {
-        // Push notification to Android device need google service
-        // Not supported in China
-        if (Constants.isDevice && isiOS) {
-            const {
-                status: existingStatus,
-            } = await Notifications.getPermissionsAsync();
-            let finalStatus = existingStatus;
-            if (existingStatus !== 'granted') {
-                const {
-                    status,
-                } = await Notifications.requestPermissionsAsync();
-                finalStatus = status;
-            }
-            if (finalStatus !== 'granted') {
-                return;
-            }
-            const token = (await Notifications.getExpoPushTokenAsync()).data;
-            updateNotificationToken(token);
-
-            if (Platform.OS === 'android') {
-                Notifications.setNotificationChannelAsync('default', {
-                    name: 'default',
-                    importance: Notifications.AndroidImportance.MAX,
-                    vibrationPattern: [0, 250, 250, 250],
-                    lightColor: '#FF231F7C',
-                });
-            }
-        }
-    }
-    function handleClickNotification(response: any) {
-        const { focus } = response.notification.request.content.data;
-        setTimeout(() => {
-            const currentState = store.getState() as State;
-            const linkmans = currentState.linkmans || [];
-            if (linkmans.find((linkman) => linkman._id === focus)) {
+        }) });
+        const response = Notifications.addNotificationResponseReceivedListener(({ notification }) => {
+            const focus = notification.request.content.data?.focus;
+            if (typeof focus === 'string' && store.getState().linkmans.some((item) => item._id === focus)) {
                 action.setFocus(focus);
-                if (Actions.currentScene !== 'chat') {
-                    Actions.chat();
-                }
+                if (Actions.currentScene !== 'chat') Actions.chat();
             }
-        }, 1000);
-    }
-    useEffect(() => {
-        disableNotification();
-        registerForPushNotificationsAsync();
-
-        Notifications.addNotificationResponseReceivedListener(
-            handleClickNotification,
-        );
+        });
+        return () => response.remove();
     }, []);
-
     useEffect(() => {
-        if (
-            connect &&
-            isLogin &&
-            notificationToken &&
-            !notificationTokens.includes(notificationToken)
-        ) {
-            setNotificationToken(notificationToken);
-        }
-    }, [connect, isLogin, notificationToken]);
-
-    function handleAppStateChange(nextAppState: string) {
-        if (nextAppState === 'active') {
-            disableNotification();
-        } else if (nextAppState === 'background') {
-            enableNotification();
-        }
-    }
-    useEffect(() => {
-        AppState.addEventListener('change', handleAppStateChange);
-        return () => {
-            AppState.removeEventListener('change', handleAppStateChange);
-        };
-    }, []);
-
+        let active = true;
+        // Remote push requires a linked EAS project and platform credentials.
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        if (!userId || !projectId) return;
+        (async () => {
+            if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('default', {
+                name: '聊天消息', importance: Notifications.AndroidImportance.DEFAULT,
+            });
+            const permission = await Notifications.requestPermissionsAsync();
+            if (!permission.granted || !active) return;
+            const value = await Notifications.getExpoPushTokenAsync({ projectId });
+            if (active) setToken(value.data);
+        })().catch(() => { /* Push setup does not block login or chat. */ });
+        return () => { active = false; };
+    }, [userId]);
+    useEffect(() => { if (connect && userId && token) setNotificationToken(token); }, [connect, userId, token]);
     return null;
 }
-
-export default Nofitication;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Keyboard, Modal, Image } from 'react-native';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageViewer from 'react-native-image-viewing';
+import { assetUrl } from '../../config';
 
 import action from '../../state/action';
 import fetch from '../../utils/fetch';
@@ -18,7 +19,7 @@ import { isAndroid, isiOS } from '../../utils/platform';
 import { referer } from '../../utils/constant';
 
 type Props = {
-    $scrollView: React.MutableRefObject<ScrollView>;
+    $scrollView: React.RefObject<ScrollView | null>;
 };
 
 let prevContentHeight = 0;
@@ -62,7 +63,7 @@ function MessageList({ $scrollView }: Props) {
             const url = message.content;
             const parseResult = /width=(\d+)&height=(\d+)/.exec(url);
             return {
-                url: `${url.startsWith('//') ? 'https:' : ''}${url}`,
+                uri: assetUrl(url),
                 ...(parseResult
                     ? {
                         width: +parseResult[1],
@@ -172,10 +173,10 @@ function MessageList({ $scrollView }: Props) {
     function openImageViewer(url: string) {
         const images = getImages();
         const index = images.findIndex(
-            (image) => image.url.indexOf(url) !== -1,
+            (image) => image.uri === assetUrl(url),
         );
         toggleShowImageViewerDialog(true);
-        setImageViewerIndex(index);
+        setImageViewerIndex(Math.max(0, index));
     }
 
     function renderMessage(message: MessageType) {
@@ -204,31 +205,12 @@ function MessageList({ $scrollView }: Props) {
             onScroll={handleScroll}
         >
             {messages.map((message) => renderMessage(message))}
-            <Modal
+            <ImageViewer
+                images={getImages()}
+                imageIndex={imageViewerIndex}
                 visible={showImageViewerDialog}
-                transparent
                 onRequestClose={closeImageViewerDialog}
-            >
-                <ImageViewer
-                    imageUrls={getImages()}
-                    index={imageViewerIndex}
-                    onClick={closeImageViewerDialog}
-                    onSwipeDown={closeImageViewerDialog}
-                    saveToLocalByLongPress={false}
-                    renderImage={(image) => (
-                        <Image
-                            source={{
-                                uri: image.source.uri,
-                                cache: 'force-cache',
-                                headers: {
-                                    Referer: referer,
-                                },
-                            }}
-                            style={image.style}
-                        />
-                    )}
-                />
-            </Modal>
+            />
         </ScrollView>
     );
 }

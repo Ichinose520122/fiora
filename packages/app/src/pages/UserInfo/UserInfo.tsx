@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button, Text, View } from 'native-base';
+import { Button, Text, View } from '../../components/NativeUI';
 import { StyleSheet } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 import {
@@ -44,7 +44,7 @@ function UserInfo({ user }: Props) {
 
     function handleSendMessage() {
         action.setFocus(friend._id);
-        if (currentLinkman._id === friend._id) {
+        if (currentLinkman?._id === friend._id) {
             Actions.pop();
         } else {
             Actions.popTo('_chatlist');
@@ -56,7 +56,7 @@ function UserInfo({ user }: Props) {
         const isSuccess = await deleteFriend(_id);
         if (isSuccess) {
             action.removeLinkman(friend._id);
-            if (currentLinkman._id === friend._id) {
+            if (currentLinkman?._id === friend._id) {
                 Actions.popTo('_chatlist');
             } else {
                 Actions.pop();

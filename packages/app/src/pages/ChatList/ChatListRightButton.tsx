@@ -1,7 +1,7 @@
-import { View, Icon } from 'native-base';
+import { View, Icon } from '../../components/NativeUI';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 import Dialog from 'react-native-dialog';
 import { createGroup } from '../../service';
 import action from '../../state/action';

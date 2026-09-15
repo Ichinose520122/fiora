@@ -1,7 +1,7 @@
 import React from 'react';
-import { Tab, Tabs, Text, View } from 'native-base';
+import { Tab, Tabs, Text, View } from '../../components/NativeUI';
 import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Actions } from 'react-native-router-flux';
+import { Actions } from '../../navigation';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 

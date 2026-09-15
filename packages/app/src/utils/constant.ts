@@ -1,1 +1,1 @@
-export const referer = 'https://fiora.suisuijiang.com/';
+export { serverReferer as referer } from '../config';
