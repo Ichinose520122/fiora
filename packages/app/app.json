@@ -2,7 +2,7 @@
   "expo": {
     "name": "Fiora",
     "icon": "./icon.png",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "App for fiora. An online chatroom",
     "slug": "nekopara-fiora",
     "scheme": "fiora",
@@ -21,8 +21,11 @@
     },
     "android": {
       "package": "cc.nekopara.chat",
-      "versionCode": 20,
-      "softwareKeyboardLayoutMode": "resize"
+      "versionCode": 2100,
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.REQUEST_INSTALL_PACKAGES"
+      ]
     },
     "updates": {
       "enabled": false

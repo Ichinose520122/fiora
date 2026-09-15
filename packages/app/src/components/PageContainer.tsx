@@ -12,7 +12,7 @@ export default function PageContainer({ children, disableSafeAreaView = false }:
     return <View style={{ flex: 1 }}>
         <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
             <ImageBackground source={require('../assets/images/background-cool.jpg')} style={{ flex: 1 }} blurRadius={10}>
-                <View style={{ flex: 1, backgroundColor: 'rgba(241,241,241,0.6)' }} />
+                <View style={{ flex: 1, backgroundColor: 'rgba(237,241,251,0.84)' }} />
             </ImageBackground>
         </BlurTargetView>
         <Background.Provider value={target}>

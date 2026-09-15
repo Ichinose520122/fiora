@@ -305,9 +305,6 @@ function Expression(props: ExpressionProps) {
                                 ))}
                             </div>
                         )}
-                        <p className={Style.copyrightNotice}>
-                            QQ 表情资源版权归腾讯所有，仅供非商业学习交流。
-                        </p>
                     </div>
                 </TabPane>
                 <TabPane tab="在线搜索" key="search">

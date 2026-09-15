@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     icon: {
-        color: 'white',
+        color: '#6377b4',
         fontSize: 32,
     },
 });

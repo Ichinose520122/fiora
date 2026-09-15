@@ -1,15 +1,17 @@
 .player {
     flex-shrink: 0;
     display: grid;
-    grid-template-columns: 80px minmax(0, 1fr) auto;
+    grid-template-columns: 68px minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
-    min-height: 90px;
-    padding: 5px;
+    min-height: 96px;
+    margin: 12px 16px 4px;
+    padding: 14px 17px;
+    border-radius: 23px;
     box-sizing: border-box;
     overflow: hidden;
-    background: rgba(255, 255, 255, .42);
-    border-bottom: 1px solid rgba(255, 255, 255, .48);
+    background: rgba(255, 255, 255, .48);
+    border: 1px solid rgba(255, 255, 255, .8);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
     color: #263b46;
     text-shadow: none;
@@ -19,8 +21,8 @@
 
 .disc {
     position: relative;
-    width: 80px;
-    height: 80px;
+    width: 68px;
+    height: 68px;
     align-self: center;
     border-radius: 50%;
     display: flex;
@@ -190,11 +192,11 @@
 
 .player button {
     min-width: 34px;
-    border: 1px solid rgba(55, 113, 119, .30);
-    background: rgba(93, 157, 153, .15);
-    border-radius: 7px;
+    border: 1px solid rgba(153, 170, 208, .24);
+    background: rgba(150, 166, 214, .14);
+    border-radius: 11px;
     padding: 3px 7px;
-    color: #315d63;
+    color: #6474a1;
     cursor: pointer;
     font-size: 10px;
     line-height: 16px;
@@ -244,8 +246,8 @@
         .rc-dialog-content {
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, .36);
-            border-radius: 14px;
-            background: rgba(235, 246, 247, .68) !important;
+            border-radius: 24px;
+            background: rgba(239, 243, 254, .84) !important;
             box-shadow: 0 18px 48px rgba(36, 57, 71, .20);
             backdrop-filter: blur(22px) saturate(145%);
             -webkit-backdrop-filter: blur(22px) saturate(145%);
@@ -301,7 +303,7 @@
 
     .active {
         color: #264e53;
-        background: rgba(103, 184, 177, .34);
+        background: rgba(193, 207, 241, .54);
         border-color: rgba(65, 126, 126, .30);
         box-shadow: 0 2px 8px rgba(62, 112, 117, .12);
     }
@@ -318,7 +320,7 @@
 .panel button {
     border: 1px solid rgba(77, 130, 134, .26);
     background: rgba(255, 255, 255, .44);
-    border-radius: 7px;
+    border-radius: 11px;
     color: #3f6e79;
     padding: 6px 9px;
     cursor: pointer;
@@ -375,10 +377,11 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 7px;
-    margin: 2px 0;
+    padding: 11px;
+    margin: 5px 0;
+    background: rgba(255,255,255,.5);
     border: 1px solid transparent;
-    border-radius: 9px;
+    border-radius: 16px;
 
     &:hover {
         background: rgba(255,255,255,.30);
@@ -469,8 +472,8 @@
     padding: 8px 9px;
     margin: 5px 0;
     border: 1px solid rgba(82, 126, 133, .14);
-    border-radius: 9px;
-    background: rgba(255, 255, 255, .22);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .44);
 }
 
 .savedText {
@@ -558,8 +561,8 @@
     margin: 16px 0 10px;
     padding: 10px 12px;
     border: 1px solid rgba(83, 123, 130, .18);
-    border-radius: 9px;
-    background: rgba(255, 255, 255, .22);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .44);
 
     summary {
         color: #426b73;
@@ -571,139 +574,22 @@
 }
 
 @media (max-width: 700px) {
-    .player {
-        grid-template-columns: 70px minmax(0, 1fr) 104px;
-        gap: 7px;
-        min-height: 80px;
-        padding: 5px;
-    }
-
-    .disc {
-        width: 70px;
-        height: 70px;
-
-        img,
-        span {
-            width: 46px;
-            height: 46px;
-            line-height: 46px;
-        }
-    }
-
-    .songLine {
-        gap: 5px;
-        line-height: 19px;
-
-        strong { font-size: 13px; }
-    }
-
-    .artist { font-size: 10px; }
-
-    .lyricViewport {
-        height: 31px;
-        margin-top: 1px;
-    }
-
-    .lyricSlide {
-        p {
-            height: 17px;
-            line-height: 17px;
-            font-size: 10px;
-        }
-
-        span {
-            height: 14px;
-            line-height: 14px;
-            font-size: 9px;
-        }
-    }
-
-    .playerNotice { display: none; }
-
-    .playerActions {
-        min-width: 104px;
-        gap: 7px;
-        padding-right: 0;
-    }
-
-    .actionButtons {
-        display: grid;
-        grid-template-columns: repeat(2, 49px);
-        gap: 2px;
-    }
-
-    .player button {
-        min-width: 0;
-        padding: 1px 4px;
-        font-size: 9px;
-        line-height: 15px;
-    }
-
-    .volume {
-        width: 104px;
-        gap: 3px;
-
-        input { width: 50px; }
-        b { display: none; }
-    }
-
-    .songActions {
-        gap: 3px;
-
-        button {
-            padding: 5px 6px;
-            font-size: 10px;
-        }
-    }
-
-    .savedPlaylist {
-        grid-template-columns: 1fr;
-    }
-
-    .savedActions {
-        justify-content: flex-start;
-    }
+    .player { grid-template-columns: 58px minmax(0, 1fr); gap: 9px 13px; margin: 9px 10px 3px; padding: 12px; border-radius: 20px; }
+    .disc { width: 58px; height: 58px; img, span { width: 40px; height: 40px; line-height: 40px; } }
+    .songLine { flex-wrap: wrap; gap: 2px 8px; line-height: 20px; strong { font-size: 14px; } }
+    .artist { font-size: 11px; }
+    .playerActions { grid-column-start: 1; grid-column-end: -1; min-width: 0; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; padding: 0; }
+    .actionButtons { flex-wrap: wrap; justify-content: flex-start; gap: 5px; }
+    .player button { font-size: 11px; min-height: 29px; padding: 3px 8px; }
+    .volume { flex-shrink: 0; input { width: 65px; } b, span { display: none; } }
+    .songActions { flex-wrap: wrap; gap: 4px; max-width: 124px; button { padding: 6px 8px; } }
+    .savedPlaylist { grid-template-columns: 1fr; }
+    .savedActions { justify-content: flex-start; flex-wrap: wrap; }
 }
-
-@media (max-width: 420px) {
-    .player {
-        grid-template-columns: 66px minmax(0, 1fr) 90px;
-        gap: 5px;
-        min-height: 76px;
-        padding: 5px;
-    }
-
-    .disc {
-        width: 66px;
-        height: 66px;
-
-        img,
-        span {
-            width: 43px;
-            height: 43px;
-            line-height: 43px;
-        }
-    }
-
-    .songLine strong { font-size: 12px; }
-    .artist { max-width: 58px; }
-    .playerActions { min-width: 90px; }
-
-    .actionButtons {
-        grid-template-columns: repeat(2, 43px);
-    }
-
-    .volume {
-        width: 90px;
-
-        span { display: none; }
-        input { width: 48px; }
-    }
-
-    .tabs {
-        gap: 5px;
-        padding: 6px;
-    }
+@media (max-width: 380px) {
+    .playerActions { flex-wrap: wrap; }
+    .volume { margin-left: auto; }
+    .tabs { gap: 4px; padding: 5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

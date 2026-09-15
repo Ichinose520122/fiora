@@ -4,6 +4,8 @@ import { StyleSheet } from 'react-native';
 import { Actions } from '../../navigation';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
+import UserTag from '../../components/UserTag';
+import { TagStyle } from '../../../../utils/tagStyle';
 import {
     useFocusLinkman,
     useIsAdmin,
@@ -27,6 +29,7 @@ type Props = {
         _id: string;
         avatar: string;
         tag: string;
+        tagStyle?: TagStyle;
         username: string;
     };
 };
@@ -95,7 +98,7 @@ function UserInfo({ user }: Props) {
             }
             action.setFocus(friendId);
 
-            if (currentLinkman._id === friend?._id) {
+            if (currentLinkman?._id === friend?._id) {
                 Actions.pop();
             } else {
                 Actions.popTo('_chatlist');
@@ -124,8 +127,9 @@ function UserInfo({ user }: Props) {
                 <View style={styles.userContainer}>
                     <Avatar src={avatar} size={88} />
                     <Text style={styles.nick}>{username}</Text>
+                    {!!user.tag && <View style={{ alignItems: 'center', marginTop: 10 }}><UserTag text={user.tag} tagStyle={user.tagStyle} /></View>}
                 </View>
-                <View style={styles.buttonContainer}>
+                {self !== _id && <View style={styles.buttonContainer}>
                     {isFriend ? (
                         <>
                             <Button
@@ -178,7 +182,7 @@ function UserInfo({ user }: Props) {
                             </Button>
                         </>
                     )}
-                </View>
+                </View>}
             </View>
         </PageContainer>
     );

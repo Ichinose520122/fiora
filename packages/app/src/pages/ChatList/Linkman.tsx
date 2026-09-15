@@ -60,7 +60,7 @@ export default function Linkman({
                 <Avatar src={avatar} size={50} />
                 <View style={styles.content}>
                     <View style={styles.nickTime}>
-                        <Text style={styles.nick}>{name}</Text>
+                        <Text numberOfLines={1} style={styles.nick}>{name}</Text>
                         <Text style={styles.time}>{formatTime()}</Text>
                     </View>
                     <View style={styles.previewUnread}>
@@ -84,26 +84,27 @@ export default function Linkman({
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        height: 70,
+        minHeight: 83,
+        marginHorizontal: 12, marginVertical: 4, borderRadius: 21, backgroundColor: '#ffffffa8', borderWidth: 1, borderColor: '#ffffffc9',
         alignItems: 'center',
         paddingLeft: 16,
         paddingRight: 16,
     },
     content: {
         flex: 1,
-        marginLeft: 8,
+        marginLeft: 13,
     },
     nickTime: {
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
     nick: {
-        fontSize: 16,
-        color: '#333',
+        fontSize: 15, fontWeight: '600', flex: 1, marginRight: 12,
+        color: '#34415a',
     },
     time: {
-        fontSize: 14,
-        color: '#888',
+        fontSize: 10,
+        color: '#99a3b8',
     },
     previewUnread: {
         marginTop: 8,
@@ -113,10 +114,10 @@ const styles = StyleSheet.create({
     preview: {
         flex: 1,
         fontSize: 14,
-        color: '#666',
+        color: '#8995ab',
     },
     unread: {
-        backgroundColor: '#2a7bf6',
+        backgroundColor: '#8a9bce',
         width: 18,
         height: 18,
         borderRadius: 9,

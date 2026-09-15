@@ -28,7 +28,7 @@ function SelfInfo() {
                 />
             </View>
             <View>
-                <Text style={[styles.nickname, { color: primaryTextColor10 }]}>
+                <Text numberOfLines={1} style={[styles.nickname, { color: '#52658e', maxWidth: 90, fontSize: 12 }]}>
                     {username}
                 </Text>
             </View>

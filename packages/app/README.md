@@ -4,12 +4,12 @@
 
 ## 当前已接入
 
-- 原生登录、邀请码注册、群聊、私聊、图片选择及预览。
+- 原生登录、邀请码注册、群聊、私聊、图片选择及预览、文件发送（单个不超过 30 MB）。登录兼容旧 token，临时断网会重试恢复。
 - `/music`、`/pixiv` 和骰子等命令提示。提交后清空输入框，服务器结果作为 system 消息展示。
 - `/pixiv ID`、作品链接的多图返回，以及单张 `i.pximg.net` 链接。
-- 表情栏依次为默认、搜索、收藏；长按自己发出的图片可收藏。
+- 表情栏依次为默认、QQ、搜索、收藏；长按自己发出的图片可收藏。
 - 群聊和私聊各自的音乐房间、点歌与队列、空闲歌单的顺序/随机播放。
-- 顶部紧凑半透明播放器、旋转封面、歌词及译文、独立音量。没有当前歌曲时不显示播放器。
+- 顶部紧凑毛玻璃播放器、旋转封面、歌词及译文、独立音量。没有当前歌曲时不显示播放器。
 - 网易云手机号验证码/MUSIC_U 账号面板；“我”页面提供 Pixiv PHPSESSID 设置。账号管理仅限站点管理员，凭据不会保存在 App 本地配置中。
 
 Android 12 及以上使用原生背景模糊；更旧系统回退为半透明底板。收听需要点击加入或点歌，退出聊天页面会结束该页面的收听。后台播放已配置 Android 媒体服务和锁屏信息，具体设备的后台保活仍待真机验证。
@@ -18,12 +18,12 @@ Android 12 及以上使用原生背景模糊；更旧系统回退为半透明底
 
 不需要在部署 Fiora 的服务器安装 Android 环境，也不需要 Expo 账号。
 
-1. 将这次 App 改动及 `.github/workflows/android-apk.yml` 放入仓库。
-2. 打开 GitHub 的 **Actions → Build Android review APK → Run workflow**，选择包含本次改动的分支。
+1. 推送 App 或共享工具改动到 `ichinose-custom`，自动开始构建。
+2. 打开 GitHub 的 **Actions → Build Android APK → Run workflow**，选择包含本次改动的分支。
 3. 构建完成后，在该次运行的 **Artifacts** 下载 `fiora-android-review-...`，解压取得 APK。
 4. 将 APK 安装到 64 位 ARM Android 手机上进行审核。
 
-该流程编译 `assembleRelease`，把 JavaScript 和资源打进 APK，安装后不需要电脑运行 Metro。当前使用 Expo 模板的调试签名供内部审核；正式分发前需要配置自己的长期签名并备份密钥。工作流只上传构建产物，不发布到应用商店，也不改动 Docker 部署。
+该流程编译 `assembleRelease`，把 JavaScript 和资源打进 APK，安装后不需要电脑运行 Metro。当前使用 Expo 模板的调试签名供内部审核；正式分发前需要配置自己的长期签名并备份密钥。工作流同时发布到固定的 `android-latest` GitHub Release，保留版本化 APK，并在上传完成后更新 `latest.json`。每次构建生成递增 versionCode；同一分支并发构建会取消旧任务。请保留签名，换签名后无法直接覆盖已安装版本。
 
 ## 本地开发和构建
 
@@ -64,6 +64,12 @@ App 不需要写入数据库密码、JWT 密钥、网易云接口令牌或 Pixiv
 
 已完成依赖兼容检查、TypeScript 检查、Android JavaScript/Hermes 资源导出和 Expo Android 工程生成，以及 Socket 断线/超时、消息去重、多图确认与撤回处理的针对性检查。
 
-**尚未完成实际 Gradle APK 编译及真机验收**：当前本地只有 Java 11、没有 Android SDK；新增 Actions 工作流尚未推送运行。优先在真机确认登录、图片上传、Pixiv 多图、两端音乐同步、切换房间、锁屏播放及权限弹窗。
+首版独立 APK 已由 GitHub Actions 编译成功。本地针对登录存储迁移、附件二进制解码和更新元数据完成检查，界面修改通过类型检查和 Android 资源导出。每次提交的实际编译结果以对应 Actions 运行状态为准；真机上仍需确认升级保留登录、文件选择、QQ 表情、两端音乐同步及安装权限弹窗。
 
-远程推送通知还需要 EAS 项目 ID 和 Android FCM 凭据，当前未配置；这不影响 App 打开时通过 Socket 接收消息。iOS 构建、旧版文件/代码消息界面的进一步适配不在此次 Android 验证范围内。
+远程推送通知还需要 EAS 项目 ID 和 Android FCM 凭据，当前未配置；这不影响 App 打开时通过 Socket 接收消息。文件消息可发送、打开及下载；代码消息的原生语法高亮和 iOS 构建尚未适配。
+
+## 在 App 内更新
+
+打开“我 → 应用更新”，检查新版后选择“下载并安装”。应用从本仓库的 [Android Release](https://github.com/Ichinose520122/fiora/releases/tag/android-latest) 读取版本，不需要 GitHub 登录；下载完成后校验大小和 MD5，再交给系统安装。GitHub 元数据同时提供 SHA-256 供独立核验。首次安装更新时，按 Android 提示允许 Fiora 安装应用；如系统未自动返回安装器，可点“重新安装”。
+
+覆盖安装保留账号与数据，请勿卸载旧版。当前仅提供 ARM64 APK。GitHub 无法访问时会提示重试，也可从发布页面手动下载安装包。

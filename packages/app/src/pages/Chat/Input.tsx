@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GlassView } from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Actions } from '../../navigation';
 import action from '../../state/action';
 import fetch from '../../utils/fetch';
@@ -39,7 +41,7 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
     function local(type: string, content: string, target = focus) {
         const id = `${target}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         action.addLinkmanMessage(target, { _id: id, type, content, createTime: Date.now(),
-            from: { _id: user._id, username: user.username, avatar: user.avatar, tag: user.tag },
+            from: { _id: user._id, username: user.username, avatar: user.avatar, tag: user.tag, tagStyle: user.tagStyle },
             to: target, loading: true });
         return id;
     }
@@ -87,6 +89,28 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
             if (id && sender === identity.current.userId) action.updateSelfMessage(target, id, { loading: false, failed: true } as Message);
         }
     }
+    async function pickFile() {
+        const target = focus; const sender = user._id;
+        let id: string | undefined;
+        try {
+            const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+            if (result.canceled || sender !== identity.current.userId) return;
+            const file = result.assets[0];
+            const info = await FileSystem.getInfoAsync(file.uri);
+            const size = file.size ?? (info.exists ? info.size : 0);
+            if (!size || size > 30 * 1024 * 1024) throw new Error('请选择不超过 30 MB 的文件');
+            const ext = (/\.([a-z0-9]{1,16})$/i.exec(file.name)?.[1] || 'bin').toLowerCase();
+            const details = { filename: file.name, size, ext };
+            id = local('file', JSON.stringify(details), target);
+            const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+            if (sender !== identity.current.userId) return;
+            const fileUrl = await uploadFile(base64, `FileMessage/${sender}_${Date.now()}.${ext}`, true);
+            if (sender === identity.current.userId) await send(id, 'file', JSON.stringify({ ...details, fileUrl }), target);
+        } catch (error) {
+            Toast.danger(error instanceof Error ? error.message : '文件发送失败');
+            if (id && sender === identity.current.userId) action.updateSelfMessage(target, id, { loading: false, failed: true } as Message);
+        }
+    }
     function insertExpression(name: string) {
         const value = `#(${name})`;
         change(message.slice(0, selection.start) + value + message.slice(selection.end));
@@ -96,19 +120,19 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
     return <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.container}>
         {!!hints.length && <GlassView intensity={35} tint="light" style={styles.hints}>{hints.map(([cmd, help]) => <TouchableOpacity key={cmd} onPress={() => { change(cmd); input.current?.focus(); }} style={{ padding: 8 }}><Text><Text style={{ fontWeight: '600' }}>{cmd}</Text>  {help}</Text></TouchableOpacity>)}</GlassView>}
         {isLogin ? <>
-            <View style={{ flexDirection: 'row', padding: 8 }}><TextInput ref={input} value={message} onChangeText={change} onSubmitEditing={submit} onSelectionChange={(e) => setSelection(e.nativeEvent.selection)} style={styles.input} placeholder="聊点什么，或输入 /music、/pixiv" autoCapitalize="none" autoCorrect={false} returnKeyType="send" submitBehavior="submit" maxLength={2048} onFocus={() => setShowExpression(false)} /><TouchableOpacity accessibilityLabel="发送消息" onPress={submit} style={{ padding: 8 }}><Ionicons name="send" size={23} color="#526b98" /></TouchableOpacity></View>
+            <View style={{ flexDirection: 'row', padding: 8 }}><TextInput ref={input} value={message} onChangeText={change} onSubmitEditing={submit} onSelectionChange={(e) => setSelection(e.nativeEvent.selection)} style={styles.input}  autoCapitalize="none" autoCorrect={false} returnKeyType="send" submitBehavior="submit" maxLength={2048} onFocus={() => setShowExpression(false)} /><TouchableOpacity accessibilityLabel="发送消息" onPress={submit} style={{ padding: 11, marginLeft: 8, backgroundColor: '#7588bd', borderRadius: 15 }}><Ionicons name="send" size={21} color="white" /></TouchableOpacity></View>
             <View style={styles.tools}>{([
                 ['musical-notes-outline', () => music.open()],
                 ['happy-outline', () => { input.current?.blur(); setShowExpression(!showExpression); onHeightChange(); }],
-                ['image-outline', () => pick(false)], ['camera-outline', () => pick(true)],
-            ] as const).map(([icon, press]) => <TouchableOpacity key={icon} accessibilityLabel={icon} onPress={press} style={{ padding: 9, marginRight: 14 }}><Ionicons name={icon} size={26} color="#526b98" /></TouchableOpacity>)}</View>
+                ['image-outline', () => pick(false)], ['camera-outline', () => pick(true)], ['attach-outline', pickFile],
+            ] as const).map(([icon, press]) => <TouchableOpacity key={icon} accessibilityLabel={icon} onPress={press} style={{ padding: 9, flex: 1, alignItems: 'center' }}><Ionicons name={icon} size={23} color="#7b8dad" /></TouchableOpacity>)}</View>
             {showExpression && <ExpressionPanel insert={insertExpression} send={sendExpression} />}
         </> : <TouchableOpacity onPress={() => Actions.login()} style={{ padding: 16 }}><Text>登录 / 注册，参与聊天</Text></TouchableOpacity>}
     </SafeAreaView>;
 }
 const styles = StyleSheet.create({
-    container: { backgroundColor: 'rgba(255,255,255,0.55)' },
-    input: { flex: 1, minHeight: 38, paddingHorizontal: 9, backgroundColor: '#ffffffb0', borderRadius: 8, color: '#24314a' },
+    container: { backgroundColor: '#f8faffb8', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderWidth: 1, borderColor: '#ffffffc9' },
+    input: { flex: 1, minHeight: 43, paddingHorizontal: 13, backgroundColor: '#ffffffd6', borderRadius: 15, color: '#24314a' },
     tools: { flexDirection: 'row', paddingHorizontal: 10 },
-    hints: { overflow: 'hidden', backgroundColor: '#ffffff66', borderRadius: 10, marginHorizontal: 8 },
+    hints: { overflow: 'hidden', backgroundColor: '#ffffff66', borderRadius: 18, marginHorizontal: 8, marginTop: 8, borderWidth: 1, borderColor: '#ffffff99' },
 });

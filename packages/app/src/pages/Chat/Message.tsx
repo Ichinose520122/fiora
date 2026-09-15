@@ -3,7 +3,7 @@ import {
     View,
     Text,
     StyleSheet,
-    Dimensions,
+    useWindowDimensions,
     TouchableOpacity,
 } from 'react-native';
 import { Alert } from 'react-native';
@@ -18,6 +18,8 @@ import { Message as MessageType } from '../../types/redux';
 import SystemMessage from './SystemMessage';
 import ImageMessage from './ImageMessage';
 import TextMessage from './TextMessage';
+import FileMessage from './FileMessage';
+import UserTag from '../../components/UserTag';
 import { getRandomColor } from '../../utils/getRandomColor';
 import InviteMessage from './InviteMessage';
 import {
@@ -29,7 +31,7 @@ import {
 import { deleteMessage } from '../../service';
 import action from '../../state/action';
 
-const { width: ScreenWidth } = Dimensions.get('window');
+
 
 type Props = {
     message: MessageType;
@@ -46,7 +48,7 @@ function Message({
     scrollToEnd,
     openImageViewer,
 }: Props) {
-    const { primaryColor8 } = useTheme();
+    const { width } = useWindowDimensions();
     const isAdmin = useIsAdmin();
     const self = useSelfId();
     const focus = useFocus();
@@ -139,10 +141,10 @@ function Message({
             case 'inviteV2': {
                 return <InviteMessage message={message} isSelf={isSelf} />;
             }
-            case 'file':
+            case 'file': return <FileMessage message={message} />;
             case 'code': {
                 return (
-                    <Text style={{ color: isSelf ? 'white' : '#666' }}>
+                    <Text style={{ color: isSelf ? '#344a71' : '#666' }}>
                         暂未支持的消息类型[
                         {message.type}
                         ], 请在Web端查看
@@ -151,7 +153,7 @@ function Message({
             }
             default:
                 return (
-                    <Text style={{ color: isSelf ? 'white' : '#666' }}>
+                    <Text style={{ color: isSelf ? '#344a71' : '#666' }}>
                         不支持的消息类型
                     </Text>
                 );
@@ -161,30 +163,15 @@ function Message({
     return (
         <View style={[styles.container, isSelf && styles.containerSelf]}>
             {isSelf ? (
-                <Avatar src={message.from.avatar} size={44} />
+                <Avatar src={message.from.avatar} size={38} />
             ) : (
                 <TouchableOpacity onPress={handleClickAvatar}>
-                    <Avatar src={message.from.avatar} size={44} />
+                    <Avatar src={message.from.avatar} size={38} />
                 </TouchableOpacity>
             )}
-            <View style={[styles.info, isSelf && styles.infoSelf]}>
+            <View style={[styles.info, { maxWidth: width - 110 }, isSelf && styles.infoSelf]}>
                 <View style={[styles.nickTime, isSelf && styles.nickTimeSelf]}>
-                    {!!message.from.tag && (
-                        <View
-                            style={[
-                                styles.tag,
-                                {
-                                    backgroundColor: getRandomColor(
-                                        message.from.tag,
-                                    ),
-                                },
-                            ]}
-                        >
-                            <Text style={styles.tagText}>
-                                {message.from.tag}
-                            </Text>
-                        </View>
-                    )}
+                    {!!message.from.tag && <UserTag text={message.from.tag} tagStyle={message.from.tagStyle} />}
                     <Text
                         style={[
                             styles.nick,
@@ -206,8 +193,8 @@ function Message({
                                 styles.content,
                                 {
                                     backgroundColor: isSelf
-                                        ? primaryColor8
-                                        : 'white',
+                                        ? '#dee6fa'
+                                        : '#ffffffed',
                                 },
                             ]}
                         >
@@ -220,22 +207,15 @@ function Message({
                             styles.content,
                             {
                                 backgroundColor: isSelf
-                                    ? primaryColor8
-                                    : 'white',
+                                    ? '#dee6fa'
+                                    : '#ffffffed',
                             },
                         ]}
                     >
                         {renderContent()}
                     </View>
                 )}
-                <View
-                    style={[
-                        styles.triangle,
-                        isSelf ? styles.triangleSelf : styles.triangleOther,
-                    ]}
-                >
-                    <View style={{ width: 0, height: 0, borderTopWidth: 5, borderBottomWidth: 5, borderTopColor: 'transparent', borderBottomColor: 'transparent', ...(isSelf ? { borderLeftWidth: 5, borderLeftColor: primaryColor8 } : { borderRightWidth: 5, borderRightColor: 'white' }) }} />
-                </View>
+
             </View>
         </View>
     );
@@ -246,7 +226,7 @@ export default React.memo(Message);
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        marginBottom: 6,
+        marginBottom: 12,
         paddingLeft: 8,
         paddingRight: 8,
     },
@@ -257,21 +237,21 @@ const styles = StyleSheet.create({
         position: 'relative',
         marginLeft: 8,
         marginRight: 8,
-        maxWidth: ScreenWidth - 120,
+        flexShrink: 1,
         alignItems: 'flex-start',
     },
     infoSelf: {
         alignItems: 'flex-end',
     },
     nickTime: {
-        flexDirection: 'row',
+        flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 4,
     },
     nickTimeSelf: {
         flexDirection: 'row-reverse',
     },
     nick: {
-        fontSize: 13,
-        color: '#333',
+        fontSize: 11, flexShrink: 1,
+        color: '#72829b',
     },
     nickSelf: {
         marginRight: 4,
@@ -280,8 +260,8 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     time: {
-        fontSize: 12,
-        color: '#666',
+        fontSize: 9,
+        color: '#a0abc0',
         marginLeft: 4,
     },
     timeSelf: {
@@ -289,14 +269,14 @@ const styles = StyleSheet.create({
     },
     content: {
         marginTop: 3,
-        borderRadius: 6,
-        padding: 5,
-        paddingLeft: 8,
-        paddingRight: 8,
+        borderRadius: 17,
+        padding: 9,
+        paddingLeft: 12,
+        paddingRight: 12,
         backgroundColor: 'white',
         minHeight: 26,
         minWidth: 20,
-        marginBottom: 6,
+        marginBottom: 12,
     },
     triangle: {
         position: 'absolute',

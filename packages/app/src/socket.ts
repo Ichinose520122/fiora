@@ -32,7 +32,8 @@ import {
 } from './types/redux';
 import getFriendId from './utils/getFriendId';
 import platform from './utils/platform';
-import { getStorageValue, setStorageValue } from './utils/storage';
+import { readSession, clearSession, sessionGeneration } from './utils/session';
+import { AppState } from 'react-native';
 
 const { dispatch } = store;
 
@@ -53,33 +54,47 @@ async function guest() {
     action.logout();
 }
 
-socket.on('connect', async () => {
+let restoreTimer: ReturnType<typeof setTimeout> | undefined;
+let restoreSequence = 0;
+let restoring = false;
+function retryRestore() {
+    if (restoreTimer) clearTimeout(restoreTimer);
+    restoreTimer = setTimeout(() => { void restoreSession(); }, 5000);
+}
+async function restoreSession() {
+    if (!socket.connected || restoring) return;
+    restoring = true;
     const connection = socket.id;
+    const sequence = ++restoreSequence;
+    const generation = sessionGeneration();
+    const current = () => socket.connected && connection === socket.id && sequence === restoreSequence && generation === sessionGeneration();
     try {
-        const token = await getStorageValue('token');
-        if (!socket.connected || connection !== socket.id) return;
-        if (!token) { await guest(); action.connect(); return; }
-        const [err, res] = await fetch('loginByToken', { token, ...platform }, { toast: false });
-        if (!socket.connected || connection !== socket.id) return;
-        if (err || !res) { await guest(); action.connect(); return; }
-        if (res.token) await setStorageValue('token', res.token);
-        if (!socket.connected || connection !== socket.id) return;
-        action.setUser(res);
-        // Only refresh music and other authenticated data after token login succeeds.
-        action.connect();
+        const session = await readSession();
+        if (!current()) return;
+        if (!session) { action.connect(); return; }
+        const [err, res] = await fetch('loginByToken', { ...platform, ...session }, { toast: false });
+        if (!current()) return;
+        if (err || !res) {
+            if (err && /token.*(过期|非法)|非法token|非法登录|用户不存在/i.test(err)) {
+                await clearSession(); action.logout(); action.connect();
+                Toast.warning('登录已失效，请重新登录');
+            } else { action.disconnect(); retryRestore(); }
+            return;
+        }
+        action.setUser(res); action.connect();
+        // History failures do not invalidate an otherwise authenticated session.
         const [historyError, linkmans] = await fetch('getLinkmansLastMessagesV2', {
             linkmans: store.getState().linkmans.map((linkman) => linkman._id),
-        });
-        if (!historyError && linkmans && connection === socket.id && store.getState().user?._id === res._id) {
-            action.setLinkmansLastMessages(linkmans);
-        }
-    } catch {
-        if (socket.connected && connection === socket.id) {
-            await guest(); action.connect(); Toast.warning('无法恢复登录，请重新登录');
-        }
-    }
-});
+        }, { toast: false });
+        if (!historyError && linkmans && current() && store.getState().user?._id === res._id) action.setLinkmansLastMessages(linkmans);
+    } catch { if (current()) { action.disconnect(); retryRestore(); } }
+    finally { if (sequence === restoreSequence) restoring = false; }
+}
+socket.on('connect', () => { void restoreSession(); });
+AppState.addEventListener('change', (state) => { if (state === 'active' && !store.getState().connect) { if (socket.connected) void restoreSession(); else socket.connect(); } });
 socket.on('disconnect', () => {
+    ++restoreSequence; restoring = false;
+    if (restoreTimer) clearTimeout(restoreTimer);
     dispatch({
         type: ConnectActionType,
         value: false,
@@ -145,6 +160,7 @@ socket.on('deleteGroup', ({ groupId }: { groupId: string }) => {
     } as RemoveLinkmanAction);
 });
 
+socket.on('changeTagStyle', (tagStyle) => action.updateUserProperty('tagStyle', tagStyle));
 socket.on('changeTag', (tag: string) => {
     dispatch({
         type: UpdateUserPropertyActionType,

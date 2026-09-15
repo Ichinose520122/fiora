@@ -7,7 +7,8 @@ import platform from '../../utils/platform';
 import action from '../../state/action';
 
 import Base from './Base';
-import { setStorageValue } from '../../utils/storage';
+import { saveSession } from '../../utils/session';
+import store from '../../state/store';
 import { Friend, Group } from '../../types/redux';
 
 export default function Signup() {
@@ -24,10 +25,11 @@ export default function Signup() {
                 type: 'success',
             });
 
-            await setStorageValue('token', res.token);
+            await saveSession(res.token);
             const user = res;
             action.setUser(user);
-
+            action.connect();
+            Actions.pop();
             const linkmanIds = [
                 ...user.groups.map((g: Group) => g._id),
                 ...user.friends.map((f: Friend) => f._id),
@@ -35,11 +37,11 @@ export default function Signup() {
             const [err2, linkmans] = await fetch('getLinkmansLastMessagesV2', {
                 linkmans: linkmanIds,
             });
-            if (!err2) {
+            if (!err2 && store.getState().user?._id === user._id) {
                 action.setLinkmansLastMessages(linkmans);
             }
 
-            Actions.chatlist();
+
 
         }
     }

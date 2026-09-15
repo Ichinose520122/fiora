@@ -2,7 +2,7 @@
 
 .commandPanel {
     position: absolute; bottom: 100%; left: 14px; right: 14px; z-index: 20;
-    background: rgba(255,255,255,.42); color: #202124 !important; border: 1px solid #ffffff7a; border-radius: 8px;
+    background: rgba(255,255,255,.42); color: #202124 !important; border: 1px solid #ffffff7a; border-radius: 18px;
     backdrop-filter: blur(20px) saturate(145%); -webkit-backdrop-filter: blur(20px) saturate(145%);
     box-shadow: 0 -6px 24px #24364a18; padding: 8px; max-height: 280px; overflow: auto;
     p { margin: 2px 8px 7px; color: #202124 !important; font-size: 11px; }
@@ -16,11 +16,12 @@
 .chatInput {
     flex-shrink: 0;
     height: 70px;
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(250, 252, 255, .65);
+    border-top: 1px solid rgba(255, 255, 255, .8);
     display: flex;
     align-items: center;
     padding: 0px 20px;
-    border-bottom-right-radius: 10px;
+    border-bottom-right-radius: 20px;
     position: relative;
 
     &[data-aero='true'] {
@@ -70,13 +71,17 @@
 .input {
     min-width: 0;
     flex: 1;
-    padding: 0px 8px;
-    height: 32px;
-    line-height: 32px;
+    padding: 0px 12px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 13px;
+    background-color: rgba(255,255,255,.78);
+    transition: box-shadow .2s;
+    &:focus { box-shadow: 0 0 0 3px rgba(131,153,202,.16); }
     outline: none;
-    border: 1px solid rgba(208, 208, 208, 0.5);
+    border: 1px solid rgba(144, 165, 202, .18);
     font-size: 14px;
-    color: #666;
+    color: #4e6080;
     user-select: auto;
 
     &::placeholder {
@@ -89,13 +94,13 @@
     right: 10px;
     top: 5px;
     font-size: 22px;
-    color: #aaa;
+    color: #91a0ba;
 }
 
 .iconButton {
     :global {
         .iconfont {
-            color: #aaa;
+            color: #91a0ba;
         }
     }
 
@@ -126,7 +131,10 @@
 .expressionDropdown {
     width: 415px;
     height: 240px;
-    background-color: white;
+    background-color: rgba(249,251,255,.96);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(62,82,125,.15);
     transform: translateY(-8px);
 
     @media @mobile {

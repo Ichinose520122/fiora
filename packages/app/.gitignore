@@ -22,6 +22,7 @@ yarn-error.log*
 /ios/
 /dist-android/
 /dist/
+/release/
 *.jks
 *.keystore
 .env

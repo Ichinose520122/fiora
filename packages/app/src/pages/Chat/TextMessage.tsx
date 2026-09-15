@@ -18,7 +18,7 @@ function TextMessage({ message, isSelf }: Props) {
         children.push(
             <Text
                 key={Math.random()}
-                style={{ color: isSelf ? 'white' : '#444' }}
+                style={{ color: isSelf ? '#344a71' : '#40506a', fontSize: 15, lineHeight: 23 }}
             >
                 {str}
             </Text>,
@@ -65,10 +65,10 @@ function TextMessage({ message, isSelf }: Props) {
                         {// Do not nest in view error in dev environment
                             process.env.NODE_ENV === 'development' ? (
                                 <View>
-                                    <Text style={{ color: '#001be5' }}>{r}</Text>
+                                    <Text style={{ color: '#5872b2' }}>{r}</Text>
                                 </View>
                             ) : (
-                                <Text style={{ color: '#001be5' }}>{r}</Text>
+                                <Text style={{ color: '#5872b2' }}>{r}</Text>
                             )}
                     </TouchableOpacity>,
                 );

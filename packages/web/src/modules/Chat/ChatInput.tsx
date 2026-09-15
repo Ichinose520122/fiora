@@ -708,7 +708,6 @@ function ChatInput() {
                 <input
                     className={Style.input}
                     type="text"
-                    placeholder="说点什么吧，输入 / 补全命令"
                     maxLength={2048}
                     ref={$input}
                     onKeyDown={handleInputKeyDown}

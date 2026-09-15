@@ -1,3 +1,4 @@
+import { TagStyle } from '../../../utils/tagStyle';
 export const ConnectActionType = 'SetConnect';
 export type ConnectAction = {
     type: typeof ConnectActionType;
@@ -152,6 +153,7 @@ export type Message = {
         username: string;
         avatar: string;
         tag: string;
+    tagStyle?: TagStyle;
         originUsername?: string;
     };
     to: string;
@@ -215,6 +217,7 @@ export type User = {
     username: string;
     avatar: string;
     tag: string;
+    tagStyle?: TagStyle;
     isAdmin: boolean;
     notificationTokens: string[];
     expressions?: string[];

@@ -69,7 +69,7 @@ export default function ChatList() {
                     />
                 </Item>
             </Header>
-            <ScrollView style={styles.messageList}>
+            <ScrollView style={styles.messageList} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
                 {linkmans && linkmans.map((linkman) => renderLinkman(linkman))}
             </ScrollView>
         </PageContainer>
@@ -81,14 +81,14 @@ const styles = StyleSheet.create({
     searchContainer: {
         marginTop: isiOS ? 0 : 5,
         backgroundColor: 'transparent',
-        height: 42,
+        height: 62,
         borderBottomWidth: 0,
     },
     searchItem: {
-        backgroundColor: 'rgba(255,255,255,0.5)',
+        backgroundColor: '#ffffff9e', borderRadius: 15, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ffffffb0',
     },
     searchIcon: {
-        color: '#555',
+        color: '#9ba7bd',
     },
     searchText: {
         fontSize: 14,

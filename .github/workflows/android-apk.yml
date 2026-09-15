@@ -1,10 +1,16 @@
-name: Build Android review APK
+name: Build Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ichinose-custom]
+    paths:
+      - 'packages/app/**'
+      - 'packages/utils/**'
+      - '.github/workflows/android-apk.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: fiora-android-${{ github.ref }}
@@ -36,15 +42,30 @@ jobs:
       - name: Check native TypeScript
         run: npm run typecheck
       - name: Generate Android project
-        run: npx expo prebuild --platform android --no-install
+        run: |
+          node scripts/release.cjs prepare
+          npx expo prebuild --platform android --no-install
       # The Expo template signs release variants with its debug key. This is a
       # standalone review APK with bundled JS, not a store release/signing setup.
       - name: Build standalone review APK
         working-directory: packages/app/android
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+      - name: Package APK and update metadata
+        run: node scripts/release.cjs package
       - uses: actions/upload-artifact@v4
         with:
           name: fiora-android-review-${{ github.sha }}
-          path: packages/app/android/app/build/outputs/apk/release/*.apk
+          path: packages/app/release/*
           if-no-files-found: error
           retention-days: 14
+      - name: Publish Android update
+        if: github.ref == 'refs/heads/ichinose-custom'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view android-latest >/dev/null 2>&1; then
+            gh release create android-latest --target "$GITHUB_SHA" --title "Fiora Android 最新版" --notes "Android ARM64 安装包。应用内可检查并下载更新；安装由系统确认。"
+          fi
+          gh release upload android-latest release/*.apk --clobber
+          gh release upload android-latest release/latest.json --clobber
