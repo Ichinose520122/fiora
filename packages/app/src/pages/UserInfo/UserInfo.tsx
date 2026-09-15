@@ -125,7 +125,7 @@ function UserInfo({ user }: Props) {
         <PageContainer>
             <View style={styles.container}>
                 <View style={styles.userContainer}>
-                    <Avatar src={avatar} size={88} />
+                    <Avatar userId={_id} src={avatar} size={88} />
                     <Text style={styles.nick}>{username}</Text>
                     {!!user.tag && <View style={{ alignItems: 'center', marginTop: 10 }}><UserTag text={user.tag} tagStyle={user.tagStyle} /></View>}
                 </View>

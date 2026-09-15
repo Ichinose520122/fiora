@@ -1,4 +1,5 @@
 import React from 'react';
+import { BackgroundConnection } from './components/BackgroundConnection';
 import { View, Button } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -42,6 +43,6 @@ export default function App() {
                 {Object.entries(screens).map(([name, Component]) => <Stack.Screen key={name} name={name} component={Component} options={{ title: ({ login: '登录', signup: '注册', groupProfile: '群组资料', userInfo: '个人信息', groupInfo: '群组信息', searchResult: '搜索结果' } as any)[name] }} />)}
             </Stack.Navigator>
         </NavigationContainer>
-        <Loading /><Notification />
+        <Loading /><Notification /><BackgroundConnection />
     </View></SafeAreaProvider>;
 }

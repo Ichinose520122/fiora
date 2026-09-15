@@ -1,6 +1,6 @@
 {
   "name": "@fiora/app",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "license": "MIT",
   "private": true,
   "main": "index.ts",
@@ -43,6 +43,7 @@
     "react-native-image-viewing": "^0.2.2",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-svg": "^15.15.4",
     "react-redux": "^9.2.0",
     "redux": "^5.0.1",
     "socket.io-client": "^4.8.1"

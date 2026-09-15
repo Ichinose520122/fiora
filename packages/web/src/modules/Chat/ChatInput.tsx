@@ -761,7 +761,7 @@ function ChatInput() {
                             onClick={() => replaceAt(member.user.username)}
                             role="button"
                         >
-                            <Avatar size={24} src={member.user.avatar} />
+                            <Avatar userId={member.user._id} size={24} src={member.user.avatar} />
                             <p className={Style.atText}>
                                 {member.user.username}
                             </p>

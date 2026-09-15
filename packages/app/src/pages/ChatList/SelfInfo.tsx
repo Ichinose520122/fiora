@@ -19,7 +19,7 @@ function SelfInfo() {
     return (
         <View style={[styles.container]}>
             <View>
-                <Avatar src={avatar} size={32} />
+                <Avatar userId={user._id} src={avatar} size={32} />
                 <View
                     style={[
                         styles.onlineStatus,

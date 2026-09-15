@@ -227,6 +227,7 @@ class Message extends Component<MessageProps, MessageState> {
                     {(context) => (
                         <Avatar
                             className={Style.avatar}
+                            userId={this.props.userId}
                             src={avatar}
                             size={44}
                             onClick={() =>

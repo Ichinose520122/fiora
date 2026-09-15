@@ -1,3 +1,4 @@
+import MusicIcon from '../../components/MusicIcon';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, View, Text, TouchableOpacity, StyleSheet, Easing } from 'react-native';
 import { GlassView } from '../../components/PageContainer';
@@ -27,7 +28,7 @@ export default function MusicPlayer() {
         <View style={styles.row}>
             <TouchableOpacity onPress={music.open} accessibilityLabel="打开音乐面板">
                 <Animated.View style={[styles.disc, { transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]}>
-                    {track.cover ? <Animated.Image source={{ uri: assetUrl(track.cover) }} style={styles.cover} /> : <Ionicons name="musical-note" color="white" size={24} />}<View style={styles.hole} />
+                    {track.cover ? <Animated.Image source={{ uri: assetUrl(track.cover) }} style={styles.cover} /> : <MusicIcon color="white" size={24} />}<View style={styles.hole} />
                 </Animated.View>
             </TouchableOpacity>
             <TouchableOpacity onPress={music.open} style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>

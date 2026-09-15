@@ -56,7 +56,7 @@ export default function registerRoutes(
                     onUserChange(socket.data.user);
                 }
                 const after = Date.now();
-                logger.info(
+                (event === 'uploadChunk' ? logger.debug.bind(logger) : logger.info.bind(logger))(
                     `[${event}]`,
                     after - before,
                     ctx.socket.id,

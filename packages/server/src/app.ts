@@ -17,6 +17,7 @@ import frequency from './middlewares/frequency';
 import isLogin from './middlewares/isLogin';
 import isAdmin from './middlewares/isAdmin';
 
+import * as uploadRoutes from './routes/upload';
 import * as userRoutes from './routes/user';
 import * as groupRoutes from './routes/group';
 import * as messageRoutes from './routes/message';
@@ -118,6 +119,7 @@ app.use(
 
 const routes = {
     ...userRoutes,
+    ...uploadRoutes,
     ...groupRoutes,
     ...messageRoutes,
     ...systemRoutes,

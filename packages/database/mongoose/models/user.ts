@@ -38,6 +38,7 @@ const UserSchema = new Schema({
     password: String,
     tokenVersion: { type: Number, default: 0 },
     avatar: String,
+    avatarDecoration: { type: String, enum: ['none', 'orbit', 'bloom', 'cat', 'wings'], default: 'none' },
     tag: {
         type: String,
         default: '',
@@ -78,6 +79,7 @@ export interface UserDocument extends Document {
     tokenVersion: number;
     /** 头像 */
     avatar: string;
+    avatarDecoration: string;
     /** 用户标签 */
     tag: string;
     /** 用户标签样式 */

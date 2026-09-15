@@ -1,3 +1,4 @@
+import MusicIcon from '../../components/MusicIcon';
 import React, { useState } from 'react';
 import { MusicProvider, MusicTrack, SavedMusicPlaylist } from '@fiora/utils/music';
 import Dialog from '../../components/Dialog';
@@ -207,7 +208,7 @@ export default function MusicPanel() {
                                                 alt=""
                                             />
                                         ) : (
-                                            '♪'
+                                            <MusicIcon size={24} />
                                         )}
                                     </div>
                                     <div className={Style.songText}>

@@ -1,3 +1,4 @@
+import MusicIcon from '../../components/MusicIcon';
 import React, { useMemo } from 'react';
 import { parseLyrics } from '@fiora/utils/music';
 import { useMusic } from './MusicSession';
@@ -50,7 +51,7 @@ export default function MusicPlayer() {
                 {track?.cover ? (
                     <img src={track.cover} alt="" />
                 ) : (
-                    <span>♪</span>
+                    <MusicIcon size={24} />
                 )}
                 <i />
             </div>

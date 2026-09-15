@@ -1,3 +1,4 @@
+import AvatarDecorationPicker from './AvatarDecorationPicker';
 import React, { useState, useRef } from 'react';
 import ReactLoading from 'react-loading';
 import Cropper from 'react-cropper';
@@ -148,7 +149,7 @@ function SelfInfo(props: SelfInfoProps) {
             title="个人信息设置"
             onClose={handleCloseDialog}
         >
-            <div className={Common.container}>
+            <div className={Common.container}><AvatarDecorationPicker />
                 <div className={Common.block}>
                     <p className={Common.title}>修改头像</p>
                     <div className={Style.changeAvatar}>

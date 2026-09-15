@@ -75,7 +75,7 @@ function SearchResult({ groups, users }: Props) {
                                     onPress={() => handleClickUser(user)}
                                 >
                                     <View style={styles.item}>
-                                        <Avatar src={user.avatar} size={40} />
+                                        <Avatar userId={user._id} src={user.avatar} size={40} />
                                         <Text style={styles.username}>
                                             {user.username}
                                         </Text>

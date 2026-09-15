@@ -1,3 +1,4 @@
+import MusicIcon from '../../components/MusicIcon';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import loadable from '@loadable/component';
@@ -32,6 +33,7 @@ const SettingAsync = loadable(
 
 function Sidebar() {
     const music = useMusic();
+    const userId = useSelector((state: State) => state.user?._id);
     const sidebarVisible = useSelector(
         (state: State) => state.status.sidebarVisible,
     );
@@ -85,6 +87,7 @@ function Sidebar() {
                 {isLogin && avatar && (
                     <Avatar
                         className={Style.avatar}
+                        userId={userId}
                         src={avatar}
                         onClick={() => toggleSelfInfoDialogVisible(true)}
                     />
@@ -97,7 +100,7 @@ function Sidebar() {
                 )}
                 <div className={Style.buttons}>
                     {isLogin && renderTooltip('一起听 · 音乐', (
-                        <button type="button" className={MusicStyle.sidebarButton} aria-label="打开音乐面板" onClick={() => music.open()}>♫</button>
+                        <button type="button" className={MusicStyle.sidebarButton} aria-label="打开音乐面板" onClick={() => music.open()}><MusicIcon /></button>
                     ))}
                     {isLogin &&
                         isAdmin &&

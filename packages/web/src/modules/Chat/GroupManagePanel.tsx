@@ -197,7 +197,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                     >
                                         <Avatar
                                             size={24}
-                                            src={member.user.avatar}
+                                            userId={member.user._id} src={member.user.avatar}
                                         />
                                         <p className={Style.username}>
                                             {member.user.username}

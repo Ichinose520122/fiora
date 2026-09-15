@@ -8,6 +8,7 @@ import action from '../../state/action';
 import Avatar from '../../components/Avatar';
 import { Linkman as LinkmanType } from '../../types/redux';
 import { formatLinkmanName } from '../../utils/linkman';
+import { useSelfId } from '../../hooks/useStore';
 import fetch from '../../utils/fetch';
 
 type Props = {
@@ -31,6 +32,7 @@ export default function Linkman({
     lastMessageId,
     linkman,
 }: Props) {
+    const selfId = useSelfId();
     function formatTime() {
         const nowTime = new Date();
         if (Time.isToday(nowTime, time)) {
@@ -57,7 +59,7 @@ export default function Linkman({
     return (
         <TouchableOpacity onPress={handlePress}>
             <View style={styles.container}>
-                <Avatar src={avatar} size={50} />
+                <Avatar userId={linkman.type === 'group' ? undefined : id.replace(selfId, '')} src={avatar} size={50} />
                 <View style={styles.content}>
                     <View style={styles.nickTime}>
                         <Text numberOfLines={1} style={styles.nick}>{name}</Text>

@@ -117,7 +117,10 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
                 ...linkman,
                 ...(action.linkmans[linkman._id]
                     ? {
-                        messages: action.linkmans[linkman._id].messages.map(convertMessage),
+                        messages: [
+                            ...action.linkmans[linkman._id].messages.map(convertMessage),
+                            ...linkman.messages.filter((local) => (local.loading || local.failed) && !action.linkmans[linkman._id].messages.some((remote) => remote._id === local._id || (local.type === 'file' && remote.type === 'file' && remote.from._id === local.from._id && remote.content === local.content))),
+                        ].sort((a, b) => Number(new Date(a.createTime)) - Number(new Date(b.createTime))),
                         unread: action.linkmans[linkman._id].unread,
                     }
                     : {}),

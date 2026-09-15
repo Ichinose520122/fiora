@@ -1,3 +1,4 @@
+import MusicIcon from '../../components/MusicIcon';
 import React, { useRef, useState } from 'react';
 import { StyleSheet, View, TextInput, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import action from '../../state/action';
 import fetch from '../../utils/fetch';
 import { useIsLogin, useStore, useUser } from '../../hooks/useStore';
 import { Message } from '../../types/redux';
+import retryFile from '../../utils/retryFile';
 import uploadFile from '../../utils/uploadFile';
 import waitForSession from '../../utils/waitForSession';
 import Toast from '../../components/Toast';
@@ -111,23 +113,8 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
             const ext = (/\.([a-z0-9]{1,16})$/i.exec(filename)?.[1] || 'bin').toLowerCase();
             const details = { filename, size, ext };
             id = local('file', JSON.stringify(details), target);
-            action.updateSelfMessage(target, id, { statusText: '正在读取文件…' } as Message);
-            // Read native bytes directly; avoid Base64 strings and a second full copy.
-            const bytes = await localFile.arrayBuffer();
-            if (bytes.byteLength !== size) throw new Error('文件读取不完整，请重新选择');
-            if (sender !== identity.current.userId) return;
-            stage = '恢复连接';
-            action.updateSelfMessage(target, id, { statusText: '正在准备上传…' } as Message);
-            await waitForSession(sender);
-            stage = '上传文件';
-            action.updateSelfMessage(target, id, { statusText: '正在上传文件…' } as Message);
-            const fileUrl = await uploadFile(bytes, `FileMessage/${sender}_${Date.now()}.${ext}`);
-            if (sender !== identity.current.userId) return;
-            const content = JSON.stringify({ ...details, fileUrl });
-            action.updateSelfMessage(target, id, { content, statusText: '正在发送消息…' } as Message);
-            stage = '发送消息';
-            await waitForSession(sender);
-            await send(id, 'file', content, target);
+            action.updateSelfMessage(target, id, { localFileUri: file.uri } as Message);
+            await retryFile({ _id: id, type: 'file', content: JSON.stringify(details), createTime: Date.now(), to: target, from: user, localFileUri: file.uri } as Message);
         } catch (error) {
             const reason = `${stage}失败：${error instanceof Error ? error.message : String(error)}`;
             Alert.alert('文件发送失败', reason);
@@ -148,7 +135,7 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
                 ['musical-notes-outline', () => music.open()],
                 ['happy-outline', () => { input.current?.blur(); setShowExpression(!showExpression); onHeightChange(); }],
                 ['image-outline', () => pick(false)], ['camera-outline', () => pick(true)], ['attach-outline', pickFile],
-            ] as const).map(([icon, press]) => <TouchableOpacity key={icon} accessibilityLabel={icon} onPress={press} style={{ padding: 9, flex: 1, alignItems: 'center' }}><Ionicons name={icon} size={23} color="#7b8dad" /></TouchableOpacity>)}</View>
+            ] as const).map(([icon, press]) => <TouchableOpacity key={icon} accessibilityLabel={icon} onPress={press} style={{ padding: 9, flex: 1, alignItems: 'center' }}>{icon === 'musical-notes-outline' ? <MusicIcon size={25} /> : <Ionicons name={icon} size={23} color="#7b8dad" />}</TouchableOpacity>)}</View>
             {showExpression && <ExpressionPanel insert={insertExpression} send={sendExpression} />}
         </> : <TouchableOpacity onPress={() => Actions.login()} style={{ padding: 16 }}><Text>登录 / 注册，参与聊天</Text></TouchableOpacity>}
     </SafeAreaView>;

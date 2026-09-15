@@ -109,7 +109,7 @@ function MessageList({ $scrollView }: Props) {
         if (isLogin) {
             [err, result] = await fetch('getLinkmanHistoryMessages', {
                 linkmanId: focus,
-                existCount: messages.length,
+                existCount: messages.filter((message) => /^[a-f0-9]{24}$/i.test(message._id)).length,
             });
         } else {
             [err, result] = await fetch('getDefalutGroupHistoryMessages', {

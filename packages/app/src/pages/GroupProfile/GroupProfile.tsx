@@ -52,7 +52,7 @@ function GroupProfile() {
                     <Text style={styles.sectionTitle}>在线成员</Text>
                     {linkman.members.map((member) => (
                         <View key={member._id} style={styles.member}>
-                            <Avatar src={member.user.avatar} size={24} />
+                            <Avatar userId={member.user._id} src={member.user.avatar} size={24} />
                             <Text style={styles.memberName}>
                                 {member.user.username}
                             </Text>

@@ -13,3 +13,13 @@ export function decodeBase64(input: string): Uint8Array {
     }
     return bytes;
 }
+
+export function encodeBase64(bytes: Uint8Array): string {
+ const abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+ let result = '';
+ for (let i = 0; i < bytes.length; i += 3) {
+  const a = bytes[i], b = bytes[i + 1] || 0, c = bytes[i + 2] || 0;
+  result += abc[a >> 2] + abc[((a & 3) << 4) | (b >> 4)] + (i + 1 < bytes.length ? abc[((b & 15) << 2) | (c >> 6)] : '=') + (i + 2 < bytes.length ? abc[c & 63] : '=');
+ }
+ return result;
+}

@@ -1,3 +1,5 @@
+import AvatarDecorationPicker from './AvatarDecorationPicker';
+import { BackgroundConnectionSetting } from '../../components/BackgroundConnection';
 import React, { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,7 +42,7 @@ export default function Other() {
     return <PageContainer><ScrollView contentContainerStyle={styles.page}>
         <TouchableOpacity activeOpacity={0.9} onPress={() => { if (isLogin) Actions.userInfo({ user }); else void login(); }}>
             <LinearGradient colors={['#e6eaff', '#f6eefe', '#f3f9ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profile}>
-                <Avatar src={isLogin ? user.avatar : require('../../../icon.png')} size={66} />
+                <Avatar userId={user?._id} src={isLogin ? user.avatar : require('../../../icon.png')} size={66} />
                 <View style={{ flex: 1, gap: 8 }}><Text style={styles.name} numberOfLines={1}>{isLogin ? user.username : '欢迎来到 Fiora'}</Text>{user?.tag ? <UserTag text={user.tag} tagStyle={user.tagStyle} /> : <Text style={styles.subtitle}>{isLogin ? '查看个人资料' : '登录，开始新的对话'}</Text>}</View>
                 <Ionicons name="chevron-forward" size={19} color="#8794af" />
             </LinearGradient>
@@ -51,6 +53,7 @@ export default function Other() {
             {row('globe-outline', '网页版', '在浏览器继续聊天', () => { void Linking.openURL(serverUrl).catch(() => Toast.danger('无法打开浏览器')); })}
             {row('shield-checkmark-outline', '隐私政策', '了解信息与权限的使用', () => setPrivacy(true))}
         </View>
+        {isLogin && <><AvatarDecorationPicker /><BackgroundConnectionSetting /></>}
         <AppUpdate />
         <TouchableOpacity disabled={loggingOut} style={styles.logout} onPress={() => { if (isLogin) void logout(); else void login(); }}><Text style={{ color: isLogin ? '#a86179' : '#5969b0', fontWeight: '600' }}>{loggingOut ? '正在退出…' : isLogin ? '退出登录' : '登录 / 注册'}</Text></TouchableOpacity>
         <Text style={styles.footer}>Fiora · 与你保持连接</Text>

@@ -804,3 +804,15 @@ export async function getUserOnlineStatus(
         isOnline,
     };
 }
+
+export async function getAvatarDecorations(ctx: Context<{ userIds: string[] }>) {
+    assert(Array.isArray(ctx.data.userIds) && ctx.data.userIds.length <= 40 && ctx.data.userIds.every((id) => typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id)), '用户列表无效');
+    const users = await User.find({ _id: { $in: ctx.data.userIds } }, { avatarDecoration: 1, isAdmin: 1 });
+    return users.map((user) => ({ _id: user._id.toString(), decoration: user.avatarDecoration || 'none', isAdmin: Boolean(user.isAdmin || config.administrator.includes(user._id.toString())) }));
+}
+export async function setAvatarDecoration(ctx: Context<{ decoration: string }>) {
+    const { decoration } = ctx.data;
+    assert(['none', 'orbit', 'bloom', 'cat', 'wings'].includes(decoration), '无效的头像挂件');
+    await User.updateOne({ _id: ctx.socket.user }, { avatarDecoration: decoration });
+    return { decoration };
+}

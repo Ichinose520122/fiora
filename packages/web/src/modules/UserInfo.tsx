@@ -155,7 +155,7 @@ function UserInfo(props: UserInfoProps) {
                         <div className={Style.header}>
                             <Avatar
                                 size={60}
-                                src={user.avatar}
+                                userId={user._id} src={user.avatar}
                                 onMouseEnter={() => toggleLargetAvatar(true)}
                                 onMouseLeave={() => toggleLargetAvatar(false)}
                             />

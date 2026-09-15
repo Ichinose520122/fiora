@@ -26,6 +26,7 @@ interface LinkmanProps {
 function Linkman(props: LinkmanProps) {
     const { id, name, avatar, preview, unread, time } = props;
 
+    const selfId = useSelector((state: State) => state.user?._id || '');
     const action = useAction();
     const focus = useSelector((state: State) => state.focus);
     const aero = useAero();
@@ -69,7 +70,7 @@ function Linkman(props: LinkmanProps) {
             role="button"
             {...aero}
         >
-            <Avatar src={avatar} size={48} />
+            <Avatar userId={id.length === 48 ? id.replace(selfId, '') : undefined} src={avatar} size={48} />
             <div className={Style.container}>
                 <div className={`${Style.rowContainer} ${Style.nameTimeBlock}`}>
                     <p className={Style.name}>{name}</p>

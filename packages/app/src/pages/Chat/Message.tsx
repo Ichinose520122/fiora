@@ -13,6 +13,7 @@ import Toast from '../../components/Toast';
 import { ActionSheet } from '../../components/NativeUI';
 import { Actions } from '../../navigation';
 import Time from '../../utils/time';
+import retryFile from '../../utils/retryFile';
 import Avatar from '../../components/Avatar';
 import { Message as MessageType } from '../../types/redux';
 import SystemMessage from './SystemMessage';
@@ -163,10 +164,10 @@ function Message({
     return (
         <View style={[styles.container, isSelf && styles.containerSelf]}>
             {isSelf ? (
-                <Avatar src={message.from.avatar} size={38} />
+                <Avatar userId={message.from._id} src={message.from.avatar} size={38} />
             ) : (
                 <TouchableOpacity onPress={handleClickAvatar}>
-                    <Avatar src={message.from.avatar} size={38} />
+                    <Avatar userId={message.from._id} src={message.from.avatar} size={38} />
                 </TouchableOpacity>
             )}
             <View style={[styles.info, { maxWidth: width - 110 }, isSelf && styles.infoSelf]}>
@@ -185,7 +186,7 @@ function Message({
                     </Text>
                 </View>
                 {message.loading && <Text style={{ fontSize: 11, color: '#637087' }}>{message.statusText || '发送中…'}</Text>}
-                {message.failed && <TouchableOpacity onPress={() => Alert.alert('发送失败', message.error || '请检查网络后重新发送')}><Text numberOfLines={2} style={{ fontSize: 11, color: '#b54255' }}>{message.error || '发送失败，请重新发送'}</Text></TouchableOpacity>}
+                {message.failed && <TouchableOpacity onPress={() => Alert.alert('发送失败', message.error || '请检查网络后重新发送', message.type === 'file' ? [{ text: '取消', style: 'cancel' }, { text: '重试', onPress: () => { void retryFile(message); } }] : [{ text: '确定' }])}><Text numberOfLines={2} style={{ fontSize: 11, color: '#b54255' }}>{message.error || '发送失败，请重新发送'}</Text></TouchableOpacity>}
                 {couldDelete && message.type !== 'image' ? (
                     <TouchableOpacity onLongPress={handleDeleteMessage}>
                         <View

@@ -108,7 +108,7 @@ function FunctionBar() {
                     onClick={() => handleClick(users[i])}
                     role="button"
                 >
-                    <Avatar size={40} src={users[i].avatar} />
+                    <Avatar userId={users[i]._id} size={40} src={users[i].avatar} />
                     <p>{users[i].username}</p>
                 </div>,
             );

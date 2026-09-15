@@ -150,6 +150,7 @@ export type Message = {
     failed?: boolean;
     error?: string;
     statusText?: string;
+    localFileUri?: string;
     from: {
         _id: string;
         username: string;

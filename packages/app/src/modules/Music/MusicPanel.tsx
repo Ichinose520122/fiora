@@ -1,3 +1,4 @@
+import MusicIcon from '../../components/MusicIcon';
 import React, { useRef, useState } from 'react';
 import { Modal, View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +20,7 @@ export default function MusicPanel() {
         finally { pendingRef.current = false; setPending(false); }
     }
     const button = (label: string, press: () => void, disabled = false) => <TouchableOpacity disabled={pending || disabled} onPress={press} style={[styles.button, { opacity: pending || disabled ? 0.4 : 1 }]}><Text style={{ color: '#6376ad', fontSize: 12, fontWeight: '500' }}>{label}</Text></TouchableOpacity>;
-    const cover = (url?: string) => <View style={styles.cover}>{url ? <Image source={{ uri: assetUrl(url) }} style={{ width: '100%', height: '100%' }} /> : <Ionicons name="musical-note-outline" color="#97a5c5" size={21} />}</View>;
+    const cover = (url?: string) => <View style={styles.cover}>{url ? <Image source={{ uri: assetUrl(url) }} style={{ width: '100%', height: '100%' }} /> : <MusicIcon color="#97a5c5" size={23} />}</View>;
     return <Modal visible={music.panel} animationType="slide" onRequestClose={music.close}>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#f0f3fb' }}>
             <View style={styles.header}><View style={{ flex: 1 }}><Text style={styles.heading}>一起听</Text><Text style={styles.meta}>同一个房间，同一段旋律</Text></View><TouchableOpacity onPress={music.close} style={styles.close} accessibilityLabel="关闭音乐面板"><Ionicons name="close" size={22} color="#8190af" /></TouchableOpacity></View>
