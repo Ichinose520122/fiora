@@ -4,5 +4,11 @@ plugins {
 }
 group = 'cc.nekopara.connection'
 version = '1.0.0'
-android { namespace 'cc.nekopara.connection' }
+android {
+  namespace 'cc.nekopara.connection'
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
 dependencies { implementation 'com.facebook.react:react-android' }
