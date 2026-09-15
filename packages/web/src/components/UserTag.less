@@ -1,6 +1,7 @@
 .tag {
-    height: 20px;
-    border-radius: 4px;
+    min-height: 20px;
+    max-width: 160px;
+    border-radius: 7px;
     padding: 0 7px;
     box-sizing: border-box;
     display: inline-flex;
@@ -21,6 +22,9 @@
     font-weight: 600;
     line-height: 1;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
     transform: translateY(1px);
 }
 
@@ -96,4 +100,3 @@
         display: none;
     }
 }
-

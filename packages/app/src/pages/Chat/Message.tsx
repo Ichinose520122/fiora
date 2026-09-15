@@ -184,8 +184,8 @@ function Message({
                         {formatTime()}
                     </Text>
                 </View>
-                {message.loading && <Text style={{ fontSize: 11, color: '#637087' }}>发送中…</Text>}
-                {message.failed && <Text style={{ fontSize: 11, color: '#b54255' }}>发送失败，请重新发送</Text>}
+                {message.loading && <Text style={{ fontSize: 11, color: '#637087' }}>{message.statusText || '发送中…'}</Text>}
+                {message.failed && <TouchableOpacity onPress={() => Alert.alert('发送失败', message.error || '请检查网络后重新发送')}><Text numberOfLines={2} style={{ fontSize: 11, color: '#b54255' }}>{message.error || '发送失败，请重新发送'}</Text></TouchableOpacity>}
                 {couldDelete && message.type !== 'image' ? (
                     <TouchableOpacity onLongPress={handleDeleteMessage}>
                         <View

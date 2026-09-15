@@ -5,13 +5,14 @@ import { GlassView } from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
+import { File as LocalFile } from 'expo-file-system';
 import { Actions } from '../../navigation';
 import action from '../../state/action';
 import fetch from '../../utils/fetch';
 import { useIsLogin, useStore, useUser } from '../../hooks/useStore';
 import { Message } from '../../types/redux';
 import uploadFile from '../../utils/uploadFile';
+import waitForSession from '../../utils/waitForSession';
 import Toast from '../../components/Toast';
 import ExpressionPanel from './ExpressionPanel';
 import { useMusic } from '../../modules/Music/MusicSession';
@@ -35,6 +36,7 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const input = useRef<TextInput>(null);
     const draft = useRef('');
+    const pickingFile = useRef(false);
     const identity = useRef({ focus, userId: user?._id });
     identity.current = { focus, userId: user?._id };
     function change(value: string) { draft.current = value; setMessage(value); }
@@ -52,10 +54,10 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
         }, { timeout: type === 'text' && (/^\/\s*pixiv\b/i.test(content) || /https:\/\/i\.pximg\.net\//i.test(content)) ? 180000 : 30000 });
         if (sender !== identity.current.userId) return;
         if (err || !result) {
-            action.updateSelfMessage(target, id, { loading: false, failed: true } as Message); return;
+            action.updateSelfMessage(target, id, { loading: false, failed: true, error: err || '服务器未返回消息确认' } as Message); return;
         }
         const { additionalMessages = [], ...first } = result;
-        action.updateSelfMessage(target, id, { ...first, loading: false });
+        action.updateSelfMessage(target, id, { ...first, loading: false, failed: false, error: '', statusText: '' });
         additionalMessages.forEach((item) => action.addLinkmanMessage(target, item));
     }
     function submit() {
@@ -90,26 +92,47 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
         }
     }
     async function pickFile() {
+        if (pickingFile.current) return;
+        pickingFile.current = true;
         const target = focus; const sender = user._id;
         let id: string | undefined;
+        let stage = '选择文件';
         try {
             const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
             if (result.canceled || sender !== identity.current.userId) return;
             const file = result.assets[0];
-            const info = await FileSystem.getInfoAsync(file.uri);
-            const size = file.size ?? (info.exists ? info.size : 0);
-            if (!size || size > 30 * 1024 * 1024) throw new Error('请选择不超过 30 MB 的文件');
-            const ext = (/\.([a-z0-9]{1,16})$/i.exec(file.name)?.[1] || 'bin').toLowerCase();
-            const details = { filename: file.name, size, ext };
+            if (!file?.uri) throw new Error('未能取得文件，请重新选择');
+            stage = '读取文件';
+            const localFile = new LocalFile(file.uri);
+            const size = localFile.size;
+            if (!localFile.exists || !Number.isFinite(size) || size < 0) throw new Error('无法读取文件，请先将文件下载到手机');
+            if (size > 30 * 1024 * 1024) throw new Error('请选择不超过 30 MB 的文件');
+            const filename = file.name || localFile.name || '附件.bin';
+            const ext = (/\.([a-z0-9]{1,16})$/i.exec(filename)?.[1] || 'bin').toLowerCase();
+            const details = { filename, size, ext };
             id = local('file', JSON.stringify(details), target);
-            const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+            action.updateSelfMessage(target, id, { statusText: '正在读取文件…' } as Message);
+            // Read native bytes directly; avoid Base64 strings and a second full copy.
+            const bytes = await localFile.arrayBuffer();
+            if (bytes.byteLength !== size) throw new Error('文件读取不完整，请重新选择');
             if (sender !== identity.current.userId) return;
-            const fileUrl = await uploadFile(base64, `FileMessage/${sender}_${Date.now()}.${ext}`, true);
-            if (sender === identity.current.userId) await send(id, 'file', JSON.stringify({ ...details, fileUrl }), target);
+            stage = '恢复连接';
+            action.updateSelfMessage(target, id, { statusText: '正在准备上传…' } as Message);
+            await waitForSession(sender);
+            stage = '上传文件';
+            action.updateSelfMessage(target, id, { statusText: '正在上传文件…' } as Message);
+            const fileUrl = await uploadFile(bytes, `FileMessage/${sender}_${Date.now()}.${ext}`);
+            if (sender !== identity.current.userId) return;
+            const content = JSON.stringify({ ...details, fileUrl });
+            action.updateSelfMessage(target, id, { content, statusText: '正在发送消息…' } as Message);
+            stage = '发送消息';
+            await waitForSession(sender);
+            await send(id, 'file', content, target);
         } catch (error) {
-            Toast.danger(error instanceof Error ? error.message : '文件发送失败');
-            if (id && sender === identity.current.userId) action.updateSelfMessage(target, id, { loading: false, failed: true } as Message);
-        }
+            const reason = `${stage}失败：${error instanceof Error ? error.message : String(error)}`;
+            Alert.alert('文件发送失败', reason);
+            if (id && sender === identity.current.userId) action.updateSelfMessage(target, id, { loading: false, failed: true, error: reason } as Message);
+        } finally { pickingFile.current = false; }
     }
     function insertExpression(name: string) {
         const value = `#(${name})`;

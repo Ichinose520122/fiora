@@ -148,6 +148,8 @@ export type Message = {
     percent?: number;
     loading?: boolean;
     failed?: boolean;
+    error?: string;
+    statusText?: string;
     from: {
         _id: string;
         username: string;

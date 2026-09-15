@@ -50,6 +50,7 @@ function UserTag(props: UserTagProps) {
 
     return (
         <span
+            title={text}
             className={`${Style.tag} ${
                 isGradient ? Style.animatedGradient : ''
             } ${tagStyle.preset === 'monochrome' ? Style.monochrome : ''} ${className}`}

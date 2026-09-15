@@ -11,7 +11,7 @@ const styles = {
         padding: 0 4px;
         text-align: center;
         cursor: pointer;
-        color: var(--primary-text-color-10);
+        color: inherit;
         text-decoration: none;
     `,
     fileInfo: css`
