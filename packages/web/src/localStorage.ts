@@ -4,6 +4,8 @@ import themes from './themes';
 /** LocalStorage存储的键值 */
 export enum LocalStorageKey {
     Theme = 'theme',
+    SelfBubbleColor = 'selfBubbleColor',
+    SelfBubbleTextColor = 'selfBubbleTextColor',
     PrimaryColor = 'primaryColor',
     PrimaryTextColor = 'primaryTextColor',
     BackgroundImage = 'backgroundImage',

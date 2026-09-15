@@ -1,3 +1,4 @@
+import BubbleColors from './BubbleColors';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Switch from 'react-switch';
@@ -313,6 +314,7 @@ function Setting(props: SettingProps) {
                                 </RadioGroup>
                             </div>
                         </div>
+                        <BubbleColors />
                         {theme === 'custom' && (
                             <>
                                 <div className={Common.block}>

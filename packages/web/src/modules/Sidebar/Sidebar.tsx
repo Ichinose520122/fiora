@@ -1,5 +1,5 @@
 import MusicIcon from '../../components/MusicIcon';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import loadable from '@loadable/component';
 
@@ -52,6 +52,14 @@ function Sidebar() {
     const [adminDialogVisible, toggleAdminDialogVisible] = useState(false);
     const [settingDialogVisible, toggleSettingDialogVisible] = useState(false);
     const aero = useAero();
+    useEffect(() => {
+        const url = new URL(window.location.href);
+        if (isAdmin && url.searchParams.get('panel') === 'admin') {
+            toggleAdminDialogVisible(true);
+            url.searchParams.delete('panel');
+            window.history.replaceState(window.history.state, '', url.toString());
+        }
+    }, [isAdmin]);
 
     if (!sidebarVisible) {
         return null;

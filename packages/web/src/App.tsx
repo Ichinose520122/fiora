@@ -38,7 +38,7 @@ function getWidthPercent() {
     } else {
         width = 0.6;
     }
-    return width;
+    return width === 1 ? 1 : Math.min(0.94, width + 160 / window.innerWidth);
 }
 
 /**

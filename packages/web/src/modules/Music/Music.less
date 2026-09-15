@@ -508,13 +508,18 @@
     width: 40px;
     height: 40px;
     background: transparent;
-    color: #5f7d84;
+    color: var(--primary-text-color-7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: color .2s;
     border: 0;
     font-size: 29px;
     cursor: pointer;
     border-radius: 8px;
 
-    &:hover { background: rgba(255,255,255,.26); }
+    &:hover { color: var(--primary-text-color-10); }
 }
 
 .account { min-height: 230px; font-size: 13px; }
