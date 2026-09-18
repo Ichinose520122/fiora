@@ -12,6 +12,7 @@ import { Actions } from '../../navigation';
 import { useIsAdmin, useIsLogin, useUser } from '../../hooks/useStore';
 import socket from '../../socket';
 import PixivAccount from './PixivAccount';
+import AdminPanel from './AdminPanel';
 import AppUpdate from './AppUpdate';
 import { serverUrl } from '../../config';
 import action from '../../state/action';
@@ -28,6 +29,7 @@ function OtherContent() {
     const [account, setAccount] = useState(false);
     const [appearance, setAppearance] = useState(false);
     const [showPixiv, setShowPixiv] = useState(false);
+    const [admin, setAdmin] = useState(false);
     const [privacy, setPrivacy] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     useEffect(() => { void getStorageValue(PrivacyPolicyStorageKey).then((value) => setPrivacy(value !== 'true')).catch(() => setPrivacy(true)); }, []);
@@ -60,7 +62,7 @@ function OtherContent() {
             {row('cloud-download-outline', '应用更新', '当前版本与 GitHub 最新安装包', () => setSection('update'))}
             {isLogin && row('person-outline', '账号资料', '修改头像、用户名与密码', () => setAccount(true))}
             {row('color-palette-outline', '外观与通知', '主题、气泡、聊天背景与消息提醒', () => setAppearance(true))}
-            {isAdmin && row('shield-outline', '管理员面板', '在网页管理，需登录管理员账号', () => { void Linking.openURL(`${serverUrl}/?panel=admin`).catch(() => Toast.danger('无法打开浏览器')); })}
+            {isAdmin && row('shield-outline', '管理员面板', '账号、标签、禁言与封禁管理', () => setAdmin(true))}
             {isAdmin && row('image-outline', 'Pixiv 账号', '管理图片获取使用的账号', () => setShowPixiv(true))}
             {row('information-circle-outline', '故障诊断', '查看并分享本机保存的异常信息', () => { void shareCrash(); })}
             {row('globe-outline', '网页版', '在浏览器继续聊天', () => { void Linking.openURL(serverUrl).catch(() => Toast.danger('无法打开浏览器')); })}
@@ -73,6 +75,7 @@ function OtherContent() {
         {account && <AccountSettings close={() => setAccount(false)} />}
         {appearance && <AppearanceSettings close={() => setAppearance(false)} />}
         {isAdmin && showPixiv && <PixivAccount close={() => setShowPixiv(false)} />}
+        {isAdmin && admin && <AdminPanel key={user?._id} close={() => setAdmin(false)} />}
         {!!section && <Modal animationType="slide" onRequestClose={() => setSection('')}><SafeAreaView style={{ flex: 1, backgroundColor: '#f3f5fc' }}><TouchableOpacity onPress={() => setSection('')} style={{ padding: 18 }}><Text style={{ color: '#52658e' }}>返回</Text></TouchableOpacity><ProfileBoundary label="设置"><ScrollView contentContainerStyle={{ padding: 16 }}>{section === 'decoration' && isLogin && <AvatarDecorationPicker />}{section === 'background' && isLogin && <BackgroundConnectionSetting />}{section === 'update' && <AppUpdate />}</ScrollView></ProfileBoundary></SafeAreaView></Modal>}
         {privacy && <PrivacyPolicy visible onClose={() => setPrivacy(false)} />}
     </SafeAreaView>;
