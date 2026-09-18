@@ -26,19 +26,9 @@ import InviteInfo from './modules/InviteInfo';
  * 获取窗口宽度百分比
  */
 function getWidthPercent() {
-    let width = 0.6;
-    if (isMobile || window.innerWidth <= 500) {
-        width = 1;
-    } else if (window.innerWidth < 1000) {
-        width = 0.9;
-    } else if (window.innerWidth < 1300) {
-        width = 0.8;
-    } else if (window.innerWidth < 1600) {
-        width = 0.7;
-    } else {
-        width = 0.6;
-    }
-    return width === 1 ? 1 : Math.min(0.94, width + 160 / window.innerWidth);
+    if (isMobile || window.innerWidth <= 500) return 1;
+    // Continuous sizing: increasing the browser width can never shrink the chat.
+    return Math.min(1, 0.6 + 280 / window.innerWidth);
 }
 
 /**
@@ -70,13 +60,15 @@ function App() {
     const [width, setWidth] = useState(getWidthPercent());
     const [height, setHeight] = useState(getHeightPercent());
     useEffect(() => {
-        window.onresize = () => {
+        const handleResize = () => {
             setWidth(getWidthPercent());
             setHeight(getHeightPercent());
         };
 
+        window.addEventListener('resize', handleResize);
         // @ts-ignore
         inobounce($app.current);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // 获取底图尺寸

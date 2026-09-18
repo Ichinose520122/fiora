@@ -38,7 +38,7 @@ const UserSchema = new Schema({
     password: String,
     tokenVersion: { type: Number, default: 0 },
     avatar: String,
-    avatarDecoration: { type: String, enum: ['none', 'orbit', 'bloom', 'cat', 'wings'], default: 'none' },
+    avatarDecoration: { type: String, enum: ['none', 'orbit', 'bloom', 'cat', 'wings', 'moon', 'laurel', 'butterfly', 'rabbit', 'ribbon', 'ocean'], default: 'none' },
     tag: {
         type: String,
         default: '',

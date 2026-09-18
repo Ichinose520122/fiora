@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef, MouseEvent } from 'react';
 import loadable from '@loadable/component';
 
-import { isMobile } from '@fiora/utils/ua';
 import { getOSSFileUrl } from '../../../utils/uploadFile';
 import Style from './Message.less';
 import { CircleProgress } from '../../../components/Progress';
@@ -32,14 +31,15 @@ function ImageMessage(props: ImageMessageProps) {
     const closeViewer = useCallback(() => toggleViewer(false), []);
     const $container = useRef(null);
 
+    const [loadedSize, setLoadedSize] = useState({ src: '', width: 200, height: 200 });
     let imageSrc = src;
-    const containerWidth = isMobile ? window.innerWidth - 25 - 50 : 450;
-    const maxWidth = containerWidth - 100 > 500 ? 500 : containerWidth - 100;
+    // CSS constrains this preferred thumbnail to the actual message column.
+    const maxWidth = 350;
     const maxHeight = 200;
-    let width = 200;
-    let height = 200;
+    let width = loadedSize.src === src ? loadedSize.width : 200;
+    let height = loadedSize.src === src ? loadedSize.height : 200;
     const parseResult = /width=([0-9]+)&height=([0-9]+)/.exec(imageSrc);
-    if (parseResult) {
+    if (parseResult && +parseResult[1] > 0 && +parseResult[2] > 0) {
         const natureWidth = +parseResult[1];
         const naturehHeight = +parseResult[2];
         let scale = 1;
@@ -98,6 +98,13 @@ function ImageMessage(props: ImageMessageProps) {
                     alt="消息图片"
                     width={width}
                     height={height}
+                    onLoad={(event) => {
+                        if (parseResult && +parseResult[1] > 0 && +parseResult[2] > 0) return;
+                        const image = event.currentTarget;
+                        if (!image.naturalWidth || !image.naturalHeight) return;
+                        const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+                        setLoadedSize({ src, width: image.naturalWidth * scale, height: image.naturalHeight * scale });
+                    }}
                     onClick={() => toggleViewer(true)}
                 />
                 {isSelf && !loading && (

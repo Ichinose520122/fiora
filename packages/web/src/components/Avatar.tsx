@@ -1,5 +1,6 @@
 import React, { SyntheticEvent, useState, useMemo } from 'react';
-import { avatarPresets, crownMark } from '../../../utils/avatarDecoration';
+import { crownMark } from '../../../utils/avatarDecoration';
+import { avatarPresets } from '../utils/avatarPresets';
 import useAvatarDecoration from '../hooks/useAvatarDecoration';
 import { getOSSFileUrl } from '../utils/uploadFile';
 

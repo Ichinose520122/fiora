@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { avatarPresets } from '../../../../utils/avatarDecoration';
+import { avatarPresets } from '../../utils/avatarPresets';
 import Avatar from '../../components/Avatar';
 import { State } from '../../state/reducer';
 import useAvatarDecoration, { refreshAvatarDecorations } from '../../hooks/useAvatarDecoration';
@@ -19,6 +19,6 @@ export default function AvatarDecorationPicker() {
             try { const [error] = await fetch('setAvatarDecoration', { decoration: item.id }); if (!error) { setSelected(item.id); refreshAvatarDecorations(); Message.success('头像挂件已保存'); } }
             finally { setBusy(false); }
         }}><Avatar src={user.avatar} size={46} userId={user._id} decoration={item.id} /><span>{item.name}</span></button>)}</div>
-        <p style={{ fontSize: 12, opacity: 0.6, marginTop: 12 }}>挂件随账号保存，网页与 App 同步。管理员皇冠自动显示。</p>
+        <p style={{ fontSize: 12, opacity: 0.6, marginTop: 12 }}>挂件随账号保存，所有用户均可选择。管理员皇冠自动显示。</p>
     </section>;
 }

@@ -812,7 +812,7 @@ export async function getAvatarDecorations(ctx: Context<{ userIds: string[] }>) 
 }
 export async function setAvatarDecoration(ctx: Context<{ decoration: string }>) {
     const { decoration } = ctx.data;
-    assert(['none', 'orbit', 'bloom', 'cat', 'wings'].includes(decoration), '无效的头像挂件');
+    assert(['none', 'orbit', 'bloom', 'cat', 'wings', 'moon', 'laurel', 'butterfly', 'rabbit', 'ribbon', 'ocean'].includes(decoration), '无效的头像挂件');
     await User.updateOne({ _id: ctx.socket.user }, { avatarDecoration: decoration });
     return { decoration };
 }

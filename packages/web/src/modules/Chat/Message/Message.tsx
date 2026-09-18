@@ -219,7 +219,7 @@ class Message extends Component<MessageProps, MessageState> {
 
         return (
             <div
-                className={`${Style.message} ${isSelf ? Style.self : ''}`}
+                className={`${Style.message} ${isSelf ? Style.self : ''} ${this.props.type === 'image' ? Style.imageOnly : ''}`}
                 ref={this.$container}
                 data-message-id={this.props.id}
             >
