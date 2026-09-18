@@ -86,14 +86,40 @@ async function restoreSession() {
         }
         action.setUser(res); action.connect();
         // History failures do not invalidate an otherwise authenticated session.
-        const [historyError, linkmans] = await fetch('getLinkmansLastMessagesV2', {
-            linkmans: store.getState().linkmans.map((linkman) => linkman._id),
-        }, { toast: false });
+        const [historyError, linkmans] = await pullRecentMessages();
         if (!historyError && linkmans && current() && store.getState().user?._id === res._id) { action.setLinkmansLastMessages(linkmans); notifyMissed(linkmans, res._id); }
     } catch { if (current()) { action.disconnect(); retryRestore(); } }
     finally { if (sequence === restoreSequence) restoring = false; }
 }
 socket.on('connect', () => { void restoreSession(); });
+async function pullRecentMessages(): Promise<[string | null, any]> {
+    const before = store.getState(); const userId = before.user?._id; const connection = socket.id;
+    const current = () => socket.connected && socket.id === connection && store.getState().user?._id === userId;
+    const result: Record<string, { messages: Message[]; unread: number }> = {};
+    for (let offset = 0; offset < before.linkmans.length; offset += 100) {
+        const rooms = before.linkmans.slice(offset, offset + 100);
+        const [error, data] = await socketRequest<any>(socket, 'getLinkmansLastMessagesV2', { linkmans: rooms.map(room => room._id) }, 15000);
+        if (error || !current()) return [error || '连接已改变', null];
+        Object.assign(result, data);
+        for (const room of rooms) {
+            const previous = [...room.messages].reverse().find(item => /^[a-f0-9]{24}$/i.test(item._id) && !item.loading && !item.failed);
+            const latest = result[room._id]?.messages;
+            if (!previous || !latest?.length || latest.some(item => item._id === previous._id)) continue;
+            const since = new Date(previous.createTime).toISOString();
+            let cursor: { time: string; id: string } | undefined; let until: string | undefined;
+            const missed: Message[] = [];
+            do {
+                const [syncError, page] = await socketRequest<any>(socket, 'syncLinkmanMessages', { linkmanId: room._id, since, until, cursor }, 30000);
+                if (syncError || !current()) return [syncError || '连接已改变', null];
+                if (!Array.isArray(page?.messages)) return ['消息同步响应无效', null];
+                missed.push(...page.messages); until = page.until; cursor = page.next || undefined;
+            } while (cursor);
+            const ids = new Set(latest.map(item => item._id));
+            result[room._id].messages = [...missed.filter(item => !ids.has(item._id)), ...latest].sort((a, b) => +new Date(a.createTime) - +new Date(b.createTime));
+        }
+    }
+    return [null, result];
+}
 function notifyMissed(rooms: any, userId: string) {
     if (AppState.currentState === 'active') return;
     for (const [roomId, data] of Object.entries(rooms) as [string, any][]) {
@@ -107,14 +133,12 @@ let refreshing = false;
 export async function resumeConnection() {
     if (!socket.connected) { socket.connect(); return; }
     if (!store.getState().connect) { await restoreSession(); return; }
-    if (!store.getState().user || refreshing) return;
+    if (!store.getState().user || refreshing || restoring) return;
     refreshing = true;
     const connection = socket.id;
     const userId = store.getState().user?._id;
     try {
-        const [err, data] = await socketRequest(socket, 'getLinkmansLastMessagesV2', {
-            linkmans: store.getState().linkmans.map((item) => item._id),
-        }, 8000);
+        const [err, data] = await pullRecentMessages();
         if (connection !== socket.id || userId !== store.getState().user?._id) return;
         if (err) { socket.disconnect(); socket.connect(); }
         else if (data) { action.setLinkmansLastMessages(data as any); notifyMissed(data, userId!); }

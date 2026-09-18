@@ -15,6 +15,8 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class ConnectionModule : Module() {
+  private var installedHandler: Thread.UncaughtExceptionHandler? = null
+  private var previousHandler: Thread.UncaughtExceptionHandler? = null
   private var speech: TextToSpeech? = null
   private var speechReady = false
   private var pendingSpeech = ""
@@ -26,12 +28,33 @@ class ConnectionModule : Module() {
     Name("FioraConnection")
     Events("onNetworkAvailable")
     OnCreate {
+      val prefs = context().applicationContext.getSharedPreferences("diagnostics", 0)
+      previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+      val previous = previousHandler
+      installedHandler = Thread.UncaughtExceptionHandler { thread, error ->
+        try {
+          val report = "Screen: " + prefs.getString("screen", "unknown") + "\n" + android.util.Log.getStackTraceString(error).take(16000)
+          prefs.edit().putString("crash", report).putBoolean("unseen", true).commit()
+        } catch (_: Exception) { }
+        previous?.uncaughtException(thread, error)
+      }
+      Thread.setDefaultUncaughtExceptionHandler(installedHandler)
       connectivity = context().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
       if (Build.VERSION.SDK_INT >= 24) connectivity?.registerDefaultNetworkCallback(callback)
     }
     OnDestroy {
+      if (Thread.getDefaultUncaughtExceptionHandler() === installedHandler) Thread.setDefaultUncaughtExceptionHandler(previousHandler)
       speech?.stop(); speech?.shutdown(); speech = null; speechReady = false
       if (Build.VERSION.SDK_INT >= 24) try { connectivity?.unregisterNetworkCallback(callback) } catch (_: Exception) { }
+    }
+    AsyncFunction("markScreen") { screen: String -> context().getSharedPreferences("diagnostics", 0).edit().putString("screen", screen.take(100)).apply() }
+    AsyncFunction("recordError") { report: String -> context().getSharedPreferences("diagnostics", 0).edit().putString("crash", report.take(16000)).putBoolean("unseen", true).apply() }
+    AsyncFunction("getLastCrash") { context().getSharedPreferences("diagnostics", 0).getString("crash", "") ?: "" }
+    AsyncFunction("consumeCrash") {
+      val prefs = context().getSharedPreferences("diagnostics", 0)
+      val report = if (prefs.getBoolean("unseen", false)) prefs.getString("crash", "") ?: "" else ""
+      prefs.edit().putBoolean("unseen", false).apply()
+      report
     }
     AsyncFunction("copyText") { text: String ->
       (context().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Fiora", text))

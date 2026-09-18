@@ -1,117 +1,35 @@
-import { usePreferences } from '../../utils/preferences';
-import { View, Text } from '../../components/NativeUI';
 import React from 'react';
-import { TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import { Linking, Share, StyleSheet, Text, View } from 'react-native';
+import { requireOptionalNativeModule } from 'expo';
 import Expression from '../../components/Expression';
+import Toast from '../../components/Toast';
 import { Message } from '../../types/redux';
 import expressions from '../../utils/expressions';
+import { usePreferences } from '../../utils/preferences';
 
-type Props = {
-    message: Message;
-    isSelf: boolean;
-};
-
-function TextMessage({ message, isSelf }: Props) {
+export default function TextMessage({ message, isSelf }: { message: Message; isSelf: boolean }) {
     const preferences = usePreferences();
-    const children = [];
-    let copy = message.content;
-
-    function push(str: string) {
-        children.push(
-            <Text
-                key={Math.random()}
-                style={{ color: isSelf ? preferences.bubbleTextColor : '#40506a', fontSize: 15, lineHeight: 23 }}
-            >
-                {str}
-            </Text>,
-        );
-    }
-
-    // 处理文本消息中的表情和链接
+    const children: React.ReactNode[] = [];
+    const content = String(message.content || '');
+    const regex = /#\(([^)\s]+)\)|https?:\/\/[^\s<>]+/g;
+    const color = isSelf ? preferences.bubbleTextColor : '#40506a';
+    const copy = () => {
+        const module = requireOptionalNativeModule('FioraConnection');
+        if (module) void module.copyText(content).then(() => Toast.success('已复制')).catch(() => Toast.warning('复制失败'));
+        else void Share.share({ message: content });
+    };
+    const text = (value: string, key: number) => <Text key={key} onLongPress={copy} style={[styles.text, { color }]}>{value}</Text>;
     let offset = 0;
-    while (copy.length > 0) {
-        const regex = /#\(([\u4e00-\u9fa5a-z]+)\)|https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/g;
-        const matchResult = regex.exec(copy);
-        if (matchResult) {
-            const r = matchResult[0];
-            const e = matchResult[1];
-            const i = copy.indexOf(r);
-            if (r[0] === '#') {
-                // 表情消息
-                const index = expressions.default.indexOf(e);
-                if (index !== -1) {
-                    // 处理从开头到匹配位置的文本
-                    if (i > 0) {
-                        push(copy.substring(0, i));
-                    }
-                    children.push(
-                        <Expression
-                            key={Math.random()}
-                            style={styles.expression}
-                            size={30}
-                            index={index}
-                        />,
-                    );
-                    offset += i + r.length;
-                }
-            } else {
-                // 链接消息
-                if (i > 0) {
-                    push(copy.substring(0, i));
-                }
-                children.push(
-                    <TouchableOpacity
-                        key={Math.random()}
-                        onPress={() => Linking.openURL(r)}
-                    >
-                        {// Do not nest in view error in dev environment
-                            process.env.NODE_ENV === 'development' ? (
-                                <View>
-                                    <Text style={{ color: '#5872b2' }}>{r}</Text>
-                                </View>
-                            ) : (
-                                <Text style={{ color: '#5872b2' }}>{r}</Text>
-                            )}
-                    </TouchableOpacity>,
-                );
-                offset += i + r.length;
-            }
-            copy = copy.substr(i + r.length);
-        } else {
-            break;
-        }
+    for (const match of content.matchAll(regex)) {
+        const index = match.index!;
+        if (index > offset) children.push(text(content.slice(offset, index), offset));
+        const expression = match[1] ? expressions.default.indexOf(match[1]) : -1;
+        if (expression >= 0) children.push(<Expression key={`expression-${index}`} size={30} index={expression} />);
+        else if (!match[1]) children.push(<Text key={`url-${index}`} onLongPress={copy} onPress={() => { void Linking.openURL(match[0]).catch(() => Toast.warning('无法打开链接')); }} style={[styles.text, { color: '#5872b2' }]}>{match[0]}</Text>);
+        else children.push(text(match[0], index));
+        offset = index + match[0].length;
     }
-
-    // 处理剩余文本
-    if (offset < message.content.length) {
-        push(message.content.substring(offset, message.content.length));
-    }
-
-    return <View style={[styles.container]}>{children}</View>;
+    if (offset < content.length) children.push(text(content.slice(offset), offset));
+    return <View style={styles.container}>{children}</View>;
 }
-
-export default TextMessage;
-
-const styles = StyleSheet.create({
-    container: {
-        // width: '100%',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        alignItems: 'flex-end',
-    },
-    text: {
-        flexShrink: 1,
-    },
-    textSelf: {
-        color: 'white',
-    },
-    expression: {
-        marginLeft: 1,
-        marginRight: 1,
-        transform: [
-            {
-                translateY: 3,
-            },
-        ],
-    },
-});
+const styles = StyleSheet.create({ container: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }, text: { flexShrink: 1, fontSize: 15, lineHeight: 23 } });

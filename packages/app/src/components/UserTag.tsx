@@ -6,7 +6,7 @@ import { TagStyle } from '../../../utils/tagStyle';
 import tagEffect from '../../../config/tagEffect';
 import { getRandomColor } from '../utils/getRandomColor';
 
-export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: TagStyle }) {
+export default function UserTag({ text, tagStyle, animated = true }: { text: string; tagStyle?: TagStyle; animated?: boolean }) {
     const [width, setWidth] = useState(0);
     const [reduceMotion, setReduceMotion] = useState(false);
     const [foreground, setForeground] = useState(AppState.currentState === 'active');
@@ -30,7 +30,7 @@ export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: T
     }, []);
     useEffect(() => {
         gradient.setValue(0); particles.forEach(value => value.setValue(0));
-        if (reduceMotion || !foreground) return;
+        if (!animated || reduceMotion || !foreground) return;
         const animations: Animated.CompositeAnimation[] = [];
         if (preset !== 'solid') {
             const duration = tagEffect.gradient.durationSeconds * 500;
@@ -49,7 +49,7 @@ export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: T
             float.start(); animations.push(float);
         });
         return () => animations.forEach(animation => animation.stop());
-    }, [preset, particle, reduceMotion, foreground]);
+    }, [preset, particle, reduceMotion, foreground, animated]);
     const scale = tagEffect.gradient.backgroundSizePercent / 100;
     return <View accessibilityLabel={text} style={styles.root}>
         <View onLayout={event => setWidth(event.nativeEvent.layout.width)} style={[styles.badge, preset === 'monochrome' && styles.monochrome, { backgroundColor: fallback }]}>
@@ -58,7 +58,7 @@ export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: T
             </Animated.View>}
             <Text style={styles.text}>{text}</Text>
         </View>
-        {!reduceMotion && particle !== 'none' && particles.map((value, index) => {
+        {animated && !reduceMotion && particle !== 'none' && particles.map((value, index) => {
             const angle = index / particles.length * Math.PI * 2;
             const x = Math.cos(angle) * tagEffect.particle.spreadXPx;
             const y = Math.sin(angle) * tagEffect.particle.spreadYPx;
