@@ -1,5 +1,5 @@
 /** Shared vector paths: SVG on web, native SVG paths on Android. */
-export const musicMark = 'M19.8 18.6A9 9 0 1 1 21 12v2.1c0 3-4 3.1-4 .1V7.4l-6 1.4v6.3M17 11l-6 1.4M11 15.1c0 2.7-4.4 3.3-4.4 1.2 0-1.7 3-2.8 4.4-1.2M17 13.6c0 2.7-4.4 3.3-4.4 1.2 0-1.7 3-2.8 4.4-1.2';
+export const musicMark = 'M10 17.5V4c0-.6.6-1 1.1-.7L20 8v5l-10-4M10 17.5c0 1.9-1.8 3.5-4 3.5s-4-1.6-4-3.5S3.8 14 6 14s4 1.6 4 3.5Z';
 export const crownMark = 'M7 20L4 8l9 5L20 3l7 10 9-5-3 12ZM8 25h24M20 17v3';
 export const avatarPresets = [
     { id: 'none', name: '无挂件', color: '#a0aac0', paths: [] },

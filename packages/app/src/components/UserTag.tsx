@@ -13,7 +13,7 @@ export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: T
     const particles = useRef(Array.from({ length: tagEffect.particle.count }, () => new Animated.Value(0))).current;
     const preset = tagStyle?.preset || 'solid';
     const particle = tagStyle?.particle || 'none';
-    const selected = (tagStyle?.colors || []).filter((color) => /^#[0-9a-f]{6}$/i.test(color));
+    const selected = (Array.isArray(tagStyle?.colors) ? tagStyle.colors : []).filter((color) => typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color));
     const palette = preset === 'monochrome' ? ['#050505', '#f5f5f5', '#141414']
         : preset === 'tripleGradient' ? selected.length >= 3 ? selected : ['#5b8ff9', '#f759ab', '#ffd666']
         : selected.length >= 2 ? selected : ['#5b8ff9', '#f759ab'];

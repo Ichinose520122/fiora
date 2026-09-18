@@ -8,7 +8,7 @@ import { getOSSFileUrl } from '../utils/uploadFile';
 import Image from './Image';
 
 type Props = {
-    src: string;
+    src: string | number;
     size: number;
     userId?: string;
     decoration?: string;
@@ -17,7 +17,7 @@ export default function Avatar({ src, size, userId, decoration }: Props) {
     const appearance = useAvatarDecoration(userId);
     const preset = avatarPresets.find((item) => item.id === (decoration ?? appearance?.decoration));
     const targetUrl = getOSSFileUrl(
-        src,
+        typeof src === 'number' || (typeof src === 'string' && src.length > 0) ? src : '/avatar/0.jpg',
         `image/resize,w_${size * 2},h_${size * 2}/quality,q_90`,
     ) as string;
     return (

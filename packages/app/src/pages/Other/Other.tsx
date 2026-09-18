@@ -40,7 +40,7 @@ export default function Other() {
         <View style={styles.icon}><Ionicons name={icon} color="#6576aa" size={22} /></View><View style={{ flex: 1 }}><Text style={styles.title}>{title}</Text><Text style={styles.subtitle}>{subtitle}</Text></View><Ionicons name="chevron-forward" size={16} color="#a4afc1" />
     </TouchableOpacity>;
     return <PageContainer><ScrollView contentContainerStyle={styles.page}>
-        <TouchableOpacity activeOpacity={0.9} onPress={() => { if (isLogin) Actions.userInfo({ user }); else void login(); }}>
+        <TouchableOpacity activeOpacity={0.9} onPress={() => { if (isLogin) Actions.userInfo({ userId: user._id }); else void login(); }}>
             <LinearGradient colors={['#e6eaff', '#f6eefe', '#f3f9ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profile}>
                 <Avatar userId={user?._id} src={isLogin ? user.avatar : require('../../../icon.png')} size={66} />
                 <View style={{ flex: 1, gap: 8 }}><Text style={styles.name} numberOfLines={1}>{isLogin ? user.username : '欢迎来到 Fiora'}</Text>{user?.tag ? <UserTag text={user.tag} tagStyle={user.tagStyle} /> : <Text style={styles.subtitle}>{isLogin ? '查看个人资料' : '登录，开始新的对话'}</Text>}</View>
@@ -49,6 +49,7 @@ export default function Other() {
         </TouchableOpacity>
         <Text style={styles.section}>偏好与服务</Text>
         <View style={styles.card}>
+            {isAdmin && row('shield-outline', '管理员面板', '在网页管理，需登录管理员账号', () => { void Linking.openURL(`${serverUrl}/?panel=admin`).catch(() => Toast.danger('无法打开浏览器')); })}
             {isAdmin && row('image-outline', 'Pixiv 账号', '管理图片获取使用的账号', () => setShowPixiv(true))}
             {row('globe-outline', '网页版', '在浏览器继续聊天', () => { void Linking.openURL(serverUrl).catch(() => Toast.danger('无法打开浏览器')); })}
             {row('shield-checkmark-outline', '隐私政策', '了解信息与权限的使用', () => setPrivacy(true))}

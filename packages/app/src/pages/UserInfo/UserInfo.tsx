@@ -1,8 +1,9 @@
 import React from 'react';
+import ProfileBoundary from '../../components/ProfileBoundary';
 import { Button, Text, View } from '../../components/NativeUI';
-import { StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { Actions } from '../../navigation';
-import PageContainer from '../../components/PageContainer';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '../../components/Avatar';
 import UserTag from '../../components/UserTag';
 import { TagStyle } from '../../../../utils/tagStyle';
@@ -11,6 +12,7 @@ import {
     useIsAdmin,
     useLinkmans,
     useSelfId,
+    useUser,
 } from '../../hooks/useStore';
 import { Linkman } from '../../types/redux';
 import action from '../../state/action';
@@ -37,15 +39,15 @@ type Props = {
 function UserInfo({ user }: Props) {
     const { _id, avatar, username } = user;
     const linkmans = useLinkmans();
-    const friend = linkmans.find((linkman) =>
-        linkman._id.includes(_id),
-    ) as Linkman;
+    const self = useSelfId();
+    const conversationId = self && self !== _id ? getFriendId(self, _id) : '';
+    const friend = linkmans.find((linkman) => linkman && linkman.type !== 'group' && linkman._id === conversationId);
     const isFriend = friend && friend.type === 'friend';
     const isAdmin = useIsAdmin();
     const currentLinkman = useFocusLinkman() as Linkman;
-    const self = useSelfId();
 
     function handleSendMessage() {
+        if (!friend) return;
         action.setFocus(friend._id);
         if (currentLinkman?._id === friend._id) {
             Actions.pop();
@@ -56,6 +58,7 @@ function UserInfo({ user }: Props) {
     }
 
     async function handleDeleteFriend() {
+        if (!friend) return;
         const isSuccess = await deleteFriend(_id);
         if (isSuccess) {
             action.removeLinkman(friend._id);
@@ -68,6 +71,7 @@ function UserInfo({ user }: Props) {
     }
 
     async function handleAddFriend() {
+        if (!self || self === _id) return;
         const newLinkman = await addFriend(_id);
         const friendId = getFriendId(_id, self);
         if (newLinkman) {
@@ -75,9 +79,9 @@ function UserInfo({ user }: Props) {
                 action.updateFriendProperty(friend._id, 'type', 'friend');
                 const messages = await getLinkmanHistoryMessages(
                     friend._id,
-                    friend.messages.length,
+                    friend.messages.filter((message) => /^[a-f0-9]{24}$/i.test(message._id)).length,
                 );
-                action.addLinkmanHistoryMessages(friend._id, messages);
+                if (Array.isArray(messages)) action.addLinkmanHistoryMessages(friend._id, messages);
             } else {
                 action.addLinkman({
                     ...newLinkman,
@@ -94,7 +98,7 @@ function UserInfo({ user }: Props) {
                     },
                 });
                 const messages = await getLinkmanHistoryMessages(friendId, 0);
-                action.addLinkmanHistoryMessages(friendId, messages);
+                if (Array.isArray(messages)) action.addLinkmanHistoryMessages(friendId, messages);
             }
             action.setFocus(friendId);
 
@@ -122,8 +126,8 @@ function UserInfo({ user }: Props) {
     }
 
     return (
-        <PageContainer>
-            <View style={styles.container}>
+        <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#f3f5fc' }}>
+            <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.userContainer}>
                     <Avatar userId={_id} src={avatar} size={88} />
                     <Text style={styles.nick}>{username}</Text>
@@ -183,16 +187,32 @@ function UserInfo({ user }: Props) {
                         </>
                     )}
                 </View>}
-            </View>
-        </PageContainer>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
-export default UserInfo;
+export default function UserInfoScreen({ user: suppliedUser, userId }: Partial<Props> & { userId?: string }) {
+    const ownUser = useUser();
+    const targetId = userId || suppliedUser?._id;
+    const user = ownUser && targetId === ownUser._id ? ownUser : suppliedUser;
+    if (!user || typeof user._id !== 'string' || !/^[a-f0-9]{24}$/i.test(user._id)) {
+        return <PageContainer><Text style={{ padding: 24 }}>用户资料暂不可用，请返回后重新打开。</Text></PageContainer>;
+    }
+    const profile = {
+        _id: user._id,
+        username: typeof user.username === 'string' ? user.username : '用户',
+        avatar: typeof user.avatar === 'string' && user.avatar ? user.avatar : '/avatar/0.jpg',
+        tag: typeof user.tag === 'string' ? user.tag : '',
+        tagStyle: user.tagStyle && typeof user.tagStyle === 'object' ? user.tagStyle : undefined,
+    };
+    return <ProfileBoundary key={profile._id}><UserInfo user={profile} /></ProfileBoundary>;
+}
 
 const styles = StyleSheet.create({
     container: {
-        paddingTop: 20,
+        paddingTop: 32,
+        paddingBottom: 24,
         paddingLeft: 16,
         paddingRight: 16,
     },
