@@ -1,8 +1,9 @@
+import { setStorageValue } from './utils/storage';
 import { User } from './types/redux';
 import fetch from './utils/fetch';
 
 function saveUsername(username: string) {
-    window.localStorage.setItem('username', username);
+    void setStorageValue('username', username).catch(() => {});
 }
 
 /**

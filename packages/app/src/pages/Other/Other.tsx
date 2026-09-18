@@ -1,3 +1,5 @@
+import AccountSettings from './AccountSettings';
+import AppearanceSettings from './AppearanceSettings';
 import AvatarDecorationPicker from './AvatarDecorationPicker';
 import { BackgroundConnectionSetting } from '../../components/BackgroundConnection';
 import React, { useEffect, useState } from 'react';
@@ -21,6 +23,8 @@ import PrivacyPolicy, { PrivacyPolicyStorageKey } from './PrivacyPolicy';
 
 export default function Other() {
     const isLogin = useIsLogin(); const isAdmin = useIsAdmin(); const user = useUser();
+    const [account, setAccount] = useState(false);
+    const [appearance, setAppearance] = useState(false);
     const [showPixiv, setShowPixiv] = useState(false);
     const [privacy, setPrivacy] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
@@ -49,6 +53,8 @@ export default function Other() {
         </TouchableOpacity>
         <Text style={styles.section}>偏好与服务</Text>
         <View style={styles.card}>
+            {isLogin && row('person-outline', '账号资料', '修改头像、用户名与密码', () => setAccount(true))}
+            {row('color-palette-outline', '外观与通知', '主题、气泡、聊天背景与消息提醒', () => setAppearance(true))}
             {isAdmin && row('shield-outline', '管理员面板', '在网页管理，需登录管理员账号', () => { void Linking.openURL(`${serverUrl}/?panel=admin`).catch(() => Toast.danger('无法打开浏览器')); })}
             {isAdmin && row('image-outline', 'Pixiv 账号', '管理图片获取使用的账号', () => setShowPixiv(true))}
             {row('globe-outline', '网页版', '在浏览器继续聊天', () => { void Linking.openURL(serverUrl).catch(() => Toast.danger('无法打开浏览器')); })}
@@ -59,6 +65,8 @@ export default function Other() {
         <TouchableOpacity disabled={loggingOut} style={styles.logout} onPress={() => { if (isLogin) void logout(); else void login(); }}><Text style={{ color: isLogin ? '#a86179' : '#5969b0', fontWeight: '600' }}>{loggingOut ? '正在退出…' : isLogin ? '退出登录' : '登录 / 注册'}</Text></TouchableOpacity>
         <Text style={styles.footer}>Fiora · 与你保持连接</Text>
     </ScrollView>
+        {account && <AccountSettings close={() => setAccount(false)} />}
+        {appearance && <AppearanceSettings close={() => setAppearance(false)} />}
         {isAdmin && showPixiv && <PixivAccount close={() => setShowPixiv(false)} />}
         <PrivacyPolicy visible={privacy} onClose={() => setPrivacy(false)} />
     </PageContainer>;

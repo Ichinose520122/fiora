@@ -72,8 +72,8 @@ function Playback({ room, offset, volume, fail, onLocalPause }: { room: MusicSna
 }
 export function MusicSessionProvider({ children }: { children: React.ReactNode }) {
     const focus = useFocus(); const userId = useSelfId();
-    // Remounting cancels old room requests, subscriptions, searches and audio together.
-    return <RoomSession key={`${userId}:${focus}`} focus={focus} userId={userId}>{children}</RoomSession>;
+    // Keep navigation mounted; room effects cancel their own subscriptions and audio.
+    return <RoomSession focus={focus} userId={userId}>{children}</RoomSession>;
 }
 function RoomSession({ children, focus, userId }: { children: React.ReactNode; focus: string; userId: string }) {
     const { connect } = useStore();
@@ -119,6 +119,7 @@ function RoomSession({ children, focus, userId }: { children: React.ReactNode; f
     function fail(message: string) { if (live.current) setError(message); }
     useEffect(() => {
         live.current = true;
+        listeningRef.current = false; setListening(false); roomRef.current = null; setRoom(null); setError(''); setTracks([]); setBusy(false); setSources([]); setPanel(false); setPosition(0);
         void setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true, interruptionMode: 'doNotMix' }).catch(() => fail('设备暂不支持后台音频'));
         void getStorageValue('music-volume').then((value) => {
             if (live.current && !volumeChanged.current && value !== null && Number.isFinite(Number(value))) updateVolume(Math.max(0, Math.min(1, Number(value))));
@@ -132,20 +133,20 @@ function RoomSession({ children, focus, userId }: { children: React.ReactNode; f
             clearInterval(timer); socket.off('musicState', state); socket.off('musicAccessLost', lost);
             if (socket.connected && focus && userId) void fetch('musicLeave', {}, { toast: false });
         };
-    }, []);
+    }, [focus, userId]);
     useEffect(() => {
         if (!connect) return;
         void refresh();
         const timer = setInterval(() => { void refresh(); }, 15000);
         const subscription = AppState.addEventListener('change', (value) => { if (value === 'active') void refresh(); });
         return () => { clearInterval(timer); subscription.remove(); };
-    }, [connect]);
+    }, [connect, focus, userId]);
     async function act(action: string, data: Record<string, unknown> = {}) {
         const [err, result] = await fetch<MusicSnapshot>('musicAction', {
             roomId: focus, action, entryId: roomRef.current?.current?.entryId, ...data,
             requestId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
         });
-        if (!live.current || err || !result) return false;
+        if (!live.current || err || !result || result.roomId !== roomRef.current?.roomId) return false;
         accept(result); return true;
     }
     async function search() {

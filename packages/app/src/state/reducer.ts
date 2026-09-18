@@ -1,3 +1,5 @@
+import { AppState } from 'react-native';
+import { Actions } from '../navigation';
 import { produce } from 'immer';
 import deepmerge from 'deepmerge';
 import {
@@ -119,7 +121,7 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
                     ? {
                         messages: [
                             ...action.linkmans[linkman._id].messages.map(convertMessage),
-                            ...linkman.messages.filter((local) => (local.loading || local.failed) && !action.linkmans[linkman._id].messages.some((remote) => remote._id === local._id || (local.type === 'file' && remote.type === 'file' && remote.from._id === local.from._id && remote.content === local.content))),
+                            ...linkman.messages.filter((local) => !action.linkmans[linkman._id].messages.some((remote) => remote._id === local._id || (local.type === 'file' && remote.type === 'file' && remote.from._id === local.from._id && remote.content === local.content))),
                         ].sort((a, b) => Number(new Date(a.createTime)) - Number(new Date(b.createTime))),
                         unread: action.linkmans[linkman._id].unread,
                     }
@@ -195,6 +197,7 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
             return state;
         }
         case AddLinkmanActionType: {
+            if (state.linkmans.some((room) => room._id === action.linkman._id)) { if (action.focus) state.focus = action.linkman._id; return state; }
             state.linkmans.unshift(action.linkman);
             if (action.focus) {
                 state.focus = action.linkman._id;
@@ -219,7 +222,7 @@ const reducer = produce((state: State = initialState, action: ActionTypes) => {
                 (linkman) => linkman._id === action.linkmanId,
             );
             if (targetLinkman && !targetLinkman.messages.some((item) => item._id === action.message._id)) {
-                if (state.focus !== targetLinkman._id) {
+                if (action.message.from?._id !== state.user?._id && (AppState.currentState !== 'active' || Actions.currentScene !== 'chat' || state.focus !== targetLinkman._id)) {
                     targetLinkman.unread += 1;
                 }
                 if (!targetLinkman.messages.some((item) => item._id === action.message._id)) {

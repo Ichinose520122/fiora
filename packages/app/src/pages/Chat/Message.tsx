@@ -1,3 +1,6 @@
+import retryMessage from '../../utils/retryMessage';
+import CodeMessage from './CodeMessage';
+import { usePreferences } from '../../utils/preferences';
 import React, { useEffect } from 'react';
 import {
     View,
@@ -50,6 +53,7 @@ function Message({
     openImageViewer,
 }: Props) {
     const { width } = useWindowDimensions();
+    const preferences = usePreferences();
     const isAdmin = useIsAdmin();
     const self = useSelfId();
     const focus = useFocus();
@@ -115,6 +119,7 @@ function Message({
 
     function renderContent() {
         switch (message.type) {
+            case 'url':
             case 'text': {
                 return <TextMessage message={message} isSelf={isSelf} />;
             }
@@ -143,15 +148,7 @@ function Message({
                 return <InviteMessage message={message} isSelf={isSelf} />;
             }
             case 'file': return <FileMessage message={message} />;
-            case 'code': {
-                return (
-                    <Text style={{ color: isSelf ? '#344a71' : '#666' }}>
-                        暂未支持的消息类型[
-                        {message.type}
-                        ], 请在Web端查看
-                    </Text>
-                );
-            }
+            case 'code': return <CodeMessage content={message.content} />;
             default:
                 return (
                     <Text style={{ color: isSelf ? '#344a71' : '#666' }}>
@@ -186,15 +183,17 @@ function Message({
                     </Text>
                 </View>
                 {message.loading && <Text style={{ fontSize: 11, color: '#637087' }}>{message.statusText || '发送中…'}</Text>}
-                {message.failed && <TouchableOpacity onPress={() => Alert.alert('发送失败', message.error || '请检查网络后重新发送', message.type === 'file' ? [{ text: '取消', style: 'cancel' }, { text: '重试', onPress: () => { void retryFile(message); } }] : [{ text: '确定' }])}><Text numberOfLines={2} style={{ fontSize: 11, color: '#b54255' }}>{message.error || '发送失败，请重新发送'}</Text></TouchableOpacity>}
+                {message.failed && <TouchableOpacity onPress={() => Alert.alert('发送失败', (message.error || '请检查网络') + '\n如果服务器已收到消息，再次发送可能重复，请先确认聊天记录。', [{ text: '取消', style: 'cancel' }, { text: '重新发送', onPress: () => { void retryMessage(message); } }])}><Text numberOfLines={2} style={{ fontSize: 11, color: '#b54255' }}>{message.error || '发送失败，请重新发送'}</Text></TouchableOpacity>}
                 {couldDelete && message.type !== 'image' ? (
                     <TouchableOpacity onLongPress={handleDeleteMessage}>
                         <View
                             style={[
                                 styles.content,
                                 {
-                                    backgroundColor: isSelf
-                                        ? '#dee6fa'
+                                    padding: message.type === 'image' ? 0 : 9,
+                                    paddingLeft: message.type === 'image' ? 0 : 12, paddingRight: message.type === 'image' ? 0 : 12,
+                                    backgroundColor: message.type === 'image' ? 'transparent' : isSelf
+                                        ? preferences.bubbleColor
                                         : '#ffffffed',
                                 },
                             ]}
@@ -207,8 +206,10 @@ function Message({
                         style={[
                             styles.content,
                             {
-                                backgroundColor: isSelf
-                                    ? '#dee6fa'
+                                padding: message.type === 'image' ? 0 : undefined,
+                                    paddingLeft: message.type === 'image' ? 0 : 12, paddingRight: message.type === 'image' ? 0 : 12,
+                                    backgroundColor: message.type === 'image' ? 'transparent' : isSelf
+                                    ? preferences.bubbleColor
                                     : '#ffffffed',
                             },
                         ]}

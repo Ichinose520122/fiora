@@ -1,3 +1,4 @@
+import { usePreferences } from '../../utils/preferences';
 import { View, Text } from '../../components/NativeUI';
 import React from 'react';
 import { TouchableOpacity, Linking, StyleSheet } from 'react-native';
@@ -11,6 +12,7 @@ type Props = {
 };
 
 function TextMessage({ message, isSelf }: Props) {
+    const preferences = usePreferences();
     const children = [];
     let copy = message.content;
 
@@ -18,7 +20,7 @@ function TextMessage({ message, isSelf }: Props) {
         children.push(
             <Text
                 key={Math.random()}
-                style={{ color: isSelf ? '#344a71' : '#40506a', fontSize: 15, lineHeight: 23 }}
+                style={{ color: isSelf ? preferences.bubbleTextColor : '#40506a', fontSize: 15, lineHeight: 23 }}
             >
                 {str}
             </Text>,

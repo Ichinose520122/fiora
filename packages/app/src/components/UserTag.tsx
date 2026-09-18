@@ -1,3 +1,4 @@
+import { usePreferences } from '../utils/preferences';
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, Easing, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +18,9 @@ export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: T
     const palette = preset === 'monochrome' ? ['#050505', '#f5f5f5', '#141414']
         : preset === 'tripleGradient' ? selected.length >= 3 ? selected : ['#5b8ff9', '#f759ab', '#ffd666']
         : selected.length >= 2 ? selected : ['#5b8ff9', '#f759ab'];
-    const fallback = getRandomColor(text);
+    const preferences = usePreferences();
+    const random = useRef(getRandomColor(`${text}:${Math.random()}`)).current;
+    const fallback = preferences.tagColorMode === 'singleColor' ? preferences.bubbleTextColor : preferences.tagColorMode === 'randomColor' ? random : getRandomColor(text);
     useEffect(() => {
         let live = true;
         void AccessibilityInfo.isReduceMotionEnabled().then(value => { if (live) setReduceMotion(value); }).catch(() => {});
@@ -53,7 +56,7 @@ export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: T
             {preset !== 'solid' && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { width: Math.max(width, 1) * scale, transform: [{ translateX: gradient.interpolate({ inputRange: [0, 1], outputRange: [0, -width * (scale - 1)] }) }] }]}>
                 <LinearGradient colors={palette as [string, string, ...string[]]} start={{ x: 0.047, y: 0.288 }} end={{ x: 0.953, y: 0.712 }} style={StyleSheet.absoluteFill} />
             </Animated.View>}
-            <Text numberOfLines={1} style={styles.text}>{text}</Text>
+            <Text style={styles.text}>{text}</Text>
         </View>
         {!reduceMotion && particle !== 'none' && particles.map((value, index) => {
             const angle = index / particles.length * Math.PI * 2;
@@ -73,9 +76,9 @@ export default function UserTag({ text, tagStyle }: { text: string; tagStyle?: T
     </View>;
 }
 const styles = StyleSheet.create({
-    root: { alignSelf: 'flex-start', position: 'relative', marginRight: 5, maxWidth: 160, flexShrink: 1 },
+    root: { alignSelf: 'flex-start', position: 'relative', marginRight: 5, maxWidth: '100%', flexShrink: 1 },
     badge: { minHeight: 20, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3, overflow: 'hidden', justifyContent: 'center' },
-    text: { color: 'white', fontSize: 11, fontWeight: '600', includeFontPadding: false, textShadowColor: '#24324730', textShadowRadius: 1 },
+    text: { color: 'white', fontSize: 11, fontWeight: '600', lineHeight: 17, textAlign: 'center', includeFontPadding: false, textShadowColor: '#24324730', textShadowRadius: 1 },
     monochrome: { borderWidth: 1, borderColor: '#ffffffd9' },
     particle: { position: 'absolute', left: '50%', top: '50%', width: 18, height: 18, marginLeft: -9, marginTop: -9, textAlign: 'center', includeFontPadding: false, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 4 },
 });

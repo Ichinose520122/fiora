@@ -1,3 +1,4 @@
+import { MusicSessionProvider } from './modules/Music/MusicSession';
 import React from 'react';
 import { BackgroundConnection } from './components/BackgroundConnection';
 import { View, Button } from 'react-native';
@@ -36,13 +37,13 @@ function screen(Component: any) { return ({ route }: any) => <Component {...rout
 const screens = { login: screen(Login), signup: screen(Signup), groupProfile: screen(GroupProfile), userInfo: screen(UserInfo), groupInfo: screen(GroupInfo), searchResult: screen(SearchResult) };
 export default function App() {
     return <SafeAreaProvider><View style={{ flex: 1 }}>
-        <NavigationContainer ref={navigation}>
+        <MusicSessionProvider><NavigationContainer ref={navigation}>
             <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#f3f5fc' }, headerTintColor: '#52658e', headerShadowVisible: false, headerTitleStyle: { fontSize: 17, fontWeight: '600' } }}>
                 <Stack.Screen name="tabs" component={Home} options={{ headerShown: false }} />
                 <Stack.Screen name="chat" component={Chat} options={({ route }: any) => ({ title: route.params?.title || '聊天', headerRight: () => <ChatRightButton /> })} />
                 {Object.entries(screens).map(([name, Component]) => <Stack.Screen key={name} name={name} component={Component} options={{ title: ({ login: '登录', signup: '注册', groupProfile: '群组资料', userInfo: '个人信息', groupInfo: '群组信息', searchResult: '搜索结果' } as any)[name] }} />)}
             </Stack.Navigator>
-        </NavigationContainer>
+        </NavigationContainer></MusicSessionProvider>
         <Loading /><Notification /><BackgroundConnection />
     </View></SafeAreaProvider>;
 }

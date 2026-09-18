@@ -1,3 +1,7 @@
+import { serverUrl } from '../../config';
+import CodeComposer from './CodeComposer';
+import { chatCommands } from '../../../../utils/chatCommands';
+import { Group } from '../../types/redux';
 import MusicIcon from '../../components/MusicIcon';
 import React, { useRef, useState } from 'react';
 import { StyleSheet, View, TextInput, Text, TouchableOpacity, Alert } from 'react-native';
@@ -19,29 +23,24 @@ import Toast from '../../components/Toast';
 import ExpressionPanel from './ExpressionPanel';
 import { useMusic } from '../../modules/Music/MusicSession';
 
-const commands = [
-    ['/music ', '点歌：歌名、ID 或平台链接'], ['/music search ', '搜索歌曲'],
-    ['/music join', '加入一起听'], ['/music leave', '仅自己停止收听'],
-    ['/music list', '查看点歌队列'], ['/music next', '切到下一首'],
-    ['/music vote', '投票切歌'], ['/music pause', '暂停房间播放'],
-    ['/music resume', '继续房间播放'], ['/music playlist ', '添加歌单'],
-    ['/music login', '网易云账号设置'], ['/pixiv ', '发送作品 ID、链接或单张 pximg 链接'],
-    ['-roll ', '掷骰子'], ['-rps', '石头剪刀布'],
-];
+const drafts = new Map<string, string>();
+const commands = chatCommands.map(({ value, description }) => [value, description]);
 export default function Input({ onHeightChange }: { onHeightChange: () => void }) {
     const isLogin = useIsLogin();
     const user = useUser();
-    const { focus } = useStore();
+    const { focus, linkmans } = useStore();
+    const [showCode, setShowCode] = useState(false);
     const music = useMusic();
-    const [message, setMessage] = useState('');
+    const draftKey = `${user?._id}:${focus}`;
+    const [message, setMessage] = useState(drafts.get(draftKey) || '');
     const [showExpression, setShowExpression] = useState(false);
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const input = useRef<TextInput>(null);
-    const draft = useRef('');
+    const draft = useRef(message);
     const pickingFile = useRef(false);
     const identity = useRef({ focus, userId: user?._id });
     identity.current = { focus, userId: user?._id };
-    function change(value: string) { draft.current = value; setMessage(value); }
+    function change(value: string) { draft.current = value; setMessage(value); if (value) drafts.set(draftKey, value); else drafts.delete(draftKey); }
     function local(type: string, content: string, target = focus) {
         const id = `${target}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         action.addLinkmanMessage(target, { _id: id, type, content, createTime: Date.now(),
@@ -51,6 +50,7 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
     }
     async function send(id: string, type: string, content: string, target = focus) {
         const sender = user._id;
+        try { await waitForSession(sender); } catch (error) { action.updateSelfMessage(target, id, { loading: false, failed: true, error: error instanceof Error ? error.message : '连接未恢复' } as Message); return; }
         const [err, result] = await fetch<Message & { additionalMessages?: Message[] }>('sendMessage', {
             to: target, type, content,
         }, { timeout: type === 'text' && (/^\/\s*pixiv\b/i.test(content) || /https:\/\/i\.pximg\.net\//i.test(content)) ? 180000 : 30000 });
@@ -67,7 +67,10 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
         if (!value || !isLogin || !focus) return;
         change(''); setShowExpression(false);
         if (/^\/music(?:\s|$)/i.test(value)) value = music.command(value);
-        void send(local('text', value), 'text', value);
+        let groupId = '';
+        try { const url = new URL(value); if (url.origin === serverUrl) groupId = /^\/invite\/group\/([a-f0-9]{24})$/i.exec(url.pathname)?.[1] || ''; } catch { /* Plain chat text. */ }
+        if (groupId) void send(local('inviteV2', JSON.stringify({ inviterName: user.username, group: groupId, groupName: '群组' })), 'inviteV2', groupId);
+        else void send(local('text', value), 'text', value);
     }
     function sendExpression(url: string) { void send(local('image', url), 'image', url); }
     async function pick(camera: boolean) {
@@ -127,14 +130,18 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
         setSelection({ start: selection.start + value.length, end: selection.start + value.length });
     }
     const hints = message && /^[/-]/.test(message) ? commands.filter(([cmd]) => cmd.startsWith(message.toLowerCase()) && cmd !== message).slice(0, 4) : [];
+    const mention = /(?:^|\s)@([^\s@]*)$/.exec(message);
+    const members = (linkmans.find((room) => room._id === focus) as Group)?.members || [];
     return <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.container}>
+        {mention && <View style={styles.hints}>{members.filter(m => m.user._id !== user?._id && m.user.username.startsWith(mention[1])).slice(0, 5).map(m => <TouchableOpacity key={m._id} onPress={() => { change(message.slice(0, message.lastIndexOf('@')) + '@' + m.user.username + ' '); input.current?.focus(); }} style={{ padding: 10 }}><Text>@{m.user.username}</Text></TouchableOpacity>)}</View>}
+        {showCode && <CodeComposer close={() => setShowCode(false)} send={(value) => { setShowCode(false); void send(local('code', value), 'code', value); }} />}
         {!!hints.length && <GlassView intensity={35} tint="light" style={styles.hints}>{hints.map(([cmd, help]) => <TouchableOpacity key={cmd} onPress={() => { change(cmd); input.current?.focus(); }} style={{ padding: 8 }}><Text><Text style={{ fontWeight: '600' }}>{cmd}</Text>  {help}</Text></TouchableOpacity>)}</GlassView>}
         {isLogin ? <>
             <View style={{ flexDirection: 'row', padding: 8 }}><TextInput ref={input} value={message} onChangeText={change} onSubmitEditing={submit} onSelectionChange={(e) => setSelection(e.nativeEvent.selection)} style={styles.input}  autoCapitalize="none" autoCorrect={false} returnKeyType="send" submitBehavior="submit" maxLength={2048} onFocus={() => setShowExpression(false)} /><TouchableOpacity accessibilityLabel="发送消息" onPress={submit} style={{ padding: 11, marginLeft: 8, backgroundColor: '#7588bd', borderRadius: 15 }}><Ionicons name="send" size={21} color="white" /></TouchableOpacity></View>
             <View style={styles.tools}>{([
                 ['musical-notes-outline', () => music.open()],
                 ['happy-outline', () => { input.current?.blur(); setShowExpression(!showExpression); onHeightChange(); }],
-                ['image-outline', () => pick(false)], ['camera-outline', () => pick(true)], ['attach-outline', pickFile],
+                ['image-outline', () => pick(false)], ['camera-outline', () => pick(true)], ['attach-outline', pickFile], ['code-slash-outline', () => setShowCode(true)],
             ] as const).map(([icon, press]) => <TouchableOpacity key={icon} accessibilityLabel={icon} onPress={press} style={{ padding: 9, flex: 1, alignItems: 'center' }}>{icon === 'musical-notes-outline' ? <MusicIcon size={25} /> : <Ionicons name={icon} size={23} color="#7b8dad" />}</TouchableOpacity>)}</View>
             {showExpression && <ExpressionPanel insert={insertExpression} send={sendExpression} />}
         </> : <TouchableOpacity onPress={() => Actions.login()} style={{ padding: 16 }}><Text>登录 / 注册，参与聊天</Text></TouchableOpacity>}

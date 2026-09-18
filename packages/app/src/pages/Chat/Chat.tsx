@@ -3,7 +3,7 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     ScrollView,
-    Dimensions,
+    Dimensions, AppState,
 } from 'react-native';
 import Constants from 'expo-constants';
 import { Actions } from '../../navigation';
@@ -11,7 +11,6 @@ import { Actions } from '../../navigation';
 import { isiOS } from '../../utils/platform';
 
 import MessageList from './MessageList';
-import { MusicSessionProvider } from '../../modules/Music/MusicSession';
 import MusicPlayer from '../../modules/Music/MusicPlayer';
 import MusicPanel from '../../modules/Music/MusicPanel';
 import Input from './Input';
@@ -65,7 +64,7 @@ const keyboardOffset = (() => {
 })();
 
 export default function Chat() {
-    return <MusicSessionProvider><ChatContent /></MusicSessionProvider>;
+    return <ChatContent />;
 }
 function ChatContent() {
     const isLogin = useIsLogin();
@@ -112,7 +111,7 @@ function ChatContent() {
     }, [(linkman as Group)?.members, (linkman as Friend)?.isOnline]);
 
     async function intervalUpdateHistory() {
-        if (isLogin && linkman) {
+        if (isLogin && linkman && AppState.currentState === 'active' && Actions.currentScene === 'chat') {
             if (linkman.messages.length > 0) {
                 const lastMessageId =
                     linkman.messages[linkman.messages.length - 1]._id;
@@ -161,8 +160,8 @@ function ChatContent() {
                 <MusicPlayer />
                 {/* 
                 // @ts-ignore */}
-                <MessageList $scrollView={$messageList} />
-                <Input onHeightChange={handleInputHeightChange} />
+                <MessageList key={`${self}:${focus}`} $scrollView={$messageList} />
+                <Input key={`${self}:${focus}`} onHeightChange={handleInputHeightChange} />
                 <MusicPanel />
             </KeyboardAvoidingView>
         </PageContainer>

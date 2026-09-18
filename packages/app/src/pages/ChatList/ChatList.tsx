@@ -70,7 +70,7 @@ export default function ChatList() {
                 </Item>
             </Header>
             <ScrollView style={styles.messageList} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
-                {linkmans && linkmans.map((linkman) => renderLinkman(linkman))}
+                {linkmans && [...linkmans].sort((a, b) => new Date(b.messages[b.messages.length - 1]?.createTime || b.createTime).getTime() - new Date(a.messages[a.messages.length - 1]?.createTime || a.createTime).getTime()).map((linkman) => renderLinkman(linkman))}
             </ScrollView>
         </PageContainer>
     );

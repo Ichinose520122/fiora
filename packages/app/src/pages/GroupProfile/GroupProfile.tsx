@@ -1,112 +1,31 @@
-import { View, Text, Button } from '../../components/NativeUI';
-import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, ScrollView, Share, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Actions } from '../../navigation';
 import Avatar from '../../components/Avatar';
 import PageContainer from '../../components/PageContainer';
 import { useFocusLinkman, useSelfId } from '../../hooks/useStore';
-import { deleteGroup, leaveGroup } from '../../service';
+import { changeGroupAvatar, changeGroupName, deleteGroup, leaveGroup } from '../../service';
+import { chooseImage } from '../../utils/chooseImage';
 import action from '../../state/action';
-import { Group } from '../../types/redux';
-
-function GroupProfile() {
-    const linkman = useFocusLinkman() as Group;
-    const self = useSelfId();
-    const isGroupCreator = linkman?.creator === self;
-    if (!linkman || linkman.type !== 'group') return <PageContainer><Text>此群聊已不可用</Text></PageContainer>;
-
-    function getOS(os: string) {
-        return os === 'Windows Server 2008 R2 / 7' ? 'Windows 7' : os;
-    }
-
-    function ShowEnvironment(environment: string) {
-        Alert.alert('设备信息', environment);
-    }
-
-    async function handleLeaveGroup() {
-        if (isGroupCreator) {
-            const isSuccess = await deleteGroup(linkman._id);
-            if (isSuccess) {
-                action.removeLinkman(linkman._id);
-                Actions.popTo('_chatlist', { title: '' });
-            }
-        } else {
-            const isSuccess = await leaveGroup(linkman._id);
-            if (isSuccess) {
-                action.removeLinkman(linkman._id);
-                Actions.popTo('_chatlist', { title: '' });
-            }
-        }
-    }
-
-    return (
-        <PageContainer>
-            <ScrollView style={styles.container}>
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>功能</Text>
-                    <Button danger onPress={handleLeaveGroup}>
-                        <Text>{isGroupCreator ? '解散群组' : '退出群组'}</Text>
-                    </Button>
-                </View>
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>在线成员</Text>
-                    {linkman.members.map((member) => (
-                        <View key={member._id} style={styles.member}>
-                            <Avatar userId={member.user._id} src={member.user.avatar} size={24} />
-                            <Text style={styles.memberName}>
-                                {member.user.username}
-                            </Text>
-                            <Pressable
-                                style={styles.memberInfoContainer}
-                                onPress={() =>
-                                    ShowEnvironment(member.environment)
-                                }
-                            >
-                                <Text style={styles.memberInfo}>
-                                    {member.browser} {getOS(member.os)}
-                                </Text>
-                            </Pressable>
-                        </View>
-                    ))}
-                </View>
-            </ScrollView>
-        </PageContainer>
-    );
+import Toast from '../../components/Toast';
+import { serverUrl } from '../../config';
+export default function GroupProfile() {
+    const room = useFocusLinkman(); const self = useSelfId();
+    const [name, setName] = useState(room?.name || ''); const [busy, setBusy] = useState(false);
+    if (!room || room.type !== 'group') return <PageContainer><Text style={{ padding: 24 }}>此群聊已不可用</Text></PageContainer>;
+    const owner = room.creator === self;
+    async function run(task: () => Promise<void>) { if (busy) return; setBusy(true); try { await task(); } catch (error) { Toast.danger(error instanceof Error ? error.message : '操作失败'); } finally { setBusy(false); } }
+    const button = (title: string, press: () => void, danger = false) => <TouchableOpacity disabled={busy} onPress={press} style={{ padding: 15, backgroundColor: '#ffffffc9', borderRadius: 14, marginVertical: 6 }}><Text style={{ color: danger ? '#b85e78' : '#52658e', textAlign: 'center' }}>{title}</Text></TouchableOpacity>;
+    return <PageContainer><ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
+        <View style={{ alignItems: 'center', paddingTop: 12, gap: 12 }}><Avatar src={room.avatar} size={78} /><Text style={{ fontSize: 21, color: '#32405a' }}>{room.name}</Text></View>
+        {button('分享邀请链接', () => { void Share.share({ message: `${room.name}\n${serverUrl}/invite/group/${room._id}` }); })}
+        {owner && <>
+            <TextInput value={name} onChangeText={setName} maxLength={50} placeholder="群名称" style={{ padding: 14, borderRadius: 12, backgroundColor: '#fff' }} />
+            {button('修改群名称', () => { void run(async () => { if (!name.trim()) throw new Error('请输入群名称'); if (await changeGroupName(room._id, name.trim())) { action.updateGroupProperty(room._id, 'name', name.trim()); Toast.success('群名称已更新'); } }); })}
+            {button('更换群头像', () => { void run(async () => { const url = await chooseImage('GroupAvatar', self); if (url && await changeGroupAvatar(room._id, url)) { action.updateGroupProperty(room._id, 'avatar', url); Toast.success('群头像已更新'); } }); })}
+        </>}
+        <Text style={{ marginTop: 16, fontSize: 17 }}>在线成员 · {room.members?.length || 0}</Text>
+        {(room.members || []).filter((member) => member?.user?._id).map((member) => <TouchableOpacity key={member._id} onPress={() => Actions.userInfo({ user: member.user })} onLongPress={() => Alert.alert('设备信息', member.environment || '')} style={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, backgroundColor: '#ffffffa0', borderRadius: 15 }}><Avatar src={member.user.avatar} userId={member.user._id} size={36} /><View style={{ flex: 1 }}><Text>{member.user.username}</Text><Text style={{ fontSize: 11, color: '#8995ab', marginTop: 4 }}>{member.browser} {member.os}</Text></View></TouchableOpacity>)}
+        {button(owner ? '解散群组' : '退出群组', () => Alert.alert(owner ? '解散此群组？' : '退出此群组？', owner ? '群组解散后不能恢复。' : '', [{ text: '取消', style: 'cancel' }, { text: '确认', style: 'destructive', onPress: () => { void run(async () => { if (await (owner ? deleteGroup(room._id) : leaveGroup(room._id))) { action.removeLinkman(room._id); Actions.popTo('_chatlist'); } }); } }]), true)}
+    </ScrollView></PageContainer>;
 }
-
-export default GroupProfile;
-
-const styles = StyleSheet.create({
-    container: {
-        paddingLeft: 12,
-        paddingRight: 12,
-        paddingTop: 8,
-        paddingBottom: 8,
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 12,
-    },
-    member: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        height: 32,
-    },
-    memberName: {
-        fontSize: 14,
-        color: '#333',
-        marginLeft: 8,
-    },
-    memberInfoContainer: {
-        flex: 1,
-    },
-    memberInfo: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'right',
-    },
-});

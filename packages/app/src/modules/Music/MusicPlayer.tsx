@@ -39,7 +39,7 @@ export default function MusicPlayer() {
             <TouchableOpacity onPress={music.open} style={styles.queue} accessibilityLabel="查看点歌队列"><Ionicons name="list-outline" size={20} color="#7382a5" /><Text style={styles.status}>{room.queue.length}</Text></TouchableOpacity>
         </View>
         <View style={styles.lyrics}><Text numberOfLines={1} style={styles.lyric}>{line?.text || '纯音乐，也很好听'}</Text>{!!translation?.text && <Text numberOfLines={1} style={styles.translation}>{translation.text}</Text>}</View>
-        <View style={styles.timeline}><View style={[styles.progress, { width: `${percent}%` }]} /></View>
+        {room.canControl ? <Slider accessibilityLabel="房间播放进度" minimumValue={0} maximumValue={Math.max(1, track.duration)} value={position} onSlidingComplete={(next) => { void music.act('seek', { position: next }); }} minimumTrackTintColor="#97a6d4" thumbTintColor="#7484b8" /> : <View style={styles.timeline}><View style={[styles.progress, { width: `${percent}%` }]} /></View>}
         <View style={[styles.row, { justifyContent: 'space-between', marginTop: 5 }]}><Text style={styles.clock}>{time(position)}</Text><Text style={styles.clock}>{time(track.duration)}</Text></View>
         <View style={[styles.row, { marginTop: 2 }]}>
             <TouchableOpacity onPress={music.listening ? music.leave : music.join} style={styles.join} accessibilityLabel={music.listening ? '退出收听' : '加入收听'}><Ionicons name={music.listening ? 'headset' : 'headset-outline'} size={17} color="#5e6fa9" /><Text style={styles.joinText}>{music.listening ? '收听中' : '一起听'}</Text></TouchableOpacity>

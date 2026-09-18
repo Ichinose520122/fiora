@@ -13,12 +13,12 @@ import com.facebook.react.jstasks.HeadlessJsTaskConfig
 class ConnectionService : HeadlessJsTaskService() {
   companion object { @Volatile var running = false }
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-    if (intent?.action == "stop") {
+    if (intent?.action == "stop" || !getSharedPreferences("connection", 0).getBoolean("enabled", true)) {
       getSharedPreferences("connection", 0).edit().putBoolean("enabled", false).apply()
       stopSelf()
       return START_NOT_STICKY
     }
-    if (running) return START_NOT_STICKY
+    if (running) return START_STICKY
     val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel("fiora-connection", "后台在线", NotificationManager.IMPORTANCE_LOW))
     val open = packageManager.getLaunchIntentForPackage(packageName)!!
@@ -33,7 +33,7 @@ class ConnectionService : HeadlessJsTaskService() {
     startForeground(781, notification)
     running = true
     super.onStartCommand(intent, flags, startId)
-    return START_NOT_STICKY
+    return START_STICKY
   }
   override fun getTaskConfig(intent: Intent?) = HeadlessJsTaskConfig("FioraConnection", Arguments.createMap(), 0, true)
   override fun onDestroy() {

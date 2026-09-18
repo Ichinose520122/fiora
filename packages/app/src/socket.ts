@@ -1,4 +1,6 @@
+import './utils/pendingMessages';
 import IO from 'socket.io-client';
+import { notifyMessage } from './utils/messageNotifications';
 import { serverUrl } from './config';
 import { socketRequest } from './utils/socketRequest';
 import Toast from './components/Toast';
@@ -39,6 +41,7 @@ const { dispatch } = store;
 
 const options = {
     transports: ['websocket'],
+    reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000, reconnectionDelayMax: 10000, timeout: 15000,
 };
 
 const host = serverUrl;
@@ -86,12 +89,38 @@ async function restoreSession() {
         const [historyError, linkmans] = await fetch('getLinkmansLastMessagesV2', {
             linkmans: store.getState().linkmans.map((linkman) => linkman._id),
         }, { toast: false });
-        if (!historyError && linkmans && current() && store.getState().user?._id === res._id) action.setLinkmansLastMessages(linkmans);
+        if (!historyError && linkmans && current() && store.getState().user?._id === res._id) { action.setLinkmansLastMessages(linkmans); notifyMissed(linkmans, res._id); }
     } catch { if (current()) { action.disconnect(); retryRestore(); } }
     finally { if (sequence === restoreSequence) restoring = false; }
 }
 socket.on('connect', () => { void restoreSession(); });
-AppState.addEventListener('change', (state) => { if (state === 'active' && !store.getState().connect) { if (socket.connected) void restoreSession(); else socket.connect(); } });
+function notifyMissed(rooms: any, userId: string) {
+    if (AppState.currentState === 'active') return;
+    for (const [roomId, data] of Object.entries(rooms) as [string, any][]) {
+        if (!data?.unread || !Array.isArray(data.messages)) continue;
+        const latest = data.messages.filter((message: Message) => message.from?._id !== userId).pop();
+        const room = store.getState().linkmans.find((item) => item._id === roomId);
+        if (latest) void notifyMessage(latest, roomId, userId, room?.type === 'group' ? room.name : undefined);
+    }
+}
+let refreshing = false;
+export async function resumeConnection() {
+    if (!socket.connected) { socket.connect(); return; }
+    if (!store.getState().connect) { await restoreSession(); return; }
+    if (!store.getState().user || refreshing) return;
+    refreshing = true;
+    const connection = socket.id;
+    const userId = store.getState().user?._id;
+    try {
+        const [err, data] = await socketRequest(socket, 'getLinkmansLastMessagesV2', {
+            linkmans: store.getState().linkmans.map((item) => item._id),
+        }, 8000);
+        if (connection !== socket.id || userId !== store.getState().user?._id) return;
+        if (err) { socket.disconnect(); socket.connect(); }
+        else if (data) { action.setLinkmansLastMessages(data as any); notifyMissed(data, userId!); }
+    } finally { refreshing = false; }
+}
+AppState.addEventListener('change', (state) => { if (state === 'active') void resumeConnection().catch(() => {}); });
 socket.on('disconnect', () => {
     ++restoreSequence; restoring = false;
     if (restoreTimer) clearTimeout(restoreTimer);
@@ -104,6 +133,8 @@ socket.on('message', (message: Message) => {
     const state = store.getState() as State;
     if (!state.user?._id) return;
     const linkman = state.linkmans.find((x) => x._id === message.to);
+    const roomId = linkman?._id || getFriendId(state.user._id, message.from._id);
+    void notifyMessage(message, roomId, state.user._id, linkman?.type === 'group' ? linkman.name : undefined);
     if (linkman) {
         dispatch({
             type: AddlinkmanMessageActionType,
@@ -117,7 +148,7 @@ socket.on('message', (message: Message) => {
             createTime: Date.now(),
             avatar: message.from.avatar,
             name: message.from.username,
-            messages: [],
+            messages: [message],
             unread: 1,
         };
         dispatch({

@@ -3,8 +3,11 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <queries><intent><action android:name="android.intent.action.TTS_SERVICE" /></intent></queries>
   <application>
-    <service android:name=".ConnectionService" android:exported="false" android:foregroundServiceType="specialUse" android:stopWithTask="true">
+    <service android:name=".ConnectionService" android:exported="false" android:foregroundServiceType="specialUse" android:stopWithTask="false">
       <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User enabled persistent chat connection for receiving messages while the chat app is in the background; an ongoing notification allows the user to stop the connection." />
     </service>
   </application>

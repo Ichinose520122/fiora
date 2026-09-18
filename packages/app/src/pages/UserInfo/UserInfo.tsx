@@ -1,4 +1,6 @@
-import React from 'react';
+import AccountSettings from '../Other/AccountSettings';
+import PageContainer from '../../components/PageContainer';
+import React, { useState } from 'react';
 import ProfileBoundary from '../../components/ProfileBoundary';
 import { Button, Text, View } from '../../components/NativeUI';
 import { ScrollView, StyleSheet } from 'react-native';
@@ -38,6 +40,7 @@ type Props = {
 
 function UserInfo({ user }: Props) {
     const { _id, avatar, username } = user;
+    const [editing, setEditing] = useState(false);
     const linkmans = useLinkmans();
     const self = useSelfId();
     const conversationId = self && self !== _id ? getFriendId(self, _id) : '';
@@ -133,6 +136,7 @@ function UserInfo({ user }: Props) {
                     <Text style={styles.nick}>{username}</Text>
                     {!!user.tag && <View style={{ alignItems: 'center', marginTop: 10 }}><UserTag text={user.tag} tagStyle={user.tagStyle} /></View>}
                 </View>
+                {self === _id && <Button block style={{ marginTop: 24 }} onPress={() => setEditing(true)}><Text>编辑个人资料</Text></Button>}
                 {self !== _id && <View style={styles.buttonContainer}>
                     {isFriend ? (
                         <>
@@ -188,6 +192,7 @@ function UserInfo({ user }: Props) {
                     )}
                 </View>}
             </ScrollView>
+            {editing && <AccountSettings close={() => setEditing(false)} />}
         </SafeAreaView>
     );
 }

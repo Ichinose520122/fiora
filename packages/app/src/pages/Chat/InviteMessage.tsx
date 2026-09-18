@@ -13,12 +13,14 @@ type Props = {
 };
 
 function InviteMessage({ message, isSelf }: Props) {
-    const invite = JSON.parse(message.content);
+    let invite: any;
+    try { invite = JSON.parse(message.content); } catch { return <Text>邀请信息无法读取</Text>; }
+    if (!invite || typeof invite.group !== 'string') return <Text>邀请信息无法读取</Text>;
 
     async function handleJoinGroup() {
         const group = await joinGroup(invite.group);
         if (group) {
-            group.type = 'group';
+            group.type = 'group'; group.messages = []; group.members = []; group.unread = 0;
             action.addLinkman(group, true);
             Actions.refresh({ title: group.name });
             Toast.success('加入群组成功');
