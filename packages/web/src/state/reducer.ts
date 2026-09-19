@@ -31,6 +31,8 @@ export interface Message {
         tag: string;
         tagStyle?: TagStyle;
     };
+    failed?: boolean;
+    sendError?: string;
     loading: boolean;
     percent: number;
     createTime: string;

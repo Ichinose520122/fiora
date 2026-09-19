@@ -149,6 +149,8 @@ function MessageList() {
                 tag={tag}
                 tagStyle={message.from.tagStyle}
                 loading={message.loading}
+                failed={message.failed}
+                sendError={message.sendError}
                 percent={message.percent}
                 shouldScroll={false}
                 tagColorMode={tagColorMode}

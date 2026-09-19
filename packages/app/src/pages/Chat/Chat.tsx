@@ -29,13 +29,14 @@ import action from '../../state/action';
 import { formatLinkmanName } from '../../utils/linkman';
 import fetch from '../../utils/fetch';
 
-let lastMessageIdCache = '';
+
 
 
 export default function Chat() {
     return <ChatContent />;
 }
 function ChatContent() {
+    const history = useRef({ acknowledged: '', busy: false });
     const isLogin = useIsLogin();
     const self = useSelfId();
     const { focus } = useStore();
@@ -84,13 +85,13 @@ function ChatContent() {
             if (linkman.messages.length > 0) {
                 const lastMessageId =
                     linkman.messages[linkman.messages.length - 1]._id;
-                if (lastMessageId !== lastMessageIdCache) {
+                if (!history.current.busy && `${self}:${focus}:${lastMessageId}` !== history.current.acknowledged) {
                     if (!/^[a-f0-9]{24}$/i.test(lastMessageId)) return;
-                    lastMessageIdCache = lastMessageId;
-                    await fetch('updateHistory', {
-                        linkmanId: focus,
-                        messageId: lastMessageId,
-                    });
+                    history.current.busy = true;
+                    try {
+                        const [error] = await fetch('updateHistory', { linkmanId: focus, messageId: lastMessageId }, { toast: false });
+                        if (!error) history.current.acknowledged = `${self}:${focus}:${lastMessageId}`;
+                    } finally { history.current.busy = false; }
                 }
             }
         }
@@ -99,25 +100,6 @@ function ChatContent() {
         const timer = setInterval(intervalUpdateHistory, 1000 * 5);
         return () => clearInterval(timer);
     }, [focus, isLogin, linkman?.messages]);
-
-    function scrollToEnd(time = 0) {
-        if (time > 200) {
-            return;
-        }
-        if ($messageList.current) {
-            $messageList.current!.scrollToEnd({ animated: false });
-        }
-
-        setTimeout(() => {
-            scrollToEnd(time + 50);
-        }, 50);
-    }
-
-    function handleInputHeightChange() {
-        if ($messageList.current) {
-            scrollToEnd();
-        }
-    }
 
     return (
         <PageContainer disableSafeAreaView>
@@ -128,7 +110,7 @@ function ChatContent() {
             >
                 <MusicPlayer />
                 <MessageList key={`${self}:${focus}`} $scrollView={$messageList} />
-                <Input key={`${self}:${focus}`} onHeightChange={handleInputHeightChange} />
+                <Input key={`${self}:${focus}`} />
                 <MusicPanel />
             </KeyboardAvoidingView>
         </PageContainer>

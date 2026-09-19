@@ -140,8 +140,9 @@ export async function resumeConnection() {
     try {
         const [err, data] = await pullRecentMessages();
         if (connection !== socket.id || userId !== store.getState().user?._id) return;
-        if (err) { socket.disconnect(); socket.connect(); }
-        else if (data) { action.setLinkmansLastMessages(data as any); notifyMissed(data, userId!); }
+        // A history timeout is not evidence that the transport is dead.
+        // Socket.IO handles transport recovery; the next sync retries history.
+        if (!err && data) { action.setLinkmansLastMessages(data as any); notifyMissed(data, userId!); }
     } finally { refreshing = false; }
 }
 AppState.addEventListener('change', (state) => { if (state === 'active') void resumeConnection().catch(() => {}); });

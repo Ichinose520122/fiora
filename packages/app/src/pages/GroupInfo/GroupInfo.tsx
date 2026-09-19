@@ -32,7 +32,7 @@ function GroupInfo({ group }: Props) {
 
     function handleSendMessage() {
         action.setFocus(group._id);
-        if (currentLinkman._id === group._id) {
+        if (currentLinkman?._id === group._id) {
             Actions.popTo('chat');
         } else {
             Actions.popTo('_chatlist');
@@ -50,7 +50,7 @@ function GroupInfo({ group }: Props) {
                 messages: [],
             });
             const messages = await getLinkmanHistoryMessages(_id, 0);
-            action.addLinkmanHistoryMessages(_id, messages);
+            if (Array.isArray(messages)) action.addLinkmanHistoryMessages(_id, messages);
             action.setFocus(_id);
 
             Actions.popTo('_chatlist');

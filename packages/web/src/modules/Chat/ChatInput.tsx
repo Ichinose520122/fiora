@@ -1,3 +1,5 @@
+import store from '../../state/store';
+import { runPendingMessage } from '../../utils/pendingSend';
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import loadable from '@loadable/component';
@@ -178,7 +180,7 @@ function ChatInput() {
     }
 
     function addSelfMessage(type: string, content: string) {
-        const _id = focus + Date.now();
+        const _id = `${focus}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const message = {
             _id,
             type,
@@ -214,25 +216,28 @@ function ChatInput() {
     }
 
     // eslint-disable-next-line react/destructuring-assignment
-    async function handleSendMessage(
+    async function deliverMessage(
         localId: string,
         type: string,
         content: string,
         linkmanId = focus,
     ) {
-        if (linkman.unread > 0) {
+        if (linkman?.unread > 0) {
             action.setLinkmanProperty(linkman._id, 'unread', 0);
         }
         const [error, message] = await sendMessage(linkmanId, type, content);
-        if (error) {
-            action.deleteMessage(linkmanId, localId, true);
-        } else {
+        if (error || !message?._id) throw new Error(error || '消息响应无效');
+        if (store.getState().user?._id === selfId && store.getState().linkmans[linkmanId]?.messages[localId]) {
             const { additionalMessages = [] } = message;
             delete message.additionalMessages;
             message.loading = false;
             action.updateMessage(linkmanId, localId, message);
             additionalMessages.forEach((item: any) => action.addLinkmanMessage(linkmanId, item));
         }
+    }
+
+    function handleSendMessage(localId: string, type: string, content: string, linkmanId = focus) {
+        return runPendingMessage(linkmanId, localId, () => deliverMessage(localId, type, content, linkmanId));
     }
 
     function sendImageMessage(image: string): void;
@@ -260,22 +265,14 @@ function ChatInput() {
                 'image',
                 `${url}?width=${img.width}&height=${img.height}`,
             );
-            try {
-                const imageUrl = await uploadFile(
-                    image.result as Blob,
-                    `ImageMessage/${selfId}_${Date.now()}.${ext}`,
-                );
-                handleSendMessage(
-                    id,
-                    'image',
-                    `${imageUrl}?width=${img.width}&height=${img.height}`,
-                    focus,
-                );
-            } catch (err) {
-                console.error(err);
-                Message.error('上传图片失败');
-            }
+            let uploaded = '';
+            await runPendingMessage(focus, id, async () => {
+                if (!uploaded) uploaded = await uploadFile(image.result as Blob, `ImageMessage/${selfId}_${Date.now()}.${ext}`);
+                if (store.getState().user?._id !== selfId || !store.getState().linkmans[focus]?.messages[id]) return;
+                await deliverMessage(id, 'image', `${uploaded}?width=${img.width}&height=${img.height}`, focus);
+            });
         };
+        img.onerror = () => { URL.revokeObjectURL(url); Message.error('无法读取图片，请重新选择'); };
         img.src = url;
     }
 
@@ -293,26 +290,12 @@ function ChatInput() {
                 ext: file.ext,
             }),
         );
-        try {
-            const fileUrl = await uploadFile(
-                file.result as Blob,
-                `FileMessage/${selfId}_${Date.now()}.${file.ext}`,
-            );
-            handleSendMessage(
-                id,
-                'file',
-                JSON.stringify({
-                    fileUrl,
-                    filename: file.filename,
-                    size: file.length,
-                    ext: file.ext,
-                }),
-                focus,
-            );
-        } catch (err) {
-            console.error(err);
-            Message.error('上传文件失败');
-        }
+        let uploaded = '';
+        await runPendingMessage(focus, id, async () => {
+            if (!uploaded) uploaded = await uploadFile(file.result as Blob, `FileMessage/${selfId}_${Date.now()}.${file.ext}`);
+            if (store.getState().user?._id !== selfId || !store.getState().linkmans[focus]?.messages[id]) return;
+            await deliverMessage(id, 'file', JSON.stringify({ fileUrl: uploaded, filename: file.filename, size: file.length, ext: file.ext }), focus);
+        });
     }
 
     async function handleSendImage() {

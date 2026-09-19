@@ -1,3 +1,4 @@
+import { retryPendingMessage } from '../../../utils/pendingSend';
 import React, { Component, createRef } from 'react';
 import pureRender from 'pure-render-decorator';
 import { connect } from 'react-redux';
@@ -40,6 +41,8 @@ interface MessageProps {
     time: string;
     type: string;
     content: string;
+    failed?: boolean;
+    sendError?: string;
     loading: boolean;
     percent: number;
     shouldScroll: boolean;
@@ -97,13 +100,13 @@ class Message extends Component<MessageProps, MessageState> {
      */
     handleDeleteMessage = async () => {
         const { id, linkmanId, loading, isAdmin } = this.props;
-        if (loading) {
+        if (loading || this.props.failed) {
             dispatch({
                 type: ActionTypes.DeleteMessage,
                 payload: {
                     linkmanId,
                     messageId: id,
-                    shouldDelete: isAdmin,
+                    shouldDelete: true,
                 } as DeleteMessagePayload,
             });
             return;
@@ -175,7 +178,7 @@ class Message extends Component<MessageProps, MessageState> {
                 );
             }
             case 'file': {
-                return <FileMessage file={content} percent={percent} />;
+                return <FileMessage file={content} percent={percent} failed={this.props.failed} />;
             }
             case 'code': {
                 return <CodeMessage code={content} />;
@@ -279,6 +282,10 @@ class Message extends Component<MessageProps, MessageState> {
                             </div>
                         )}
                     </div>
+                    {this.props.failed && <div role="status" style={{ fontSize: 12, marginTop: 6 }}>
+                        <span>发送未确认：{this.props.sendError || '连接失败'}</span>{' '}
+                        <button type="button" title="请先确认聊天记录中没有该消息，重试可能重复发送" onClick={() => { void retryPendingMessage(this.props.id); }}>重试</button>
+                    </div>}
                     <div className={Style.arrow} />
                 </div>
             </div>

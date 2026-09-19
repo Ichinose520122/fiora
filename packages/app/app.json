@@ -2,7 +2,7 @@
   "expo": {
     "name": "Fiora",
     "icon": "./icon.png",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "App for fiora. An online chatroom",
     "slug": "nekopara-fiora",
     "scheme": "fiora",

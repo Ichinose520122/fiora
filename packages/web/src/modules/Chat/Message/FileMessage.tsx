@@ -35,9 +35,10 @@ const styles = {
 type Props = {
     file: string;
     percent: number;
+    failed?: boolean;
 };
 
-function FileMessage({ file, percent }: Props) {
+function FileMessage({ file, percent, failed }: Props) {
     const { fileUrl, filename, size } = JSON.parse(file);
     const url = fileUrl && getOSSFileUrl(fileUrl);
 
@@ -53,9 +54,7 @@ function FileMessage({ file, percent }: Props) {
                 <span className={styles.fileInfoText}>{filesize(size)}</span>
             </div>
             <p className={styles.button}>
-                {percent === undefined || percent >= 100
-                    ? '下载'
-                    : `上传中... ${percent.toFixed(0)}%`}
+                {failed ? '发送失败' : fileUrl ? '下载' : `上传中... ${Number.isFinite(percent) ? percent.toFixed(0) : 0}%`}
             </p>
         </a>
     );

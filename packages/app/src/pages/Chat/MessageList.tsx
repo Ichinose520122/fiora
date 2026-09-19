@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
-import { KeyboardEvents, useKeyboardState } from 'react-native-keyboard-controller';
+import { KeyboardEvents } from 'react-native-keyboard-controller';
 import ImageViewer from 'react-native-image-viewing';
 import { assetUrl } from '../../config';
 
@@ -26,7 +26,10 @@ type Props = {
 
 function MessageList({ $scrollView }: Props) {
     const scrollState = useRef({ prevContentHeight: 0, prevMessageCount: 0, shouldScroll: true, isFirstTimeFetchHistory: true }).current;
-    const keyboardVisible = useKeyboardState(state => state.isVisible);
+    const keyboardTransition = useRef(false);
+    const wasAtBottom = useRef(true);
+    const scrollFrame = useRef<number | null>(null);
+    const viewportHeight = useRef(0);
     const resizeScroll = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const isLogin = useIsLogin();
     const self = useSelfId();
@@ -34,6 +37,7 @@ function MessageList({ $scrollView }: Props) {
     const { focus } = useStore();
     const messages = focusLinkman?.messages || [];
 
+    const userScrolling = useRef(false);
     const [refreshing, setRefreshing] = useState(false);
     const [showImageViewerDialog, toggleShowImageViewerDialog] = useState(
         false,
@@ -41,18 +45,33 @@ function MessageList({ $scrollView }: Props) {
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
 
     useEffect(() => {
-        const keyboardDidShowListener = KeyboardEvents.addListener(
-            'keyboardDidShow',
-            handleKeyboardShow,
-        );
-
-        return () => {
-            scrollState.prevContentHeight = 0;
-            scrollState.prevMessageCount = 0;
-            scrollState.shouldScroll = true;
-            scrollState.isFirstTimeFetchHistory = true;
-            keyboardDidShowListener.remove();
+        const willChange = () => {
+            if (!keyboardTransition.current) wasAtBottom.current = scrollState.shouldScroll;
+            keyboardTransition.current = true;
+            if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
             if (resizeScroll.current) clearTimeout(resizeScroll.current);
+        };
+        const didChange = (opening: boolean) => {
+            // Keep transition-generated layout/scroll events out of history loading.
+            if (resizeScroll.current) clearTimeout(resizeScroll.current);
+            resizeScroll.current = setTimeout(() => {
+                // On hide, ScrollView clamps to the larger viewport itself.
+                // A second scrollToEnd after that clamp causes a visible bounce.
+                if (opening && wasAtBottom.current) $scrollView.current?.scrollToEnd({ animated: false });
+                keyboardTransition.current = false;
+                scrollState.shouldScroll = wasAtBottom.current;
+            }, 50);
+        };
+        const listeners = [
+            KeyboardEvents.addListener('keyboardWillShow', willChange),
+            KeyboardEvents.addListener('keyboardWillHide', willChange),
+            KeyboardEvents.addListener('keyboardDidShow', () => didChange(true)),
+            KeyboardEvents.addListener('keyboardDidHide', () => didChange(false)),
+        ];
+        return () => {
+            listeners.forEach(listener => listener.remove());
+            if (resizeScroll.current) clearTimeout(resizeScroll.current);
+            if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
         };
     }, []);
 
@@ -76,22 +95,13 @@ function MessageList({ $scrollView }: Props) {
         return images;
     }
 
-    function scrollToEnd(time = 0) {
-        if (time > 200) {
-            return;
-        }
-        if ($scrollView.current) {
-            $scrollView.current!.scrollToEnd({ animated: false });
-        }
-
-        setTimeout(() => {
-            scrollToEnd(time + 50);
-        }, 50);
-    }
-
-    function handleKeyboardShow() {
-        scrollState.shouldScroll = true;
-        scrollToEnd();
+    function scrollToEnd() {
+        if (keyboardTransition.current) return;
+        if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+        scrollFrame.current = requestAnimationFrame(() => {
+            scrollFrame.current = null;
+            if (!keyboardTransition.current) $scrollView.current?.scrollToEnd({ animated: false });
+        });
     }
 
     async function handleRefresh() {
@@ -118,7 +128,7 @@ function MessageList({ $scrollView }: Props) {
                 existCount: messages.length,
             });
         }
-        if (!err) {
+        if (!err && Array.isArray(result)) {
             if (result.length > 0) {
                 action.addLinkmanHistoryMessages(focus, result);
             } else {
@@ -163,11 +173,12 @@ function MessageList({ $scrollView }: Props) {
             contentSize,
             contentOffset,
         } = event.nativeEvent;
+        if (keyboardTransition.current) return;
         scrollState.shouldScroll =
             contentOffset.y >
             contentSize.height - layoutMeasurement.height * 1.2;
 
-        if (contentOffset.y < (isiOS ? 0 : 50)) {
+        if (userScrolling.current && contentOffset.y < (isiOS ? 0 : 50)) {
             handleRefresh();
         }
     }
@@ -206,13 +217,15 @@ function MessageList({ $scrollView }: Props) {
             contentContainerStyle={{ paddingVertical: 8 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={isiOS ? "interactive" : "on-drag"}
-            onLayout={() => {
-                // adjustResize changes the viewport without changing message content size.
-                if (keyboardVisible || scrollState.shouldScroll) {
-                    if (resizeScroll.current) clearTimeout(resizeScroll.current);
-                    resizeScroll.current = setTimeout(() => $scrollView.current?.scrollToEnd({ animated: false }), 0);
-                }
+            onLayout={(event) => {
+                const height = event.nativeEvent.layout.height;
+                const previous = viewportHeight.current;
+                viewportHeight.current = height;
+                // Expanding the viewport already clamps its offset natively.
+                if (!keyboardTransition.current && height < previous && scrollState.shouldScroll) scrollToEnd();
             }}
+            onScrollBeginDrag={() => { userScrolling.current = true; }}
+            onScrollEndDrag={() => { userScrolling.current = false; }}
             scrollEventThrottle={50}
             onScroll={handleScroll}
         >

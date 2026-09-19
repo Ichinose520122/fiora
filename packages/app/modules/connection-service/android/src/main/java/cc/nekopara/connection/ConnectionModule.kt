@@ -93,6 +93,15 @@ class ConnectionModule : Module() {
     }
     Function("isEnabled") { context().getSharedPreferences("connection", 0).getBoolean("enabled", true) }
     Function("isRunning") { ConnectionService.running }
+    Function("getGeneration") { ConnectionService.generation }
+    Function("getStatus") {
+      mapOf("running" to ConnectionService.running,
+        "responsive" to (ConnectionService.lastHeartbeat > 0L && android.os.SystemClock.elapsedRealtime() - ConnectionService.lastHeartbeat < 65000L))
+    }
+    AsyncFunction("heartbeat") { connected: Boolean ->
+      if (ConnectionService.running) context().startService(Intent(context(), ConnectionService::class.java).setAction("status").putExtra("connected", connected))
+      Unit
+    }
     Function("isBatteryUnrestricted") {
       Build.VERSION.SDK_INT < 23 || (context().getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(context().packageName)
     }

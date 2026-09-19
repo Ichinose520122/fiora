@@ -42,16 +42,26 @@ export default function Notification() {
         let live = true;
         setRemotePushReady(false);
         if (!userId || !connect || !preferences.notifications) return;
-        void (async () => {
-            await prepareNotificationChannels();
-            if (AppState.currentState !== 'active') return;
-            const permission = await Notifications.requestPermissionsAsync();
-            const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-            if (!permission.granted || !live || !projectId) return;
-            const token = await Notifications.getExpoPushTokenAsync({ projectId });
-            if (live && await setNotificationToken(token.data)) setRemotePushReady(true);
-        })().catch(() => { /* Local socket notifications remain available if push registration fails. */ });
-        return () => { live = false; setRemotePushReady(false); };
+        let registering = false;
+        let registered = false;
+        const register = async () => {
+            if (!live || registering || registered || AppState.currentState !== 'active') return;
+            registering = true;
+            try {
+                await prepareNotificationChannels();
+                if (AppState.currentState !== 'active') return;
+                const current = await Notifications.getPermissionsAsync();
+                const permission = !current.granted && current.canAskAgain ? await Notifications.requestPermissionsAsync() : current;
+                const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+                if (!permission.granted || !live || !projectId) return;
+                const token = await Notifications.getExpoPushTokenAsync({ projectId });
+                if (live && await setNotificationToken(token.data) && live) { registered = true; setRemotePushReady(true); }
+            } catch { /* Keep local socket notifications when push registration fails. */ }
+            finally { registering = false; }
+        };
+        void register();
+        const listener = AppState.addEventListener('change', state => { if (state === 'active') void register(); });
+        return () => { live = false; listener.remove(); setRemotePushReady(false); };
     }, [userId, connect, preferences.notifications]);
     return null;
 }
