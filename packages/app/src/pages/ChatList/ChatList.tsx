@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
@@ -11,6 +12,8 @@ import { search } from '../../service';
 import { isiOS } from '../../utils/platform';
 
 export default function ChatList() {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const [searchKeywords, updateSearchKeywords] = useState('');
     const linkmans = useLinkmans();
 
@@ -76,7 +79,7 @@ export default function ChatList() {
     );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     messageList: {},
     searchContainer: {
         marginTop: isiOS ? 0 : 5,

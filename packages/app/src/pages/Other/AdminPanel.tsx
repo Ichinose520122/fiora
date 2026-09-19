@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +10,7 @@ import fetch from '../../utils/fetch';
 import Toast from '../../components/Toast';
 import UserTag from '../../components/UserTag';
 import PixivAccount from './PixivAccount';
+import MusicAccount from '../../modules/Music/MusicAccount';
 
 type SystemConfig = { disableSendMessage: boolean; disableNewUserSendMessage: boolean };
 type SealList = { users: string[]; ips: string[] };
@@ -16,14 +18,19 @@ const presets: [TagStylePreset, string][] = [['solid', '经典纯色'], ['dualGr
 const particles: [TagParticleType, string][] = [['none', '无粒子'], ['star', '空心五角星'], ['heart', '爱心粒子']];
 
 function Field({ label, value, onChange, secret = false, disabled = false, maxLength = 64 }: { label: string; value: string; onChange: (value: string) => void; secret?: boolean; disabled?: boolean; maxLength?: number }) {
-    return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} value={value} onChangeText={onChange} editable={!disabled} secureTextEntry={secret} autoCorrect={false} autoCapitalize="none" maxLength={maxLength} placeholder={label} placeholderTextColor="#8a95aa" style={styles.input} /></View>;
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
+    return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} value={value} onChangeText={onChange} editable={!disabled} secureTextEntry={secret} autoCorrect={false} autoCapitalize="none" maxLength={maxLength} placeholder={label} placeholderTextColor={theme.color('#8a95aa')} style={styles.input} /></View>;
 }
 
 export default function AdminPanel({ close }: { close: () => void }) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const isAdmin = useIsAdmin(); const user = useUser(); const { connect } = useStore();
     const [busy, setBusy] = useState(false); const pending = useRef(false); const live = useRef(false);
     const [config, setConfig] = useState<SystemConfig>(); const [seals, setSeals] = useState<SealList>();
     const [loadError, setLoadError] = useState(''); const [pixiv, setPixiv] = useState(false);
+    const [netease, setNetease] = useState(false);
     const [username, setUsername] = useState(''); const [password, setPassword] = useState('');
     const [tagUsername, setTagUsername] = useState(''); const [tag, setTag] = useState('');
     const [preset, setPreset] = useState<TagStylePreset>('solid'); const [particle, setParticle] = useState<TagParticleType>('none');
@@ -77,7 +84,7 @@ export default function AdminPanel({ close }: { close: () => void }) {
     const choices = <T extends string,>(options: [T, string][], selected: T, change: (value: T) => void) => <View style={styles.choices}>{options.map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="button" accessibilityState={{ selected: selected === value }} disabled={disabled} onPress={() => change(value)} style={[styles.choice, selected === value && styles.selected]}><Text style={[styles.choiceText, selected === value && styles.selectedText]}>{label}</Text></TouchableOpacity>)}</View>;
     if (!isAdmin) return null;
     return <Modal animationType="slide" onRequestClose={close}><SafeAreaView style={styles.page}>
-        <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="返回" onPress={close} style={styles.back}><Ionicons name="chevron-back" size={22} color="#52658e" /></TouchableOpacity><View style={{ flex: 1 }}><Text style={styles.heading}>管理员面板</Text><Text style={styles.hint}>当前账号：{user?.username}</Text></View>{busy ? <ActivityIndicator color="#6377b4" /> : <TouchableOpacity accessibilityRole="button" onPress={() => { void run(refresh); }} disabled={!connect} style={styles.back}><Ionicons name="refresh-outline" size={22} color="#52658e" /></TouchableOpacity>}</View>
+        <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="返回" onPress={close} style={styles.back}><Ionicons name="chevron-back" size={22} color={theme.color('#52658e')} /></TouchableOpacity><View style={{ flex: 1 }}><Text style={styles.heading}>管理员面板</Text><Text style={styles.hint}>当前账号：{user?.username}</Text></View>{busy ? <ActivityIndicator color={theme.color('#6377b4')} /> : <TouchableOpacity accessibilityRole="button" onPress={() => { void run(refresh); }} disabled={!connect} style={styles.back}><Ionicons name="refresh-outline" size={22} color={theme.color('#52658e')} /></TouchableOpacity>}</View>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             {!connect && <Text style={styles.error}>连接恢复后可继续管理。</Text>}
             {!!loadError && <Text style={styles.error}>读取管理状态失败：{loadError}。请点右上角刷新。</Text>}
@@ -97,13 +104,14 @@ export default function AdminPanel({ close }: { close: () => void }) {
             </View>
             <View style={styles.card}><Text style={styles.title}>封禁用户</Text><Text style={styles.hint}>当前服务器封禁时长：10 分钟</Text><Field label="要封禁的用户名" value={sealName} onChange={setSealName} disabled={disabled} />{button('封禁用户', () => { if (!required(sealName, '用户名')) return; const target = sealName.trim(); confirm(`封禁 ${target}？`, '该账号将在 10 分钟内无法正常使用聊天服务。', async () => { if (await request('sealUser', { username: target })) { setSealName(''); Toast.success('用户已封禁'); await refresh(); } }); }, true)}<Text style={styles.label}>当前封禁用户</Text><Text selectable style={styles.hint}>{seals ? seals.users.join('、') || '暂无' : '尚未读取'}</Text></View>
             <View style={styles.card}><Text style={styles.title}>封禁 IP</Text><Text style={styles.hint}>当前服务器封禁时长：6 小时</Text><Field label="IP 地址" value={sealIp} onChange={setSealIp} disabled={disabled} />{button('封禁 IP', () => { if (!required(sealIp, 'IP 地址')) return; const target = sealIp.trim(); confirm(`封禁 ${target}？`, '会影响使用该 IP 的所有用户，持续 6 小时。', async () => { if (await request('sealIp', { ip: target })) { setSealIp(''); Toast.success('IP 已封禁'); await refresh(); } }); }, true)}<Text style={styles.label}>当前封禁 IP</Text><Text selectable style={styles.hint}>{seals ? seals.ips.join('\n') || '暂无' : '尚未读取'}</Text></View>
+            <View style={styles.card}><Text style={styles.title}>网易云音乐账号</Text><Text style={styles.hint}>管理服务器播放音乐使用的账号，支持验证码和 MUSIC_U 登录。</Text>{button(netease ? '收起网易云登录' : '管理网易云账号', () => setNetease(!netease))}{netease && <MusicAccount />}</View>
             <View style={styles.card}><Text style={styles.title}>Pixiv 账号</Text><Text style={styles.hint}>配置、验证或清除服务器获取图片使用的账号。</Text>{button('管理 Pixiv 账号', () => setPixiv(true))}</View>
         </ScrollView></KeyboardAvoidingView>
         {pixiv && <PixivAccount close={() => setPixiv(false)} />}
     </SafeAreaView></Modal>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     page: { flex: 1, backgroundColor: '#f3f5fc' }, header: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 8 }, back: { padding: 12 }, heading: { fontSize: 21, fontWeight: '700', color: '#32405a' },
     content: { padding: 18, gap: 16, paddingBottom: 36 }, card: { backgroundColor: '#fff', borderRadius: 20, padding: 18, gap: 12 }, title: { fontSize: 17, fontWeight: '600', color: '#32405a' },
     hint: { color: '#7c899f', fontSize: 12, lineHeight: 19 }, label: { color: '#475570', fontSize: 14 }, field: { gap: 7 }, input: { color: '#32405a', backgroundColor: '#f3f5fa', borderRadius: 12, padding: 13, fontSize: 15 },

@@ -3,9 +3,9 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     ScrollView,
-    Dimensions, AppState,
+    AppState,
 } from 'react-native';
-import Constants from 'expo-constants';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Actions } from '../../navigation';
 
 import { isiOS } from '../../utils/platform';
@@ -33,40 +33,12 @@ import fetch from '../../utils/fetch';
 
 let lastMessageIdCache = '';
 
-const keyboardOffset = (() => {
-    const { width, height } = Dimensions.get('window');
-    const screenRatio = height / width;
-    if (screenRatio === 667 / 375) {
-        // iPhone 6 / 7 / 8
-        return 64;
-    }
-    if (screenRatio === 736 / 414) {
-        // iPhone 6 / 7 / 8 PLUS
-        return 64;
-    }
-    if (screenRatio === 812 / 375) {
-        // iPhone X / 12mini
-        return 86;
-    }
-    if (screenRatio === 896 / 414) {
-        // iPhone Xr / 11 / 11 Pro Max
-        return 86;
-    }
-    if (screenRatio === 844 / 390) {
-        // iPhone 12 / 12 Prop
-        return 64;
-    }
-    if (screenRatio === 926 / 428) {
-        // iPhone 12 Pro Max
-        return 64;
-    }
-    return Constants.statusBarHeight + 44;
-})();
 
 export default function Chat() {
     return <ChatContent />;
 }
 function ChatContent() {
+    const keyboardOffset = useHeaderHeight();
     const isLogin = useIsLogin();
     const self = useSelfId();
     const { focus } = useStore();
@@ -154,12 +126,11 @@ function ChatContent() {
         <PageContainer disableSafeAreaView>
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={isiOS ? 'padding' : 'height'}
+                behavior={isiOS ? 'padding' : undefined}
+                enabled={isiOS}
                 keyboardVerticalOffset={keyboardOffset}
             >
                 <MusicPlayer />
-                {/* 
-                // @ts-ignore */}
                 <MessageList key={`${self}:${focus}`} $scrollView={$messageList} />
                 <Input key={`${self}:${focus}`} onHeightChange={handleInputHeightChange} />
                 <MusicPanel />

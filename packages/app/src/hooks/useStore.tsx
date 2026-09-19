@@ -1,3 +1,4 @@
+import { useAppTheme } from '../utils/theme';
 import { useSelector } from 'react-redux';
 import { State, User } from '../types/redux';
 
@@ -24,13 +25,8 @@ export function useIsAdmin() {
 }
 
 export function useTheme() {
-    const { ui } = useStore();
-    const { primaryColor, primaryTextColor } = ui;
-    return {
-        primaryColor8: `rgba(${primaryColor}, 0.8)`,
-        primaryColor10: `rgba(${primaryColor}, 1)`,
-        primaryTextColor10: `rgba(${primaryTextColor}, 1)`,
-    };
+    const theme = useAppTheme();
+    return { primaryColor8: theme.accent + 'cc', primaryColor10: theme.accent, primaryTextColor10: theme.onAccent };
 }
 
 export function useLinkmans() {

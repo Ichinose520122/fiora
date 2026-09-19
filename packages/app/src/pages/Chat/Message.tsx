@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import retryMessage from '../../utils/retryMessage';
 import CodeMessage from './CodeMessage';
 import { usePreferences } from '../../utils/preferences';
@@ -52,6 +53,8 @@ function Message({
     scrollToEnd,
     openImageViewer,
 }: Props) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const { width } = useWindowDimensions();
     const preferences = usePreferences();
     const isAdmin = useIsAdmin();
@@ -151,7 +154,7 @@ function Message({
             case 'code': return <CodeMessage content={message.content} />;
             default:
                 return (
-                    <Text style={{ color: isSelf ? '#344a71' : '#666' }}>
+                    <Text style={{ color: isSelf ? theme.color('#344a71', 'color') : theme.color('#666', 'color') }}>
                         不支持的消息类型
                     </Text>
                 );
@@ -182,8 +185,8 @@ function Message({
                         {formatTime()}
                     </Text>
                 </View>
-                {message.loading && <Text style={{ fontSize: 11, color: '#637087' }}>{message.statusText || '发送中…'}</Text>}
-                {message.failed && <TouchableOpacity onPress={() => Alert.alert('发送失败', (message.error || '请检查网络') + '\n如果服务器已收到消息，再次发送可能重复，请先确认聊天记录。', [{ text: '取消', style: 'cancel' }, { text: '重新发送', onPress: () => { void retryMessage(message); } }])}><Text numberOfLines={2} style={{ fontSize: 11, color: '#b54255' }}>{message.error || '发送失败，请重新发送'}</Text></TouchableOpacity>}
+                {message.loading && <Text style={{ fontSize: 11, color: theme.color('#637087', 'color') }}>{message.statusText || '发送中…'}</Text>}
+                {message.failed && <TouchableOpacity onPress={() => Alert.alert('发送失败', (message.error || '请检查网络') + '\n如果服务器已收到消息，再次发送可能重复，请先确认聊天记录。', [{ text: '取消', style: 'cancel' }, { text: '重新发送', onPress: () => { void retryMessage(message); } }])}><Text numberOfLines={2} style={{ fontSize: 11, color: theme.color('#b54255', 'color') }}>{message.error || '发送失败，请重新发送'}</Text></TouchableOpacity>}
                 {couldDelete && message.type !== 'image' ? (
                     <TouchableOpacity onLongPress={handleDeleteMessage}>
                         <View
@@ -225,7 +228,7 @@ function Message({
 
 export default React.memo(Message);
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         marginBottom: 12,

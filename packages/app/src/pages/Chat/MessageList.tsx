@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Keyboard, Modal, Image } from 'react-native';
 import ImageViewer from 'react-native-image-viewing';
 import { assetUrl } from '../../config';
@@ -28,6 +28,7 @@ let shouldScroll = true;
 let isFirstTimeFetchHistory = true;
 
 function MessageList({ $scrollView }: Props) {
+    const resizeScroll = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const isLogin = useIsLogin();
     const self = useSelfId();
     const focusLinkman = useFocusLinkman();
@@ -42,7 +43,7 @@ function MessageList({ $scrollView }: Props) {
 
     useEffect(() => {
         const keyboardDidShowListener = Keyboard.addListener(
-            'keyboardWillShow',
+            isiOS ? 'keyboardWillShow' : 'keyboardDidShow',
             handleKeyboardShow,
         );
 
@@ -52,6 +53,7 @@ function MessageList({ $scrollView }: Props) {
             shouldScroll = true;
             isFirstTimeFetchHistory = true;
             keyboardDidShowListener.remove();
+            if (resizeScroll.current) clearTimeout(resizeScroll.current);
         };
     }, []);
 
@@ -201,6 +203,16 @@ function MessageList({ $scrollView }: Props) {
             style={styles.container}
             ref={$scrollView}
             onContentSizeChange={handleContentSizeChange}
+            contentContainerStyle={{ paddingVertical: 8 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={isiOS ? "interactive" : "on-drag"}
+            onLayout={() => {
+                // adjustResize changes the viewport without changing message content size.
+                if (shouldScroll) {
+                    if (resizeScroll.current) clearTimeout(resizeScroll.current);
+                    resizeScroll.current = setTimeout(() => $scrollView.current?.scrollToEnd({ animated: false }), 0);
+                }
+            }}
             scrollEventThrottle={50}
             onScroll={handleScroll}
         >
@@ -219,7 +231,7 @@ export default MessageList;
 
 const styles = StyleSheet.create({
     container: {
-        paddingTop: 8,
-        paddingBottom: 8,
+        flex: 1,
+        minHeight: 0,
     },
 });

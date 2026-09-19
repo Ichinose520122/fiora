@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import AccountSettings from '../Other/AccountSettings';
 import PageContainer from '../../components/PageContainer';
 import React, { useState } from 'react';
@@ -39,6 +40,8 @@ type Props = {
 };
 
 function UserInfo({ user }: Props) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const { _id, avatar, username } = user;
     const [editing, setEditing] = useState(false);
     const linkmans = useLinkmans();
@@ -129,14 +132,14 @@ function UserInfo({ user }: Props) {
     }
 
     return (
-        <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#f3f5fc' }}>
+        <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: theme.color('#f3f5fc', 'backgroundColor') }}>
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.userContainer}>
                     <Avatar userId={_id} src={avatar} size={88} />
                     <Text style={styles.nick}>{username}</Text>
                     {!!user.tag && <View style={{ alignItems: 'center', marginTop: 10 }}><UserTag text={user.tag} tagStyle={user.tagStyle} /></View>}
                 </View>
-                {self === _id && <Button block style={{ marginTop: 24 }} onPress={() => setEditing(true)}><Text>编辑个人资料</Text></Button>}
+                {self === _id && <Button block style={{ marginTop: 24 }} onPress={() => setEditing(true)}><Text style={{ color: theme.text }}>编辑个人资料</Text></Button>}
                 {self !== _id && <View style={styles.buttonContainer}>
                     {isFriend ? (
                         <>
@@ -146,7 +149,7 @@ function UserInfo({ user }: Props) {
                                 style={styles.button}
                                 onPress={handleSendMessage}
                             >
-                                <Text>发送消息</Text>
+                                <Text style={{ color: theme.text }}>发送消息</Text>
                             </Button>
                             <Button
                                 primary
@@ -155,7 +158,7 @@ function UserInfo({ user }: Props) {
                                 style={styles.button}
                                 onPress={handleDeleteFriend}
                             >
-                                <Text>删除好友</Text>
+                                <Text style={{ color: theme.text }}>删除好友</Text>
                             </Button>
                         </>
                     ) : (
@@ -165,7 +168,7 @@ function UserInfo({ user }: Props) {
                             style={styles.button}
                             onPress={handleAddFriend}
                         >
-                            <Text>加为好友</Text>
+                            <Text style={{ color: theme.text }}>加为好友</Text>
                         </Button>
                     )}
                     {isAdmin && (
@@ -177,7 +180,7 @@ function UserInfo({ user }: Props) {
                                 style={styles.button}
                                 onPress={handleSealUser}
                             >
-                                <Text>封禁用户</Text>
+                                <Text style={{ color: theme.text }}>封禁用户</Text>
                             </Button>
                             <Button
                                 primary
@@ -186,7 +189,7 @@ function UserInfo({ user }: Props) {
                                 style={styles.button}
                                 onPress={handleSealIp}
                             >
-                                <Text>封禁 ip</Text>
+                                <Text style={{ color: theme.text }}>封禁 ip</Text>
                             </Button>
                         </>
                     )}
@@ -198,6 +201,8 @@ function UserInfo({ user }: Props) {
 }
 
 export default function UserInfoScreen({ user: suppliedUser, userId }: Partial<Props> & { userId?: string }) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const ownUser = useUser();
     const targetId = userId || suppliedUser?._id;
     const user = ownUser && targetId === ownUser._id ? ownUser : suppliedUser;
@@ -214,7 +219,7 @@ export default function UserInfoScreen({ user: suppliedUser, userId }: Partial<P
     return <ProfileBoundary key={profile._id}><UserInfo user={profile} /></ProfileBoundary>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         paddingTop: 32,
         paddingBottom: 24,

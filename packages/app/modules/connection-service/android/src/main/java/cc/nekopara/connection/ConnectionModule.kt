@@ -10,6 +10,11 @@ import android.net.Network
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.Ringtone
+import android.media.RingtoneManager
+import android.app.NotificationManager
 import android.provider.Settings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -20,6 +25,7 @@ class ConnectionModule : Module() {
   private var speech: TextToSpeech? = null
   private var speechReady = false
   private var pendingSpeech = ""
+  private var notificationTone: Ringtone? = null
   private var connectivity: ConnectivityManager? = null
   private val callback = object : ConnectivityManager.NetworkCallback() {
     override fun onAvailable(network: Network) { sendEvent("onNetworkAvailable", emptyMap<String, Any>()) }
@@ -45,6 +51,7 @@ class ConnectionModule : Module() {
     OnDestroy {
       if (Thread.getDefaultUncaughtExceptionHandler() === installedHandler) Thread.setDefaultUncaughtExceptionHandler(previousHandler)
       speech?.stop(); speech?.shutdown(); speech = null; speechReady = false
+      notificationTone?.stop(); notificationTone = null
       if (Build.VERSION.SDK_INT >= 24) try { connectivity?.unregisterNetworkCallback(callback) } catch (_: Exception) { }
     }
     AsyncFunction("markScreen") { screen: String -> context().getSharedPreferences("diagnostics", 0).edit().putString("screen", screen.take(100)).apply() }
@@ -68,6 +75,21 @@ class ConnectionModule : Module() {
         }
       } else if (speechReady) speech?.speak(pendingSpeech, TextToSpeech.QUEUE_FLUSH, null, "fiora-message")
       Unit
+    }
+    AsyncFunction("playMessageSound") {
+      val ctx = context().applicationContext
+      val audio = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+      val notifications = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      if (audio.ringerMode != AudioManager.RINGER_MODE_NORMAL || audio.getStreamVolume(AudioManager.STREAM_NOTIFICATION) == 0 || notifications.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE || notifications.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS) {
+        false
+      } else {
+        notificationTone?.stop()
+        notificationTone = RingtoneManager.getRingtone(ctx, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+        notificationTone?.audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+        if (Build.VERSION.SDK_INT >= 28) notificationTone?.isLooping = false
+        notificationTone?.play()
+        notificationTone != null
+      }
     }
     Function("isEnabled") { context().getSharedPreferences("connection", 0).getBoolean("enabled", true) }
     Function("isRunning") { ConnectionService.running }

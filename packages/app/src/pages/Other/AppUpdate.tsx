@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Application from 'expo-application';
@@ -7,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppRelease, checkAppUpdate, releasePage } from '../../utils/appUpdate';
 
 export default function AppUpdate() {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const [release, setRelease] = useState<AppRelease | null>(null);
     const [message, setMessage] = useState('从 GitHub 获取最新 Android 构建');
     const [busy, setBusy] = useState(false); const [progress, setProgress] = useState<number | null>(null);
@@ -70,18 +73,18 @@ export default function AppUpdate() {
         } finally { download.current = null; running.current = false; if (mounted.current) { setBusy(false); setProgress(null); } }
     }
     return <View style={styles.card}>
-        <View style={styles.row}><View style={styles.icon}><Ionicons name="cloud-download-outline" size={23} color="#5969b0" /></View><View style={{ flex: 1 }}><Text style={styles.title}>应用更新</Text><Text style={styles.caption}>当前 {Application.nativeApplicationVersion || '开发版'} · 构建 {current || '本地'}</Text></View></View>
+        <View style={styles.row}><View style={styles.icon}><Ionicons name="cloud-download-outline" size={23} color={theme.color('#5969b0')} /></View><View style={{ flex: 1 }}><Text style={styles.title}>应用更新</Text><Text style={styles.caption}>当前 {Application.nativeApplicationVersion || '开发版'} · 构建 {current || '本地'}</Text></View></View>
         <Text style={styles.message}>{message}</Text>
         {progress !== null && <><View style={styles.track}><View style={[styles.fill, { width: `${Math.round(progress * 100)}%` }]} /></View><Text style={styles.caption}>{Math.round(progress * 100)}%</Text></>}
         <View style={styles.actions}>
             <TouchableOpacity disabled={busy} style={styles.button} onPress={() => void check()}><Text style={styles.label}>{busy ? '处理中…' : '检查更新'}</Text></TouchableOpacity>
-            {release && release.versionCode > current && Platform.OS === 'android' && <TouchableOpacity disabled={busy} style={[styles.button, styles.primary]} onPress={() => void getApk()}><Text style={{ color: 'white' }}>{apk ? '重新安装' : '下载并安装'}</Text></TouchableOpacity>}
+            {release && release.versionCode > current && Platform.OS === 'android' && <TouchableOpacity disabled={busy} style={[styles.button, styles.primary]} onPress={() => void getApk()}><Text style={{ color: theme.color('white', 'color') }}>{apk ? '重新安装' : '下载并安装'}</Text></TouchableOpacity>}
             <TouchableOpacity style={styles.button} onPress={() => { void Linking.openURL(releasePage).catch(() => setMessage('无法打开浏览器')); }}><Text style={styles.label}>发布记录</Text></TouchableOpacity>
         </View>
         {settings && <TouchableOpacity onPress={() => { void IntentLauncher.startActivityAsync('android.settings.MANAGE_UNKNOWN_APP_SOURCES', { data: `package:${Application.applicationId}` }).catch(() => setMessage('请到系统设置中允许 Fiora 安装未知应用')); }}><Text style={styles.label}>打开安装权限设置</Text></TouchableOpacity>}
     </View>;
 }
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     card: { backgroundColor: '#ffffffc9', borderRadius: 22, padding: 18, marginTop: 14, borderWidth: 1, borderColor: '#ffffff' },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 }, icon: { backgroundColor: '#eef0fd', padding: 10, borderRadius: 15 },
     title: { color: '#26344d', fontSize: 16, fontWeight: '600' }, caption: { color: '#8490a5', fontSize: 11, marginTop: 5 }, message: { color: '#67758d', fontSize: 13, marginVertical: 14, lineHeight: 20 },

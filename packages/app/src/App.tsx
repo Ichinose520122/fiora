@@ -1,3 +1,4 @@
+import { useAppTheme } from './utils/theme';
 import CrashReport, { recordScreen } from './components/CrashReport';
 import { MusicSessionProvider } from './modules/Music/MusicSession';
 import React from 'react';
@@ -28,18 +29,22 @@ import Notification from './components/Nofitication';
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 function Home() {
+    const theme = useAppTheme();
+
     const loggedIn = useIsLogin();
-    return <Tabs.Navigator screenOptions={{ headerStyle: { backgroundColor: '#f3f5fc' }, headerTintColor: '#52658e', headerShadowVisible: false, headerTitleStyle: { fontSize: 17, fontWeight: '600' }, tabBarActiveTintColor: '#6377b4', tabBarInactiveTintColor: '#a0aac0', tabBarStyle: { backgroundColor: '#f8f9fe', borderTopColor: '#e8ecf6', elevation: 0 }, tabBarLabelStyle: { fontSize: 11 } }}>
-        <Tabs.Screen name="chatlist" component={ChatList} options={{ title: '聊天', headerLeft: () => <SelfInfo />, headerRight: () => loggedIn ? <ChatListRightButton /> : <Button title="登录" color="#6377b4" onPress={() => Actions.login()} />, tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} /> }} />
+    return <Tabs.Navigator screenOptions={{ headerStyle: { backgroundColor: theme.color('#f3f5fc', 'backgroundColor') }, headerTintColor: theme.text, headerShadowVisible: false, headerTitleStyle: { fontSize: 17, fontWeight: '600' }, tabBarActiveTintColor: theme.accent, tabBarInactiveTintColor: theme.muted, tabBarStyle: { backgroundColor: theme.color('#f8f9fe', 'backgroundColor'), borderTopColor: theme.color('#e8ecf6', 'borderTopColor'), elevation: 0 }, tabBarLabelStyle: { fontSize: 11 } }}>
+        <Tabs.Screen name="chatlist" component={ChatList} options={{ title: '聊天', headerLeft: () => <SelfInfo />, headerRight: () => loggedIn ? <ChatListRightButton /> : <Button title="登录" color={theme.color('#6377b4')} onPress={() => Actions.login()} />, tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} /> }} />
         <Tabs.Screen name="other" component={Other} options={{ title: '我', tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" color={color} size={size} /> }} />
     </Tabs.Navigator>;
 }
 function screen(Component: any) { return ({ route }: any) => <Component {...route.params} />; }
 const screens = { login: screen(Login), signup: screen(Signup), groupProfile: screen(GroupProfile), userInfo: screen(UserInfo), groupInfo: screen(GroupInfo), searchResult: screen(SearchResult) };
 export default function App() {
+    const theme = useAppTheme();
+
     return <SafeAreaProvider><View style={{ flex: 1 }}>
         <MusicSessionProvider><NavigationContainer ref={navigation} onReady={recordScreen} onStateChange={recordScreen}>
-            <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#f3f5fc' }, headerTintColor: '#52658e', headerShadowVisible: false, headerTitleStyle: { fontSize: 17, fontWeight: '600' } }}>
+            <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: theme.color('#f3f5fc', 'backgroundColor') }, headerTintColor: theme.text, headerShadowVisible: false, headerTitleStyle: { fontSize: 17, fontWeight: '600' } }}>
                 <Stack.Screen name="tabs" component={Home} options={{ headerShown: false }} />
                 <Stack.Screen name="chat" component={Chat} options={({ route }: any) => ({ title: route.params?.title || '聊天', headerRight: () => <ChatRightButton /> })} />
                 {Object.entries(screens).map(([name, Component]) => <Stack.Screen key={name} name={name} component={Component} options={{ title: ({ login: '登录', signup: '注册', groupProfile: '群组资料', userInfo: '个人信息', groupInfo: '群组信息', searchResult: '搜索结果' } as any)[name] }} />)}

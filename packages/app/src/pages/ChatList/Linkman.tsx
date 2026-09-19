@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React from 'react';
 import { Text, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Actions } from '../../navigation';
@@ -32,6 +33,8 @@ export default function Linkman({
     lastMessageId,
     linkman,
 }: Props) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const selfId = useSelfId();
     function formatTime() {
         const nowTime = new Date();
@@ -83,7 +86,7 @@ export default function Linkman({
     );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         minHeight: 83,

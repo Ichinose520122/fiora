@@ -1,3 +1,4 @@
+import { useAppTheme } from '../../utils/theme';
 import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +12,8 @@ import Toast from '../../components/Toast';
 import Avatar from '../../components/Avatar';
 
 export default function AccountSettings({ close }: { close: () => void }) {
+    const theme = useAppTheme();
+
     const user = useUser();
     const [name, setName] = useState(user?.username || '');
     const [oldPassword, setOld] = useState(''); const [newPassword, setNew] = useState(''); const [confirm, setConfirm] = useState('');
@@ -20,13 +23,13 @@ export default function AccountSettings({ close }: { close: () => void }) {
         try { await task(); } catch (error) { Toast.danger(error instanceof Error ? error.message : '保存失败'); } finally { setBusy(false); }
     }
     if (!user) return null;
-    const input = { backgroundColor: '#fff', color: '#32405a', padding: 14, borderRadius: 12, marginVertical: 6 };
-    const button = (title: string, press: () => void) => <TouchableOpacity disabled={busy} onPress={press} style={{ padding: 14, alignItems: 'center', borderRadius: 12, backgroundColor: '#e2e9f8', marginVertical: 8, opacity: busy ? 0.5 : 1 }}><Text style={{ color: '#52658e' }}>{title}</Text></TouchableOpacity>;
-    return <Modal animationType="slide" onRequestClose={close}><SafeAreaView style={{ flex: 1, backgroundColor: '#f3f5fc' }}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, gap: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 22, color: '#32405a' }}>账号资料</Text>{button('完成', close)}</View>
+    const input = { backgroundColor: theme.color('#fff', 'backgroundColor'), color: theme.color('#32405a', 'color'), padding: 14, borderRadius: 12, marginVertical: 6 };
+    const button = (title: string, press: () => void) => <TouchableOpacity disabled={busy} onPress={press} style={{ padding: 14, alignItems: 'center', borderRadius: 12, backgroundColor: theme.color('#e2e9f8', 'backgroundColor'), marginVertical: 8, opacity: busy ? 0.5 : 1 }}><Text style={{ color: theme.color('#52658e', 'color') }}>{title}</Text></TouchableOpacity>;
+    return <Modal animationType="slide" onRequestClose={close}><SafeAreaView style={{ flex: 1, backgroundColor: theme.color('#f3f5fc', 'backgroundColor') }}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, gap: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 22, color: theme.color('#32405a', 'color') }}>账号资料</Text>{button('完成', close)}</View>
         <View style={{ alignItems: 'center', paddingTop: 18 }}><Avatar src={user.avatar} userId={user._id} size={80} /></View>
         {button('更换头像', () => { void run(async () => { const url = await chooseImage('Avatar', user._id); if (url && await changeAvatar(url)) { action.setAvatar(url); Toast.success('头像已更新'); } }); })}
-        <Text>用户名</Text><TextInput style={input} value={name} onChangeText={setName} maxLength={32} autoCapitalize="none" />
+        <Text style={{ color: theme.text }}>用户名</Text><TextInput style={input} value={name} onChangeText={setName} maxLength={32} autoCapitalize="none" />
         {button('保存用户名', () => { void run(async () => { if (!name.trim()) throw new Error('请输入用户名'); if (await changeUsername(name.trim())) { action.updateUserProperty('username', name.trim()); Toast.success('用户名已更新'); } }); })}
         <Text style={{ marginTop: 14 }}>修改密码</Text>
         <TextInput style={input} value={oldPassword} onChangeText={setOld} placeholder="当前密码" secureTextEntry autoCapitalize="none" />

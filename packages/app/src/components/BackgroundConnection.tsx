@@ -1,3 +1,4 @@
+import { useAppTheme } from '../utils/theme';
 import React, { useEffect, useState } from 'react';
 import { AppRegistry, AppState, Linking, Platform, Switch, Text, View, TouchableOpacity } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
@@ -25,6 +26,8 @@ AppRegistry.registerHeadlessTask('FioraConnection', () => () => {
 });
 
 export function BackgroundConnection() {
+    const theme = useAppTheme();
+
     const loggedIn = useIsLogin();
     useEffect(() => {
         if (!service) return;
@@ -48,6 +51,8 @@ export function BackgroundConnection() {
 }
 
 export function BackgroundConnectionSetting() {
+    const theme = useAppTheme();
+
     const { connect } = useStore();
     const [enabled, setEnabled] = useState(Boolean(service?.isEnabled()));
     const [unrestricted, setUnrestricted] = useState(Boolean(service?.isBatteryUnrestricted()));
@@ -63,8 +68,8 @@ export function BackgroundConnectionSetting() {
         return () => { live = false; listener.remove(); };
     }, []);
     if (!service) return null;
-    return <View style={{ padding: 16, marginTop: 18, backgroundColor: '#ffffffc9', borderRadius: 20, gap: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ color: '#32405a', fontSize: 15 }}>后台在线</Text><Switch disabled={busy} value={enabled} onValueChange={async (value) => {
+    return <View style={{ padding: 16, marginTop: 18, backgroundColor: theme.color('#ffffffc9', 'backgroundColor'), borderRadius: 20, gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ color: theme.color('#32405a', 'color'), fontSize: 15 }}>后台在线</Text><Switch disabled={busy} value={enabled} onValueChange={async (value) => {
             setBusy(true);
             try {
                 if (value) { await prepareNotificationChannels(); const permission = await Notifications.requestPermissionsAsync(); setAllowed(permission.granted); }
@@ -74,10 +79,10 @@ export function BackgroundConnectionSetting() {
             } catch { await service.setEnabled(false); setEnabled(false); Toast.warning('无法启动后台在线，请检查系统设置'); }
             finally { setBusy(false); }
         }} /></View>
-        <Text style={{ color: connect ? '#529475' : '#b27d4c' }}>{connect ? '聊天连接正常' : '正在恢复连接…'}</Text>
-        <Text style={{ fontSize: 12, color: '#8491a8', lineHeight: 19 }}>常驻通知维持后台连接，断网后自动恢复。会增加耗电；请允许通知、后台运行和自启动，并在最近任务中锁定应用。</Text>
-        <TouchableOpacity onPress={() => { void Linking.openSettings(); }}><Text style={{ color: '#6377b4' }}>消息通知：{allowed ? '已允许 · 打开系统设置' : '未允许 · 去开启'}</Text></TouchableOpacity>
-        <TouchableOpacity onPress={() => { void service.openBatterySettings().catch(() => Linking.openSettings()); }}><Text style={{ color: '#6377b4' }}>电池限制：{unrestricted ? '已解除' : '去允许不受限制的后台运行'}</Text></TouchableOpacity>
-        <Text style={{ fontSize: 11, color: '#8491a8' }}>系统强行停止、重启或完全断网期间无法保持在线；重新打开会恢复登录并补齐消息。</Text>
+        <Text style={{ color: connect ? theme.color('#529475', 'color') : theme.color('#b27d4c', 'color') }}>{connect ? '聊天连接正常' : '正在恢复连接…'}</Text>
+        <Text style={{ fontSize: 12, color: theme.color('#8491a8', 'color'), lineHeight: 19 }}>常驻通知维持后台连接，断网后自动恢复。会增加耗电；请允许通知、后台运行和自启动，并在最近任务中锁定应用。</Text>
+        <TouchableOpacity onPress={() => { void Linking.openSettings(); }}><Text style={{ color: theme.color('#6377b4', 'color') }}>消息通知：{allowed ? '已允许 · 打开系统设置' : '未允许 · 去开启'}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => { void service.openBatterySettings().catch(() => Linking.openSettings()); }}><Text style={{ color: theme.color('#6377b4', 'color') }}>电池限制：{unrestricted ? '已解除' : '去允许不受限制的后台运行'}</Text></TouchableOpacity>
+        <Text style={{ fontSize: 11, color: theme.color('#8491a8', 'color') }}>系统强行停止、重启或完全断网期间无法保持在线；重新打开会恢复登录并补齐消息。</Text>
     </View>;
 }

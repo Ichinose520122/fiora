@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 export const defaultPreferences = {
-    theme: 'mist', tagColorMode: 'fixedColor', bubbleColor: '#dee6fa', bubbleTextColor: '#344a71',
+    theme: 'mint', tagColorMode: 'fixedColor', bubbleColor: '#b9ddd4', bubbleTextColor: '#275a53',
+    accentColor: '', pageColor: '', surfaceColor: '', primaryTextColor: '',
     background: '', notifications: true, sound: true, preview: true, voice: false, selfVoice: false,
 };
 export type Preferences = typeof defaultPreferences;

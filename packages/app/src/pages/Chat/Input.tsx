@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import { serverUrl } from '../../config';
 import CodeComposer from './CodeComposer';
 import { chatCommands } from '../../../../utils/chatCommands';
@@ -26,6 +27,8 @@ import { useMusic } from '../../modules/Music/MusicSession';
 const drafts = new Map<string, string>();
 const commands = chatCommands.map(({ value, description }) => [value, description]);
 export default function Input({ onHeightChange }: { onHeightChange: () => void }) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const isLogin = useIsLogin();
     const user = useUser();
     const { focus, linkmans } = useStore();
@@ -132,22 +135,22 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
     const hints = message && /^[/-]/.test(message) ? commands.filter(([cmd]) => cmd.startsWith(message.toLowerCase()) && cmd !== message).slice(0, 4) : [];
     const mention = /(?:^|\s)@([^\s@]*)$/.exec(message);
     const members = (linkmans.find((room) => room._id === focus) as Group)?.members || [];
-    return <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.container}>
-        {mention && <View style={styles.hints}>{members.filter(m => m.user._id !== user?._id && m.user.username.startsWith(mention[1])).slice(0, 5).map(m => <TouchableOpacity key={m._id} onPress={() => { change(message.slice(0, message.lastIndexOf('@')) + '@' + m.user.username + ' '); input.current?.focus(); }} style={{ padding: 10 }}><Text>@{m.user.username}</Text></TouchableOpacity>)}</View>}
+    return <SafeAreaView edges={['bottom', 'left', 'right']} onLayout={onHeightChange} style={styles.container}>
+        {mention && <View style={styles.hints}>{members.filter(m => m.user._id !== user?._id && m.user.username.startsWith(mention[1])).slice(0, 5).map(m => <TouchableOpacity key={m._id} onPress={() => { change(message.slice(0, message.lastIndexOf('@')) + '@' + m.user.username + ' '); input.current?.focus(); }} style={{ padding: 10 }}><Text style={{ color: theme.text }}>@{m.user.username}</Text></TouchableOpacity>)}</View>}
         {showCode && <CodeComposer close={() => setShowCode(false)} send={(value) => { setShowCode(false); void send(local('code', value), 'code', value); }} />}
-        {!!hints.length && <GlassView intensity={35} tint="light" style={styles.hints}>{hints.map(([cmd, help]) => <TouchableOpacity key={cmd} onPress={() => { change(cmd); input.current?.focus(); }} style={{ padding: 8 }}><Text><Text style={{ fontWeight: '600' }}>{cmd}</Text>  {help}</Text></TouchableOpacity>)}</GlassView>}
+        {!!hints.length && <GlassView intensity={35} tint="light" style={styles.hints}>{hints.map(([cmd, help]) => <TouchableOpacity key={cmd} onPress={() => { change(cmd); input.current?.focus(); }} style={{ padding: 8 }}><Text style={{ color: theme.text }}><Text style={{ fontWeight: '600' }}>{cmd}</Text>  {help}</Text></TouchableOpacity>)}</GlassView>}
         {isLogin ? <>
-            <View style={{ flexDirection: 'row', padding: 8 }}><TextInput ref={input} value={message} onChangeText={change} onSubmitEditing={submit} onSelectionChange={(e) => setSelection(e.nativeEvent.selection)} style={styles.input}  autoCapitalize="none" autoCorrect={false} returnKeyType="send" submitBehavior="submit" maxLength={2048} onFocus={() => setShowExpression(false)} /><TouchableOpacity accessibilityLabel="发送消息" onPress={submit} style={{ padding: 11, marginLeft: 8, backgroundColor: '#7588bd', borderRadius: 15 }}><Ionicons name="send" size={21} color="white" /></TouchableOpacity></View>
+            <View style={{ flexDirection: 'row', padding: 8 }}><TextInput ref={input} value={message} onChangeText={change} onSubmitEditing={submit} onSelectionChange={(e) => setSelection(e.nativeEvent.selection)} style={styles.input}  autoCapitalize="none" autoCorrect={false} returnKeyType="send" submitBehavior="submit" maxLength={2048} onFocus={() => { setShowExpression(false); onHeightChange(); }} /><TouchableOpacity accessibilityLabel="发送消息" onPress={submit} style={{ padding: 11, marginLeft: 8, backgroundColor: theme.color('#7588bd', 'backgroundColor'), borderRadius: 15 }}><Ionicons name="send" size={21} color={theme.color('white')} /></TouchableOpacity></View>
             <View style={styles.tools}>{([
                 ['musical-notes-outline', () => music.open()],
                 ['happy-outline', () => { input.current?.blur(); setShowExpression(!showExpression); onHeightChange(); }],
                 ['image-outline', () => pick(false)], ['camera-outline', () => pick(true)], ['attach-outline', pickFile], ['code-slash-outline', () => setShowCode(true)],
-            ] as const).map(([icon, press]) => <TouchableOpacity key={icon} accessibilityLabel={icon} onPress={press} style={{ padding: 9, flex: 1, alignItems: 'center' }}>{icon === 'musical-notes-outline' ? <MusicIcon size={25} /> : <Ionicons name={icon} size={23} color="#7b8dad" />}</TouchableOpacity>)}</View>
+            ] as const).map(([icon, press]) => <TouchableOpacity key={icon} accessibilityLabel={icon} onPress={press} style={{ padding: 9, flex: 1, alignItems: 'center' }}>{icon === 'musical-notes-outline' ? <MusicIcon size={25} /> : <Ionicons name={icon} size={23} color={theme.color('#7b8dad')} />}</TouchableOpacity>)}</View>
             {showExpression && <ExpressionPanel insert={insertExpression} send={sendExpression} />}
-        </> : <TouchableOpacity onPress={() => Actions.login()} style={{ padding: 16 }}><Text>登录 / 注册，参与聊天</Text></TouchableOpacity>}
+        </> : <TouchableOpacity onPress={() => Actions.login()} style={{ padding: 16 }}><Text style={{ color: theme.text }}>登录 / 注册，参与聊天</Text></TouchableOpacity>}
     </SafeAreaView>;
 }
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: { backgroundColor: '#f8faffb8', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderWidth: 1, borderColor: '#ffffffc9' },
     input: { flex: 1, minHeight: 43, paddingHorizontal: 13, backgroundColor: '#ffffffd6', borderRadius: 15, color: '#24314a' },
     tools: { flexDirection: 'row', paddingHorizontal: 10 },

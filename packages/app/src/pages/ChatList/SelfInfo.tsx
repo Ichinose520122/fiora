@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import { Text, View } from '../../components/NativeUI';
 import React from 'react';
 import { StyleSheet } from 'react-native';
@@ -5,6 +6,8 @@ import Avatar from '../../components/Avatar';
 import { useIsLogin, useStore, useTheme, useUser } from '../../hooks/useStore';
 
 function SelfInfo() {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const isLogin = useIsLogin();
     const user = useUser();
     const { primaryTextColor10 } = useTheme();
@@ -28,7 +31,7 @@ function SelfInfo() {
                 />
             </View>
             <View>
-                <Text numberOfLines={1} style={[styles.nickname, { color: '#52658e', maxWidth: 90, fontSize: 12 }]}>
+                <Text numberOfLines={1} style={[styles.nickname, { color: theme.color('#52658e', 'color'), maxWidth: 90, fontSize: 12 }]}>
                     {username}
                 </Text>
             </View>
@@ -38,7 +41,7 @@ function SelfInfo() {
 
 export default SelfInfo;
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
