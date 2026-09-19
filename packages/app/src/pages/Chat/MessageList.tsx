@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Keyboard, Modal, Image } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { KeyboardEvents, useKeyboardState } from 'react-native-keyboard-controller';
 import ImageViewer from 'react-native-image-viewing';
 import { assetUrl } from '../../config';
 
@@ -22,12 +23,10 @@ type Props = {
     $scrollView: React.RefObject<ScrollView | null>;
 };
 
-let prevContentHeight = 0;
-let prevMessageCount = 0;
-let shouldScroll = true;
-let isFirstTimeFetchHistory = true;
 
 function MessageList({ $scrollView }: Props) {
+    const scrollState = useRef({ prevContentHeight: 0, prevMessageCount: 0, shouldScroll: true, isFirstTimeFetchHistory: true }).current;
+    const keyboardVisible = useKeyboardState(state => state.isVisible);
     const resizeScroll = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const isLogin = useIsLogin();
     const self = useSelfId();
@@ -42,16 +41,16 @@ function MessageList({ $scrollView }: Props) {
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
 
     useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener(
-            isiOS ? 'keyboardWillShow' : 'keyboardDidShow',
+        const keyboardDidShowListener = KeyboardEvents.addListener(
+            'keyboardDidShow',
             handleKeyboardShow,
         );
 
         return () => {
-            prevContentHeight = 0;
-            prevMessageCount = 0;
-            shouldScroll = true;
-            isFirstTimeFetchHistory = true;
+            scrollState.prevContentHeight = 0;
+            scrollState.prevMessageCount = 0;
+            scrollState.shouldScroll = true;
+            scrollState.isFirstTimeFetchHistory = true;
             keyboardDidShowListener.remove();
             if (resizeScroll.current) clearTimeout(resizeScroll.current);
         };
@@ -91,6 +90,7 @@ function MessageList({ $scrollView }: Props) {
     }
 
     function handleKeyboardShow() {
+        scrollState.shouldScroll = true;
         scrollToEnd();
     }
 
@@ -99,8 +99,8 @@ function MessageList({ $scrollView }: Props) {
             return;
         }
 
-        if (isFirstTimeFetchHistory && isAndroid) {
-            isFirstTimeFetchHistory = false;
+        if (scrollState.isFirstTimeFetchHistory && isAndroid) {
+            scrollState.isFirstTimeFetchHistory = false;
             return;
         }
 
@@ -137,24 +137,24 @@ function MessageList({ $scrollView }: Props) {
         contentWidth: number,
         contentHeight: number,
     ) {
-        if (prevContentHeight === 0) {
+        if (scrollState.prevContentHeight === 0) {
             $scrollView.current!.scrollTo({
                 x: 0,
                 y: 0,
                 animated: false,
             });
         } else if (
-            contentHeight !== prevContentHeight &&
-            messages.length - prevMessageCount > 1
+            contentHeight !== scrollState.prevContentHeight &&
+            messages.length - scrollState.prevMessageCount > 1
         ) {
             $scrollView.current!.scrollTo({
                 x: 0,
-                y: contentHeight - prevContentHeight - 60,
+                y: contentHeight - scrollState.prevContentHeight - 60,
                 animated: false,
             });
         }
-        prevContentHeight = contentHeight;
-        prevMessageCount = messages.length;
+        scrollState.prevContentHeight = contentHeight;
+        scrollState.prevMessageCount = messages.length;
     }
 
     function handleScroll(event: any) {
@@ -163,7 +163,7 @@ function MessageList({ $scrollView }: Props) {
             contentSize,
             contentOffset,
         } = event.nativeEvent;
-        shouldScroll =
+        scrollState.shouldScroll =
             contentOffset.y >
             contentSize.height - layoutMeasurement.height * 1.2;
 
@@ -187,7 +187,7 @@ function MessageList({ $scrollView }: Props) {
                 key={message._id}
                 message={message}
                 isSelf={self === message.from._id}
-                shouldScroll={shouldScroll}
+                shouldScroll={scrollState.shouldScroll}
                 scrollToEnd={scrollToEnd}
                 openImageViewer={openImageViewer}
             />
@@ -208,7 +208,7 @@ function MessageList({ $scrollView }: Props) {
             keyboardDismissMode={isiOS ? "interactive" : "on-drag"}
             onLayout={() => {
                 // adjustResize changes the viewport without changing message content size.
-                if (shouldScroll) {
+                if (keyboardVisible || scrollState.shouldScroll) {
                     if (resizeScroll.current) clearTimeout(resizeScroll.current);
                     resizeScroll.current = setTimeout(() => $scrollView.current?.scrollToEnd({ animated: false }), 0);
                 }

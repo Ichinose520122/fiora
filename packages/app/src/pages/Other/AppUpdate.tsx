@@ -1,6 +1,7 @@
+import { ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React, { useEffect, useRef, useState } from 'react';
-import { Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import * as Application from 'expo-application';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';

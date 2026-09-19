@@ -1,7 +1,8 @@
+import { ThemedText as Text, ThemedTextInput as TextInput } from '../../components/ThemedText';
 import { useAppTheme } from '../../utils/theme';
 import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Modal, ScrollView, TouchableOpacity, View } from 'react-native';
+import SafeAreaView from '../../components/ThemeScreen';
 import { useUser } from '../../hooks/useStore';
 import { changeAvatar, changePassword, changeUsername } from '../../service';
 import action from '../../state/action';
@@ -29,12 +30,12 @@ export default function AccountSettings({ close }: { close: () => void }) {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 22, color: theme.color('#32405a', 'color') }}>账号资料</Text>{button('完成', close)}</View>
         <View style={{ alignItems: 'center', paddingTop: 18 }}><Avatar src={user.avatar} userId={user._id} size={80} /></View>
         {button('更换头像', () => { void run(async () => { const url = await chooseImage('Avatar', user._id); if (url && await changeAvatar(url)) { action.setAvatar(url); Toast.success('头像已更新'); } }); })}
-        <Text style={{ color: theme.text }}>用户名</Text><TextInput style={input} value={name} onChangeText={setName} maxLength={32} autoCapitalize="none" />
+        <Text style={{ color: theme.text }}>用户名</Text><TextInput style={[input, { backgroundColor: theme.input, color: theme.text, borderWidth: 1, borderColor: theme.border }]} value={name} onChangeText={setName} maxLength={32} autoCapitalize="none" />
         {button('保存用户名', () => { void run(async () => { if (!name.trim()) throw new Error('请输入用户名'); if (await changeUsername(name.trim())) { action.updateUserProperty('username', name.trim()); Toast.success('用户名已更新'); } }); })}
         <Text style={{ marginTop: 14 }}>修改密码</Text>
-        <TextInput style={input} value={oldPassword} onChangeText={setOld} placeholder="当前密码" secureTextEntry autoCapitalize="none" />
-        <TextInput style={input} value={newPassword} onChangeText={setNew} placeholder="新密码" secureTextEntry autoCapitalize="none" />
-        <TextInput style={input} value={confirm} onChangeText={setConfirm} placeholder="再次输入新密码" secureTextEntry autoCapitalize="none" />
+        <TextInput style={[input, { backgroundColor: theme.input, color: theme.text, borderWidth: 1, borderColor: theme.border }]} value={oldPassword} onChangeText={setOld} placeholder="当前密码" secureTextEntry autoCapitalize="none" />
+        <TextInput style={[input, { backgroundColor: theme.input, color: theme.text, borderWidth: 1, borderColor: theme.border }]} value={newPassword} onChangeText={setNew} placeholder="新密码" secureTextEntry autoCapitalize="none" />
+        <TextInput style={[input, { backgroundColor: theme.input, color: theme.text, borderWidth: 1, borderColor: theme.border }]} value={confirm} onChangeText={setConfirm} placeholder="再次输入新密码" secureTextEntry autoCapitalize="none" />
         {button('更新密码', () => { void run(async () => {
             if (!oldPassword || !newPassword) throw new Error('请填写当前密码和新密码');
             if (newPassword !== confirm) throw new Error('两次新密码不一致');

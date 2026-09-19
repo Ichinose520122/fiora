@@ -1,11 +1,12 @@
+import { ThemedText as Text, ThemedTextInput as TextInput } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import MusicIcon from '../../components/MusicIcon';
 import React, { useRef, useState } from 'react';
-import { Modal, View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { Modal, View, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { assetUrl } from '../../config';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/ThemeScreen';
 import { useMusic } from './MusicSession';
 import { useSelfId } from '../../hooks/useStore';
 import MusicAccount from './MusicAccount';
@@ -35,13 +36,13 @@ export default function MusicPanel() {
                 {!!music.error && <Text style={{ color: theme.color('#a34354', 'color') }}>{music.error}</Text>}
                 {panelTab === 'search' && <>
                     <View style={styles.row}>{music.sources.map((s) => <TouchableOpacity key={s.id} disabled={!s.enabled} onPress={() => music.setSource(s.id)} style={[styles.button, { opacity: s.enabled ? 1 : 0.35, backgroundColor: music.source === s.id ? theme.color('#cad8ea', 'backgroundColor') : 'transparent' }]}><Text style={{ color: theme.text }}>{s.name}</Text></TouchableOpacity>)}</View>
-                    <View style={styles.row}><TextInput style={styles.input} value={music.keywords} onChangeText={music.setKeywords} onSubmitEditing={music.search} placeholder={music.source === 'local' ? '搜索服务器本地曲库（可留空）' : '歌曲名 / 歌手'} />{button(music.busy ? '搜索中' : '搜索', () => { void music.search(); }, music.busy)}</View>
+                    <View style={styles.row}><TextInput style={[styles.input, { backgroundColor: theme.input, borderWidth: 1, borderColor: theme.border }]} value={music.keywords} onChangeText={music.setKeywords} onSubmitEditing={music.search} placeholder={music.source === 'local' ? '搜索服务器本地曲库（可留空）' : '歌曲名 / 歌手'} />{button(music.busy ? '搜索中' : '搜索', () => { void music.search(); }, music.busy)}</View>
                     {music.tracks.map((track) => <View key={`${track.provider}:${track.id}`} style={styles.track}>{cover(track.cover)}<View style={{ flex: 1, minWidth: 0 }}><Text numberOfLines={1} style={styles.songTitle}>{track.title}</Text><Text numberOfLines={1} style={styles.meta}>{track.artist} · {time(track.duration)}</Text></View>{button('＋ 点歌', () => { void act('add', { id: track.id, provider: track.provider }, true); })}</View>)}
                     <Text style={styles.meta}>点歌优先播放，后续点歌加入队列。本地歌曲由服务器曲库提供。</Text>
                 </>}
                 {panelTab === 'queue' && <>
                     {room?.current && <Text style={{ paddingVertical: 12 }}>正在播放：{room.current.title}</Text>}
-                    {!room?.queue.length && <Text style={{ paddingVertical: 20 }}>暂无待播歌曲</Text>}
+                    {!room?.queue.length && <View style={{ alignItems: 'center', padding: 28, gap: 10, borderRadius: 22, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}><View style={{ padding: 16, borderRadius: 22, backgroundColor: theme.soft }}><MusicIcon size={34} color={theme.accent} /></View><Text style={{ fontSize: 16, fontWeight: '600' }}>队列暂时空着</Text><Text style={{ color: theme.muted, fontSize: 12 }}>喜欢的歌，和房间里的朋友一起听</Text>{button('去点歌', () => music.setPanelTab('search'))}</View>}
                     {room?.queue.map((track, i) => <View key={track.entryId} style={styles.track}><Text style={styles.index}>{String(i + 1).padStart(2, '0')}</Text><View style={{ flex: 1, minWidth: 0 }}><Text numberOfLines={1} style={styles.songTitle}>{track.title}</Text><Text numberOfLines={1} style={styles.meta}>{track.artist} · {track.requestedByName}</Text></View>{room.canControl && button('置顶', () => { void act('top', { entryId: track.entryId }); })}{(room.canControl || track.requestedBy === self) && button('取消', () => { void act('remove', { entryId: track.entryId }); })}</View>)}
                     {room?.current && button(room.canControl ? '下一首' : `投票切歌 ${room.votes.length}/${room.votesNeeded}`, () => { void act(room.canControl ? 'next' : 'vote'); })}
                     {room?.canControl && button('清空队列', () => { void act('clearQueue'); })}

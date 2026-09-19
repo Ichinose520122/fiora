@@ -1,7 +1,9 @@
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { ThemedText as Text, ThemedTextInput as TextInput } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import SafeAreaView from '../../components/ThemeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { TagParticleType, TagStylePreset } from '../../../../utils/tagStyle';
 import { useIsAdmin, useStore, useUser } from '../../hooks/useStore';
@@ -20,7 +22,7 @@ const particles: [TagParticleType, string][] = [['none', '无粒子'], ['star', 
 function Field({ label, value, onChange, secret = false, disabled = false, maxLength = 64 }: { label: string; value: string; onChange: (value: string) => void; secret?: boolean; disabled?: boolean; maxLength?: number }) {
     const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
 
-    return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} value={value} onChangeText={onChange} editable={!disabled} secureTextEntry={secret} autoCorrect={false} autoCapitalize="none" maxLength={maxLength} placeholder={label} placeholderTextColor={theme.color('#8a95aa')} style={styles.input} /></View>;
+    return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} value={value} onChangeText={onChange} editable={!disabled} secureTextEntry={secret} autoCorrect={false} autoCapitalize="none" maxLength={maxLength} placeholder={label} placeholderTextColor={theme.color('#8a95aa')} style={[styles.input, { backgroundColor: theme.input, color: theme.text, borderWidth: 1, borderColor: theme.border }]} /></View>;
 }
 
 export default function AdminPanel({ close }: { close: () => void }) {
@@ -85,7 +87,7 @@ export default function AdminPanel({ close }: { close: () => void }) {
     if (!isAdmin) return null;
     return <Modal animationType="slide" onRequestClose={close}><SafeAreaView style={styles.page}>
         <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="返回" onPress={close} style={styles.back}><Ionicons name="chevron-back" size={22} color={theme.color('#52658e')} /></TouchableOpacity><View style={{ flex: 1 }}><Text style={styles.heading}>管理员面板</Text><Text style={styles.hint}>当前账号：{user?.username}</Text></View>{busy ? <ActivityIndicator color={theme.color('#6377b4')} /> : <TouchableOpacity accessibilityRole="button" onPress={() => { void run(refresh); }} disabled={!connect} style={styles.back}><Ionicons name="refresh-outline" size={22} color={theme.color('#52658e')} /></TouchableOpacity>}</View>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             {!connect && <Text style={styles.error}>连接恢复后可继续管理。</Text>}
             {!!loadError && <Text style={styles.error}>读取管理状态失败：{loadError}。请点右上角刷新。</Text>}
             <View style={styles.card}><Text style={styles.title}>发言管理</Text>{!config ? <Text style={styles.hint}>尚未读取到当前设置</Text> : <>

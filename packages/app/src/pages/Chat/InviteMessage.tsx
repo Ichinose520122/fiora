@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import { View, Text } from '../../components/NativeUI';
 import React from 'react';
 import { StyleSheet, TouchableNativeFeedback } from 'react-native';
@@ -13,6 +14,8 @@ type Props = {
 };
 
 function InviteMessage({ message, isSelf }: Props) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     let invite: any;
     try { invite = JSON.parse(message.content); } catch { return <Text>邀请信息无法读取</Text>; }
     if (!invite || typeof invite.group !== 'string') return <Text>邀请信息无法读取</Text>;
@@ -37,7 +40,7 @@ function InviteMessage({ message, isSelf }: Props) {
                 <View
                     style={[
                         styles.info,
-                        { borderBottomColor: isSelf ? 'white' : '#aaa' },
+                        { borderBottomColor: isSelf ? theme.color('white', 'borderBottomColor') : theme.color('#aaa', 'borderBottomColor') },
                     ]}
                 >
                     <Text style={styles.text}>
@@ -57,7 +60,7 @@ function InviteMessage({ message, isSelf }: Props) {
 
 export default InviteMessage;
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         width: '90%',
         alignItems: 'center',

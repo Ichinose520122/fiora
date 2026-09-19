@@ -1,6 +1,7 @@
+import { ThemedText as Text } from './ThemedText';
 import { useAppTheme } from '../utils/theme';
 import React, { useEffect, useState } from 'react';
-import { AppRegistry, AppState, Linking, Platform, Switch, Text, View, TouchableOpacity } from 'react-native';
+import { AppRegistry, AppState, Linking, Platform, Switch, View, TouchableOpacity } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 import * as Notifications from 'expo-notifications';
 import { useIsLogin, useStore } from '../hooks/useStore';

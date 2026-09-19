@@ -3,9 +3,9 @@ import { StyleSheet } from 'react-native';
 import { Preferences, usePreferences } from './preferences';
 
 export const themePresets = {
-    mint: { accent: '#509f91', page: '#edf7f3', surface: '#ffffff', text: '#275a53' },
-    mist: { accent: '#6377b4', page: '#f3f5fc', surface: '#ffffff', text: '#32405a' },
-    rose: { accent: '#b57591', page: '#fcf1f5', surface: '#ffffff', text: '#71485c' },
+    mint: { accent: '#509f91', page: '#e2f0e8', surface: '#f0f8f3', text: '#275a53' },
+    mist: { accent: '#6377b4', page: '#e8edf7', surface: '#f2f5fc', text: '#32405a' },
+    rose: { accent: '#b57591', page: '#f5e6ec', surface: '#fcf2f6', text: '#71485c' },
 };
 export function mixColors(a: string, b: string, weight: number) {
     const rgb = (hex: string) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
@@ -17,9 +17,15 @@ export function resolveAppTheme(prefs: Preferences) {
     const pick = (value: string, fallback: string) => /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
     const accent = pick(prefs.accentColor, preset.accent); const page = pick(prefs.pageColor, preset.page);
     const surface = pick(prefs.surfaceColor, preset.surface); const text = pick(prefs.primaryTextColor, preset.text);
+    const navigation = pick(prefs.navigationColor, mixColors(surface, accent, 0.10));
+    const input = pick(prefs.inputColor, mixColors(surface, page, 0.45));
+    const incomingBubble = pick(prefs.incomingBubbleColor, surface);
+    const pageAccent = mixColors(page, accent, 0.12);
     const muted = mixColors(text, surface, 0.44); const soft = mixColors(surface, accent, 0.13); const border = mixColors(surface, accent, 0.23);
     const rgb = [1, 3, 5].map(i => parseInt(accent.slice(i, i + 2), 16));
     const onAccent = rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114 > 165 ? '#18352f' : '#ffffff';
+    const pageRgb = [1, 3, 5].map(i => parseInt(page.slice(i, i + 2), 16));
+    const dark = pageRgb[0] * 0.299 + pageRgb[1] * 0.587 + pageRgb[2] * 0.114 < 140;
     // Adapt the existing mist palette by semantic role; preserve red warnings,
     // success indicators, cover artwork and user-supplied chat bubble colors.
     const color = (value: string, role = 'color') => {
@@ -36,12 +42,12 @@ export function resolveAppTheme(prefs: Preferences) {
         if (neutral && light > 0.98) return value; // White icon labels retain contrast on solid buttons.
         return (light < 0.43 ? text : !neutral && light - Math.min(r, g, b) > 0.13 && r < 0.65 ? accent : muted) + alpha;
     };
-    return { accent, page, surface, text, muted, soft, border, onAccent, color };
+    return { accent, page, surface, text, muted, soft, border, onAccent, navigation, input, incomingBubble, pageAccent, dark, color };
 }
 export type AppTheme = ReturnType<typeof resolveAppTheme>;
 export function useAppTheme() {
     const prefs = usePreferences();
-    return useMemo(() => resolveAppTheme(prefs), [prefs.theme, prefs.accentColor, prefs.pageColor, prefs.surfaceColor, prefs.primaryTextColor]);
+    return useMemo(() => resolveAppTheme(prefs), [prefs.theme, prefs.accentColor, prefs.pageColor, prefs.surfaceColor, prefs.primaryTextColor, prefs.navigationColor, prefs.inputColor, prefs.incomingBubbleColor]);
 }
 export function useThemedStyles<T extends StyleSheet.NamedStyles<T>>(base: T): T {
     const theme = useAppTheme();

@@ -1,6 +1,7 @@
+import { ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React from 'react';
-import { Text, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Actions } from '../../navigation';
 
 import Time from '../../utils/time';

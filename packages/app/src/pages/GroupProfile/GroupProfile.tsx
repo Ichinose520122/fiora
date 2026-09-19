@@ -1,6 +1,7 @@
+import { ThemedText as Text, ThemedTextInput as TextInput } from '../../components/ThemedText';
 import { useAppTheme } from '../../utils/theme';
 import React, { useState } from 'react';
-import { Alert, ScrollView, Share, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Share, TouchableOpacity, View } from 'react-native';
 import { Actions } from '../../navigation';
 import Avatar from '../../components/Avatar';
 import PageContainer from '../../components/PageContainer';
@@ -23,7 +24,7 @@ export default function GroupProfile() {
         <View style={{ alignItems: 'center', paddingTop: 12, gap: 12 }}><Avatar src={room.avatar} size={78} /><Text style={{ fontSize: 21, color: theme.color('#32405a', 'color') }}>{room.name}</Text></View>
         {button('分享邀请链接', () => { void Share.share({ message: `${room.name}\n${serverUrl}/invite/group/${room._id}` }); })}
         {owner && <>
-            <TextInput value={name} onChangeText={setName} maxLength={50} placeholder="群名称" style={{ padding: 14, borderRadius: 12, backgroundColor: theme.color('#fff', 'backgroundColor') }} />
+            <TextInput value={name} onChangeText={setName} maxLength={50} placeholder="群名称" style={{ padding: 14, borderRadius: 12, backgroundColor: theme.input }} />
             {button('修改群名称', () => { void run(async () => { if (!name.trim()) throw new Error('请输入群名称'); if (await changeGroupName(room._id, name.trim())) { action.updateGroupProperty(room._id, 'name', name.trim()); Toast.success('群名称已更新'); } }); })}
             {button('更换群头像', () => { void run(async () => { const url = await chooseImage('GroupAvatar', self); if (url && await changeGroupAvatar(room._id, url)) { action.updateGroupProperty(room._id, 'avatar', url); Toast.success('群头像已更新'); } }); })}
         </>}

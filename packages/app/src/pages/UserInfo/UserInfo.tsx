@@ -6,7 +6,7 @@ import ProfileBoundary from '../../components/ProfileBoundary';
 import { Button, Text, View } from '../../components/NativeUI';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Actions } from '../../navigation';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/ThemeScreen';
 import Avatar from '../../components/Avatar';
 import UserTag from '../../components/UserTag';
 import { TagStyle } from '../../../../utils/tagStyle';

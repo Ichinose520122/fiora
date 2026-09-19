@@ -18,7 +18,7 @@ export function Button({ transparent, block, primary, danger, style, children, .
 }
 export function Header({ searchBar, rounded, style, ...props }: any) { return <NativeView {...props} style={[{ flexDirection: 'row', padding: 10 }, style]} />; }
 export function Item({ rounded, style, ...props }: any) { return <NativeView {...props} style={[{ flexDirection: 'row', flex: 1, alignItems: 'center', borderRadius: 6 }, style]} />; }
-export function Input({ style, ...props }: any) { const theme = useAppTheme(); return <TextInput placeholderTextColor={theme.muted} {...props} style={[{ flex: 1, minHeight: 40, padding: 6, color: theme.text }, style]} />; }
+export function Input({ style, ...props }: any) { const theme = useAppTheme(); return <TextInput placeholderTextColor={theme.muted} selectionColor={theme.accent} keyboardAppearance={theme.dark ? 'dark' : 'light'} {...props} style={[{ flex: 1, minHeight: 40, padding: 6, color: theme.text }, style]} />; }
 export function Body({ style, ...props }: any) { return <NativeView {...props} style={[{ flex: 1 }, style]} />; }
 export function Right({ style, ...props }: any) { return <NativeView {...props} style={[{ alignItems: 'flex-end', justifyContent: 'center' }, style]} />; }
 export function ListItem({ icon, style, onPress, children, ...props }: any) { const theme = useAppTheme(); return <TouchableOpacity {...props} disabled={!onPress} onPress={onPress} style={[{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 0.5, borderBottomColor: theme.border }, style]}>{children}</TouchableOpacity>; }

@@ -1,7 +1,8 @@
+import { ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import MusicIcon from '../../components/MusicIcon';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, View, Text, TouchableOpacity, StyleSheet, Easing } from 'react-native';
+import { Animated, View, TouchableOpacity, StyleSheet, Easing } from 'react-native';
 import { GlassView } from '../../components/PageContainer';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';

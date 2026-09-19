@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React from 'react';
 import { Tab, Tabs, Text, View } from '../../components/NativeUI';
 import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
@@ -20,6 +21,8 @@ type Props = {
 };
 
 function SearchResult({ groups, users }: Props) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     function handleClickGroup(group: any) {
         Actions.push('groupInfo', { group });
     }
@@ -92,7 +95,7 @@ function SearchResult({ groups, users }: Props) {
 
 export default SearchResult;
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         backgroundColor: 'transparent',
     },

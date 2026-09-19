@@ -1,5 +1,7 @@
+import { ThemedText as Text } from '../../components/ThemedText';
+import { useAppTheme } from '../../utils/theme';
 import React from 'react';
-import { Linking, Share, StyleSheet, Text, View } from 'react-native';
+import { Linking, Share, StyleSheet, View } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 import Expression from '../../components/Expression';
 import Toast from '../../components/Toast';
@@ -8,11 +10,12 @@ import expressions from '../../utils/expressions';
 import { usePreferences } from '../../utils/preferences';
 
 export default function TextMessage({ message, isSelf }: { message: Message; isSelf: boolean }) {
+    const theme = useAppTheme();
     const preferences = usePreferences();
     const children: React.ReactNode[] = [];
     const content = String(message.content || '');
     const regex = /#\(([^)\s]+)\)|https?:\/\/[^\s<>]+/g;
-    const color = isSelf ? preferences.bubbleTextColor : '#40506a';
+    const color = isSelf ? preferences.bubbleTextColor : theme.text;
     const copy = () => {
         const module = requireOptionalNativeModule('FioraConnection');
         if (module) void module.copyText(content).then(() => Toast.success('已复制')).catch(() => Toast.warning('复制失败'));
@@ -25,7 +28,7 @@ export default function TextMessage({ message, isSelf }: { message: Message; isS
         if (index > offset) children.push(text(content.slice(offset, index), offset));
         const expression = match[1] ? expressions.default.indexOf(match[1]) : -1;
         if (expression >= 0) children.push(<Expression key={`expression-${index}`} size={30} index={expression} />);
-        else if (!match[1]) children.push(<Text key={`url-${index}`} onLongPress={copy} onPress={() => { void Linking.openURL(match[0]).catch(() => Toast.warning('无法打开链接')); }} style={[styles.text, { color: '#5872b2' }]}>{match[0]}</Text>);
+        else if (!match[1]) children.push(<Text key={`url-${index}`} onLongPress={copy} onPress={() => { void Linking.openURL(match[0]).catch(() => Toast.warning('无法打开链接')); }} style={[styles.text, { color: isSelf ? preferences.bubbleTextColor : theme.accent, textDecorationLine: 'underline' }]}>{match[0]}</Text>);
         else children.push(text(match[0], index));
         offset = index + match[0].length;
     }

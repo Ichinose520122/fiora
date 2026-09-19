@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 export const defaultPreferences = {
     theme: 'mint', tagColorMode: 'fixedColor', bubbleColor: '#b9ddd4', bubbleTextColor: '#275a53',
     accentColor: '', pageColor: '', surfaceColor: '', primaryTextColor: '',
+    navigationColor: '', inputColor: '', incomingBubbleColor: '',
     background: '', notifications: true, sound: true, preview: true, voice: false, selfVoice: false,
 };
 export type Preferences = typeof defaultPreferences;

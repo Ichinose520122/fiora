@@ -1,13 +1,14 @@
+import { ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import { shareCrash } from '../../components/CrashReport';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/ThemeScreen';
 import ProfileBoundary from '../../components/ProfileBoundary';
 import AccountSettings from './AccountSettings';
 import AppearanceSettings from './AppearanceSettings';
 import AvatarDecorationPicker from './AvatarDecorationPicker';
 import { BackgroundConnectionSetting } from '../../components/BackgroundConnection';
 import React, { useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
+import { Linking, ScrollView, StyleSheet, TouchableOpacity, View, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Actions } from '../../navigation';
 import { useIsAdmin, useIsLogin, useUser } from '../../hooks/useStore';
@@ -45,19 +46,22 @@ function OtherContent() {
     </TouchableOpacity>;
     return <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: theme.color('#f3f5fc', 'backgroundColor') }}><ScrollView contentContainerStyle={styles.page}>
         <TouchableOpacity activeOpacity={0.9} onPress={() => { if (isLogin) Actions.userInfo({ userId: user._id }); else void login(); }}>
-            <View style={[styles.profile, { backgroundColor: theme.color('#e9edf9', 'backgroundColor') }]}>
+            <View style={[styles.profile, { backgroundColor: theme.soft }]}>
                 <Avatar userId={user?._id} src={isLogin ? user.avatar : require('../../../icon.png')} size={66} />
                 <View style={{ flex: 1, gap: 8 }}><Text style={styles.name} numberOfLines={1}>{isLogin ? user.username : '欢迎来到 Fiora'}</Text>{user?.tag ? <UserTag text={user.tag} tagStyle={user.tagStyle} /> : <Text style={styles.subtitle}>{isLogin ? '查看个人资料' : '登录，开始新的对话'}</Text>}</View>
                 <Ionicons name="chevron-forward" size={19} color={theme.color('#8794af')} />
             </View>
         </TouchableOpacity>
-        <Text style={styles.section}>偏好与服务</Text>
+        <Text style={styles.section}>账号与外观</Text>
         <View style={styles.card}>
             {isLogin && row('sparkles-outline', '头像挂件', '选择与网页同步的头像装饰', () => setSection('decoration'))}
-            {isLogin && row('notifications-outline', '后台在线', '连接状态、通知权限、电池限制', () => setSection('background'))}
-            {row('cloud-download-outline', '应用更新', '当前版本与 GitHub 最新安装包', () => setSection('update'))}
             {isLogin && row('person-outline', '账号资料', '修改头像、用户名与密码', () => setAccount(true))}
             {row('color-palette-outline', '外观与通知', '主题、气泡、聊天背景与消息提醒', () => setAppearance(true))}
+        </View>
+        <Text style={styles.section}>连接与管理</Text>
+        <View style={styles.card}>
+            {isLogin && row('notifications-outline', '后台在线', '连接状态、通知权限、电池限制', () => setSection('background'))}
+            {row('cloud-download-outline', '应用更新', '当前版本与 GitHub 最新安装包', () => setSection('update'))}
             {isAdmin && row('shield-outline', '管理员面板', '账号、标签、禁言与封禁管理', () => setAdmin(true))}
             {row('information-circle-outline', '故障诊断', '查看并分享本机保存的异常信息', () => { void shareCrash(); })}
             {row('globe-outline', '网页版', '在浏览器继续聊天', () => { void Linking.openURL(serverUrl).catch(() => Toast.danger('无法打开浏览器')); })}
@@ -78,7 +82,7 @@ export default function Other() {
 const baseStyles = StyleSheet.create({
     page: { padding: 18, paddingBottom: 28 }, profile: { flexDirection: 'row', alignItems: 'center', padding: 22, gap: 16, borderRadius: 25, borderWidth: 1, borderColor: '#ffffff' },
     name: { color: '#283653', fontWeight: '700', fontSize: 21 }, section: { fontSize: 12, fontWeight: '600', color: '#8995ab', marginTop: 28, marginBottom: 12, marginLeft: 5, letterSpacing: 1 },
-    card: { backgroundColor: '#ffffffc9', borderRadius: 22, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff' }, row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 17 },
+    card: { backgroundColor: '#ffffffc9', borderRadius: 22, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff' }, row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, borderBottomWidth: 0.5, borderBottomColor: '#e8ecf6' },
     icon: { backgroundColor: '#f0f3fb', borderRadius: 14, padding: 10 }, title: { color: '#32405a', fontSize: 15, fontWeight: '500' }, subtitle: { color: '#8491a8', fontSize: 12, marginTop: 4 },
     logout: { padding: 17, borderRadius: 17, backgroundColor: '#ffffffb0', alignItems: 'center', marginTop: 25 }, footer: { color: '#9ba6bb', fontSize: 11, textAlign: 'center', marginTop: 23 },
 });

@@ -1,6 +1,8 @@
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
+import { ThemedText as Text } from '../../components/ThemedText';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Header, Item, Icon, Input } from '../../components/NativeUI';
 import { Actions } from '../../navigation';
@@ -58,7 +60,7 @@ export default function ChatList() {
     return (
         <PageContainer>
             <Header searchBar rounded noShadow style={styles.searchContainer}>
-                <Item style={styles.searchItem}>
+                <Item style={[styles.searchItem, { backgroundColor: theme.input, borderColor: theme.border }]}>
                     <Icon name="ios-search" style={styles.searchIcon} />
                     <Input
                         style={styles.searchText}
@@ -72,7 +74,9 @@ export default function ChatList() {
                     />
                 </Item>
             </Header>
+            <View style={{ paddingHorizontal: 18, paddingTop: 5, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 13, fontWeight: '600', color: theme.muted }}>最近会话</Text><Text style={{ color: theme.accent, fontSize: 12 }}>{linkmans.length} 个会话</Text></View>
             <ScrollView style={styles.messageList} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+                {!linkmans.length && <View style={{ margin: 18, padding: 30, alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: 24, borderWidth: 1, borderColor: theme.border }}><View style={{ padding: 18, borderRadius: 24, backgroundColor: theme.soft }}><Ionicons name="chatbubbles-outline" size={36} color={theme.accent} /></View><Text style={{ fontWeight: '600', fontSize: 17 }}>从一次对话开始</Text><Text style={{ color: theme.muted, textAlign: 'center', lineHeight: 21 }}>搜索朋友或群组，开启新的聊天。</Text></View>}
                 {linkmans && [...linkmans].sort((a, b) => new Date(b.messages[b.messages.length - 1]?.createTime || b.createTime).getTime() - new Date(a.messages[a.messages.length - 1]?.createTime || a.createTime).getTime()).map((linkman) => renderLinkman(linkman))}
             </ScrollView>
         </PageContainer>

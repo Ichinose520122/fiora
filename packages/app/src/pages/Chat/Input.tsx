@@ -1,3 +1,4 @@
+import { ThemedTextInput as TextInput, ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import { serverUrl } from '../../config';
 import CodeComposer from './CodeComposer';
@@ -5,8 +6,9 @@ import { chatCommands } from '../../../../utils/chatCommands';
 import { Group } from '../../types/redux';
 import MusicIcon from '../../components/MusicIcon';
 import React, { useRef, useState } from 'react';
-import { StyleSheet, View, TextInput, Text, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useKeyboardState } from 'react-native-keyboard-controller';
 import { GlassView } from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,6 +31,7 @@ const commands = chatCommands.map(({ value, description }) => [value, descriptio
 export default function Input({ onHeightChange }: { onHeightChange: () => void }) {
     const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
 
+    const keyboardVisible = useKeyboardState(state => state.isVisible);
     const isLogin = useIsLogin();
     const user = useUser();
     const { focus, linkmans } = useStore();
@@ -135,12 +138,12 @@ export default function Input({ onHeightChange }: { onHeightChange: () => void }
     const hints = message && /^[/-]/.test(message) ? commands.filter(([cmd]) => cmd.startsWith(message.toLowerCase()) && cmd !== message).slice(0, 4) : [];
     const mention = /(?:^|\s)@([^\s@]*)$/.exec(message);
     const members = (linkmans.find((room) => room._id === focus) as Group)?.members || [];
-    return <SafeAreaView edges={['bottom', 'left', 'right']} onLayout={onHeightChange} style={styles.container}>
+    return <SafeAreaView edges={keyboardVisible ? ['left', 'right'] : ['bottom', 'left', 'right']} onLayout={onHeightChange} style={[styles.container, { backgroundColor: theme.navigation, borderColor: theme.border }]}>
         {mention && <View style={styles.hints}>{members.filter(m => m.user._id !== user?._id && m.user.username.startsWith(mention[1])).slice(0, 5).map(m => <TouchableOpacity key={m._id} onPress={() => { change(message.slice(0, message.lastIndexOf('@')) + '@' + m.user.username + ' '); input.current?.focus(); }} style={{ padding: 10 }}><Text style={{ color: theme.text }}>@{m.user.username}</Text></TouchableOpacity>)}</View>}
         {showCode && <CodeComposer close={() => setShowCode(false)} send={(value) => { setShowCode(false); void send(local('code', value), 'code', value); }} />}
-        {!!hints.length && <GlassView intensity={35} tint="light" style={styles.hints}>{hints.map(([cmd, help]) => <TouchableOpacity key={cmd} onPress={() => { change(cmd); input.current?.focus(); }} style={{ padding: 8 }}><Text style={{ color: theme.text }}><Text style={{ fontWeight: '600' }}>{cmd}</Text>  {help}</Text></TouchableOpacity>)}</GlassView>}
+        {!!hints.length && <GlassView intensity={35} tint={theme.dark ? "dark" : "light"} style={styles.hints}>{hints.map(([cmd, help]) => <TouchableOpacity key={cmd} onPress={() => { change(cmd); input.current?.focus(); }} style={{ padding: 8 }}><Text style={{ color: theme.text }}><Text style={{ fontWeight: '600' }}>{cmd}</Text>  {help}</Text></TouchableOpacity>)}</GlassView>}
         {isLogin ? <>
-            <View style={{ flexDirection: 'row', padding: 8 }}><TextInput ref={input} value={message} onChangeText={change} onSubmitEditing={submit} onSelectionChange={(e) => setSelection(e.nativeEvent.selection)} style={styles.input}  autoCapitalize="none" autoCorrect={false} returnKeyType="send" submitBehavior="submit" maxLength={2048} onFocus={() => { setShowExpression(false); onHeightChange(); }} /><TouchableOpacity accessibilityLabel="发送消息" onPress={submit} style={{ padding: 11, marginLeft: 8, backgroundColor: theme.color('#7588bd', 'backgroundColor'), borderRadius: 15 }}><Ionicons name="send" size={21} color={theme.color('white')} /></TouchableOpacity></View>
+            <View style={{ flexDirection: 'row', padding: 8 }}><TextInput ref={input} value={message} onChangeText={change} onSubmitEditing={submit} onSelectionChange={(e) => setSelection(e.nativeEvent.selection)} selectionColor={theme.accent} keyboardAppearance={theme.dark ? "dark" : "light"} style={[styles.input, { backgroundColor: theme.input, color: theme.text, borderWidth: 1, borderColor: theme.border }]}  autoCapitalize="none" autoCorrect={false} returnKeyType="send" submitBehavior="submit" maxLength={2048} onFocus={() => { setShowExpression(false); onHeightChange(); }} /><TouchableOpacity accessibilityLabel="发送消息" onPress={submit} style={{ padding: 11, marginLeft: 8, backgroundColor: theme.accent, borderRadius: 15 }}><Ionicons name="send" size={21} color={theme.onAccent} /></TouchableOpacity></View>
             <View style={styles.tools}>{([
                 ['musical-notes-outline', () => music.open()],
                 ['happy-outline', () => { input.current?.blur(); setShowExpression(!showExpression); onHeightChange(); }],

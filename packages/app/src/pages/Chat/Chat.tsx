@@ -1,14 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import {
     StyleSheet,
-    KeyboardAvoidingView,
     ScrollView,
     AppState,
 } from 'react-native';
-import { useHeaderHeight } from '@react-navigation/elements';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Actions } from '../../navigation';
 
-import { isiOS } from '../../utils/platform';
 
 import MessageList from './MessageList';
 import MusicPlayer from '../../modules/Music/MusicPlayer';
@@ -38,7 +36,6 @@ export default function Chat() {
     return <ChatContent />;
 }
 function ChatContent() {
-    const keyboardOffset = useHeaderHeight();
     const isLogin = useIsLogin();
     const self = useSelfId();
     const { focus } = useStore();
@@ -126,9 +123,8 @@ function ChatContent() {
         <PageContainer disableSafeAreaView>
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={isiOS ? 'padding' : undefined}
-                enabled={isiOS}
-                keyboardVerticalOffset={keyboardOffset}
+                behavior="padding"
+                automaticOffset
             >
                 <MusicPlayer />
                 <MessageList key={`${self}:${focus}`} $scrollView={$messageList} />

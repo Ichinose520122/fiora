@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React from 'react';
 import { Button, Text, View } from '../../components/NativeUI';
 import { StyleSheet } from 'react-native';
@@ -19,6 +20,8 @@ type Props = {
 };
 
 function GroupInfo({ group }: Props) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const { _id, avatar, name, members } = group;
     const linkmans = useLinkmans();
     const linkman = linkmans.find(
@@ -96,7 +99,7 @@ function GroupInfo({ group }: Props) {
 
 export default GroupInfo;
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         paddingTop: 20,
         paddingLeft: 16,

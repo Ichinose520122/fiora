@@ -1,6 +1,7 @@
+import { ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme } from '../../utils/theme';
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { avatarPresets } from '../../../../utils/avatarDecoration';
 import Avatar from '../../components/Avatar';
 import { useUser } from '../../hooks/useStore';

@@ -1,5 +1,7 @@
+import { ThemedText as Text, ThemedTextInput as TextInput } from '../../components/ThemedText';
+import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import React, { useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 import { Form, Label, Button, View } from '../../components/NativeUI';
 import { Actions } from '../../navigation';
 
@@ -20,6 +22,8 @@ export default function Base({
     onSubmit,
     invite = false,
 }: Props) {
+    const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [inviteCode, setInviteCode] = useState('');
@@ -52,10 +56,10 @@ export default function Base({
     return (
         <PageContainer>
             <View style={styles.container}>
-                <Form>
+                <Form style={{ backgroundColor: theme.surface, padding: 20, borderRadius: 22, borderWidth: 1, borderColor: theme.border }}>
                     <Label style={styles.label}>用户名</Label>
                     <TextInput
-                        style={[styles.input]}
+                        style={[styles.input, { color: theme.text, backgroundColor: theme.input, borderColor: theme.border }]}
                         // @ts-ignore
                         ref={$username}
                         clearButtonMode="while-editing"
@@ -74,7 +78,7 @@ export default function Base({
                         autoCapitalize="none"
                         autoComplete="password"
                     />
-                    {invite && <><Label style={styles.label}>邀请码</Label><TextInput value={inviteCode} onChangeText={setInviteCode} style={styles.input} autoCapitalize="none" autoCorrect={false} /></>}
+                    {invite && <><Label style={styles.label}>邀请码</Label><TextInput value={inviteCode} onChangeText={setInviteCode} style={[styles.input, { color: theme.text, backgroundColor: theme.input, borderColor: theme.border }]} autoCapitalize="none" autoCorrect={false} /></>}
                 </Form>
                 <Button
                     primary
@@ -83,7 +87,7 @@ export default function Base({
                     disabled={busy}
                     onPress={handlePress}
                 >
-                    <Text style={styles.buttonText}>{busy ? '处理中…' : buttonText}</Text>
+                    <Text style={[styles.buttonText, { color: theme.onAccent }]}>{busy ? '处理中…' : buttonText}</Text>
                 </Button>
                 <Button disabled={busy} transparent style={styles.signup} onPress={handleJump}>
                     <Text style={styles.signupText}>{jumpText}</Text>
@@ -93,7 +97,7 @@ export default function Base({
     );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
     container: {
         paddingLeft: 12,
         paddingRight: 12,
@@ -119,7 +123,7 @@ const styles = StyleSheet.create({
     input: {
         height: 42,
         fontSize: 16,
-        borderRadius: 6,
+        borderRadius: 12,
         marginBottom: 12,
         paddingLeft: 6,
         borderWidth: 1,

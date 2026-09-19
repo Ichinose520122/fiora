@@ -1,9 +1,13 @@
+import { ThemedText as Text } from '../../components/ThemedText';
+import { useAppTheme } from '../../utils/theme';
 import React, { useEffect, useState } from 'react';
-import { FlatList, View, Text, Image, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { FlatList, View, Image, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { serverUrl } from '../../config';
 type Item = { id: string; name: string; preview: string; image: string };
 let cache: Item[] | null = null;
 export default function QQExpression({ send }: { send: (url: string) => void }) {
+    const theme = useAppTheme();
+
     const [items, setItems] = useState(cache || []);
     const [error, setError] = useState(''); const [attempt, retry] = useState(0);
     const { width } = useWindowDimensions();
@@ -28,7 +32,7 @@ export default function QQExpression({ send }: { send: (url: string) => void }) 
         return () => { live = false; clearTimeout(timer); controller.abort(); };
     }, [attempt]);
     return <View style={{ flex: 1 }}>
-        {!items.length && <TouchableOpacity onPress={() => retry((v) => v + 1)} style={{ padding: 20 }}><Text style={{ color: '#687d96' }}>{error || '正在加载 QQ 表情…'}</Text></TouchableOpacity>}
+        {!items.length && <TouchableOpacity onPress={() => retry((v) => v + 1)} style={{ padding: 20 }}><Text style={{ color: theme.color('#687d96', 'color') }}>{error || '正在加载 QQ 表情…'}</Text></TouchableOpacity>}
         <FlatList data={items} numColumns={6} initialNumToRender={24} windowSize={3} keyExtractor={(item) => item.id} renderItem={({ item }) => <TouchableOpacity accessibilityLabel={item.name} onPress={() => send(`${item.image}${item.image.includes('?') ? '&' : '?'}width=120&height=120`)} style={{ width: (width - 12) / 6, height: 57, padding: 8, alignItems: 'center' }}><Image source={{ uri: item.preview }} resizeMode="contain" fadeDuration={0} style={{ width: 40, height: 40 }} /></TouchableOpacity>} contentContainerStyle={{ padding: 6 }} />
     </View>;
 }

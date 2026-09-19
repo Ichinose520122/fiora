@@ -1,15 +1,10 @@
+import { ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
 import retryMessage from '../../utils/retryMessage';
 import CodeMessage from './CodeMessage';
 import { usePreferences } from '../../utils/preferences';
 import React, { useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    useWindowDimensions,
-    TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { Alert } from 'react-native';
 import fetch from '../../utils/fetch';
 import Toast from '../../components/Toast';
@@ -197,7 +192,7 @@ function Message({
                                     paddingLeft: message.type === 'image' ? 0 : 12, paddingRight: message.type === 'image' ? 0 : 12,
                                     backgroundColor: message.type === 'image' ? 'transparent' : isSelf
                                         ? preferences.bubbleColor
-                                        : '#ffffffed',
+                                        : theme.incomingBubble,
                                 },
                             ]}
                         >
@@ -213,7 +208,7 @@ function Message({
                                     paddingLeft: message.type === 'image' ? 0 : 12, paddingRight: message.type === 'image' ? 0 : 12,
                                     backgroundColor: message.type === 'image' ? 'transparent' : isSelf
                                     ? preferences.bubbleColor
-                                    : '#ffffffed',
+                                    : theme.incomingBubble,
                             },
                         ]}
                     >
