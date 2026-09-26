@@ -12,6 +12,7 @@ import Message from '../../components/Message';
 
 import Style from './HeaderBar.less';
 import useAero from '../../hooks/useAero';
+import useConnectionIndicator from '../../hooks/useConnectionIndicator';
 
 const styles = {
     count: css`
@@ -48,7 +49,7 @@ function HeaderBar(props: Props) {
     } = props;
 
     const action = useAction();
-    const connectStatus = useSelector((state: State) => state.connect);
+    const connectStatus = useConnectionIndicator();
     const isLogin = useIsLogin();
     const sidebarVisible = useSelector(
         (state: State) => state.status.sidebarVisible,
@@ -115,7 +116,7 @@ function HeaderBar(props: Props) {
                         />
                         {connectStatus
                             ? '服务器已连接'
-                            : '服务器连接已断开'}
+                            : '连接中断，正在自动恢复…'}
                     </span>
                 )}
             </h2>

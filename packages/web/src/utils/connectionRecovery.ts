@@ -12,104 +12,114 @@ interface RecoverableSocket {
 export default function installConnectionRecovery(
     socket: RecoverableSocket,
     isRestoring: () => boolean,
+    restoreSession: () => void,
 ) {
-    const intervalMs = 30000;
-    const timeoutMs = 8000;
     let probeTimer: number | undefined;
     let probeVersion = 0;
-    let lastCheck = 0;
-    let lastRestart = 0;
+    let lastCheck = -Infinity;
+    let lastRestart = -Infinity;
+    let frozen = false;
+    let disposed = false;
+    let failures = 0;
 
     function cancelProbe() {
         window.clearTimeout(probeTimer);
         probeTimer = undefined;
         probeVersion += 1;
     }
-
     function restart() {
-        if (navigator.onLine === false || Date.now() - lastRestart < 5000) {
-            return;
-        }
+        if (disposed || frozen || navigator.onLine === false || Date.now() - lastRestart < 5000) return;
         lastRestart = Date.now();
         cancelProbe();
+        failures = 0;
         socket.disconnect();
         socket.connect();
     }
-
     function check() {
-        if (document.hidden || navigator.onLine === false) {
-            return;
-        }
+        // Hidden tabs can still receive messages. Only frozen/offline pages suspend checks.
+        if (disposed || frozen || navigator.onLine === false) return;
         if (!socket.connected) {
             socket.connect();
             return;
         }
-        if (isRestoring() || probeTimer !== undefined || Date.now() - lastCheck < 5000) {
-            return;
-        }
+        if (probeTimer !== undefined || Date.now() - lastCheck < 5000) return;
         lastCheck = Date.now();
+        const startedAt = lastCheck;
+        const timeoutMs = document.hidden ? 90000 : 10000;
         const version = ++probeVersion;
         const connectionId = socket.id;
-        probeTimer = window.setTimeout(() => {
-            cancelProbe();
-            if (!document.hidden && socket.id === connectionId) {
-                restart();
+        const timedOut = (allowGrace: boolean) => {
+            if (version !== probeVersion || socket.id !== connectionId) return;
+            if (disposed || frozen || navigator.onLine === false) { cancelProbe(); return; }
+            if (allowGrace && Date.now() - startedAt > timeoutMs + 5000) {
+                // Delayed timers after suspension are not evidence of a dead transport.
+                // Let queued acknowledgements run, but never defer failure forever.
+                probeTimer = window.setTimeout(() => timedOut(false), 1000);
+                return;
             }
-        }, timeoutMs);
+            cancelProbe();
+            failures += 1;
+            if (failures >= 2) restart();
+            else check();
+        };
+        probeTimer = window.setTimeout(() => timedOut(true), timeoutMs);
         socket.emit('connectionHealth', {}, (response) => {
-            if (version !== probeVersion || socket.id !== connectionId) {
-                return;
-            }
+            if (disposed || version !== probeVersion || socket.id !== connectionId) return;
             cancelProbe();
-            if (
-                response && typeof response === 'object' &&
-                response.ok === true &&
-                (!window.localStorage.getItem('token') || response.authenticated)
-            ) {
-                return;
-            }
-            // A live transport can still have lost its server-side login/rooms.
-            if (window.localStorage.getItem('token')) {
-                restart();
+            // Any response proves transport liveness, even a server business error.
+            failures = 0;
+            if (response && typeof response === 'object' && response.ok === true &&
+                window.localStorage.getItem('token') && response.authenticated === false && !isRestoring()) {
+                restoreSession();
             }
         });
     }
-
     function resume() {
-        if (document.hidden) {
-            return;
-        }
-        // Keep an in-flight probe: focus/pageshow/visibilitychange often arrive together.
+        if (disposed || frozen || document.hidden) return;
         check();
     }
-
     function visibilityChanged() {
-        if (document.hidden) {
-            cancelProbe();
-            lastCheck = 0;
-        } else {
-            resume();
-        }
+        // Visibility changes also change the timeout policy. Start a fresh probe.
+        cancelProbe();
+        failures = 0;
+        lastCheck = -Infinity;
+        check();
     }
-
-    function pageShown() {
-        resume();
+    function freeze() {
+        frozen = true;
+        cancelProbe();
     }
-
-    socket.on('disconnect', cancelProbe);
+    function thaw() {
+        frozen = false;
+        visibilityChanged();
+    }
+    function resetConnection() {
+        cancelProbe();
+        failures = 0;
+        lastCheck = -Infinity;
+    }
+    socket.on('connect', resetConnection);
+    socket.on('disconnect', resetConnection);
     document.addEventListener('visibilitychange', visibilityChanged);
+    document.addEventListener('freeze', freeze);
+    document.addEventListener('resume', thaw);
+    window.addEventListener('pagehide', freeze);
+    window.addEventListener('pageshow', thaw);
     window.addEventListener('focus', resume);
-    window.addEventListener('online', resume);
-    window.addEventListener('pageshow', pageShown);
-    const interval = window.setInterval(check, intervalMs);
-
+    window.addEventListener('online', visibilityChanged);
+    const interval = window.setInterval(check, 30000);
     return () => {
+        disposed = true;
         cancelProbe();
         window.clearInterval(interval);
-        socket.off('disconnect', cancelProbe);
+        socket.off('connect', resetConnection);
+        socket.off('disconnect', resetConnection);
         document.removeEventListener('visibilitychange', visibilityChanged);
+        document.removeEventListener('freeze', freeze);
+        document.removeEventListener('resume', thaw);
+        window.removeEventListener('pagehide', freeze);
+        window.removeEventListener('pageshow', thaw);
         window.removeEventListener('focus', resume);
-        window.removeEventListener('online', resume);
-        window.removeEventListener('pageshow', pageShown);
+        window.removeEventListener('online', visibilityChanged);
     };
 }

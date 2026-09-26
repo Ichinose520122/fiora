@@ -201,7 +201,11 @@ window.onfocus = () => {
 window.onblur = () => {
     windowStatus = 'blur';
 };
-installConnectionRecovery(socket, () => restoringSession);
+installConnectionRecovery(socket, () => restoringSession, () => {
+    // Keep the transport, but block sends until the lost login is restored.
+    dispatch({ type: ActionTypes.Disconnect, payload: '' });
+    void restoreSession();
+});
 
 let prevFrom: string | null = '';
 let prevName = '';

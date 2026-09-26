@@ -6,6 +6,7 @@ import loadable from '@loadable/component';
 import { isMobile } from '@fiora/utils/ua';
 import { State } from '../../state/reducer';
 import useIsLogin from '../../hooks/useIsLogin';
+import useConnectionIndicator from '../../hooks/useConnectionIndicator';
 import Avatar from '../../components/Avatar';
 import Tooltip from '../../components/Tooltip';
 import IconButton from '../../components/IconButton';
@@ -39,7 +40,7 @@ function Sidebar() {
     );
     const action = useAction();
     const isLogin = useIsLogin();
-    const isConnect = useSelector((state: State) => state.connect);
+    const isConnect = useConnectionIndicator();
     const isAdmin = useSelector(
         (state: State) => state.user && state.user.isAdmin,
     );
