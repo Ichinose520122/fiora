@@ -29,7 +29,7 @@
 | 一台能正常访问网易云的国内服务器 | 可使用国内地域的阿里云 ECS，运行本项目的 music-api 镜像 |
 | Docker Engine、Compose 插件、Git、OpenSSL | 两台服务器均安装；宿主机不需要单独安装 Node.js、MongoDB 或 Redis |
 | 两个域名 | 例如 `chat.example.com` 指向聊天服务器，`music-api.example.com` 指向国内服务器 |
-| DNS、端口与出站网络 | 配置 A 记录；只有 IPv6 确实可用时才配置 AAAA。HTTPS 网关需 TCP 80/443，SSH 保留你的管理端口 |
+| DNS、端口与出站网络 | 配置 A 记录；只有 IPv6 确实可用时才配置 AAAA。HTTPS 网关需 TCP 80/443；HTTP/3 另需 UDP 443，SSH 保留你的管理端口 |
 | 可用磁盘与内存 | 保存数据库、图片、曲库和备份；源码构建的 Node 堆上限为 1600 MB，需额外留出系统及容器内存 |
 | 网易云账号 | 站点管理员可在音乐面板登录；部分歌曲需要相应会员权限 |
 
@@ -403,3 +403,22 @@ sh scripts/backup-r2.sh
 ## 许可与依赖致谢
 
 基于 [yinxin630/fiora](https://github.com/yinxin630/fiora)，遵循 [MIT License](LICENSE)，保留原作者版权声明。网易云接口使用 [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api)。
+
+
+### 重连、群名与头像头饰
+
+网页切到其他标签页、最小化或后台挂很久后，返回前台会立即检查旧连接：正常就补查遗漏消息；3 秒内无响应则主动重连、恢复登录并补消息。当前聊天页和草稿保留；曾经在线的页面返回时提供 12 秒静默恢复窗口，持续失败才显示断线提示。尚未发出的请求会等待连接恢复（最多 12 秒）；已经发出但结果不确定的消息不会自动重发，避免重复。浏览器冻结或丢弃标签页时，网页无法承诺持续后台在线；恢复运行后会检查连接并补消息。
+
+默认群只在数据库中不存在时创建，重建容器不再覆盖已保存的群名。之前被覆盖的名字需重新设置一次，并确保保留 MongoDB 数据卷。
+
+网页设置和 App 的头像挂件区域新增“头像头饰”，普通用户可选择光环、星星、蝴蝶结、薄荷芽、小花等。管理员面板的“设置用户头饰”支持按用户名设置皇冠或其他头饰。头饰仅改变外观，不改变管理权限；普通用户更换掉获赠的皇冠后，需要管理员再次设置。头饰保存在 MongoDB，网页与 App 共用，其他客户端会在头像资料下一次刷新时显示（通常一分钟内）。
+
+### 图片与 HTTP/3
+
+网页上传 PNG/JPEG/GIF/WebP 图片、头像与背景时使用带登录令牌的 HTTP 接口 `POST /api/upload/image`，不再把这些图片的二进制内容塞进聊天 WebSocket。接口保留登录有效期、密码变更失效、封禁、文件归属、大小与格式检查，并限制并发和读取时间。启用 OSS 时仍优先直传 OSS。图片显示本身也是普通 HTTP 请求。
+
+HTTP/3 由浏览器和 HTTPS 网关协商，前端不能强制指定。仓库附带的 Caddy Compose 已映射 `443:443/udp`；还需在服务器防火墙和云安全组放行 UDP 443。如果使用独立 Caddy/CDN，需在实际对外网关启用，Fiora 内部的 9200 端口无需改成 QUIC。浏览器不支持或 UDP 不通时可继续使用 HTTP/2、HTTP/1.1；无需强制 H3。
+
+确认方法：浏览器开发者工具 → Network → 显示 Protocol 列，查看图片 GET 或上传 POST 是否为 `h3`；响应中的 `Alt-Svc: h3` 仅表示服务器声明支持，不代表本次传输已经使用 H3。App 是否使用 H3 由其原生网络栈决定，本次未强制修改原生传输协议。
+
+参考：[Caddy 协议配置](https://caddyserver.com/docs/caddyfile/options#protocols)、[Alt-Svc 的含义](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Alt-Svc)。

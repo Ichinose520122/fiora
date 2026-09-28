@@ -1,3 +1,4 @@
+import HeadwearPicker from './HeadwearPicker';
 import { ThemedText as Text } from '../../components/ThemedText';
 import { useAppTheme } from '../../utils/theme';
 import React, { useState } from 'react';
@@ -23,6 +24,7 @@ export default function AvatarDecorationPicker() {
             try { const [error] = await fetch('setAvatarDecoration', { decoration: item.id }); if (!error) { setSelected(item.id); refreshAvatarDecorations(); Toast.success('头像挂件已保存'); } }
             finally { setBusy(false); }
         }}><Avatar src={user.avatar} size={44} userId={user._id} decoration={item.id} /><Text style={{ fontSize: 12, color: theme.color('#667391', 'color') }}>{item.name}</Text></TouchableOpacity>)}</View>
-        <Text style={{ fontSize: 11, color: theme.color('#98a2b5', 'color'), marginTop: 12 }}>挂件随账号保存，网页与 App 同步。管理员皇冠自动显示。</Text>
+        <Text style={{ fontSize: 11, color: theme.color('#98a2b5', 'color'), marginTop: 12 }}>挂件随账号保存，网页与 App 同步。头饰可在下方单独设置。</Text>
+        <HeadwearPicker />
     </View>;
 }

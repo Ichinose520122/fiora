@@ -1,3 +1,4 @@
+import HeadwearPicker from './HeadwearPicker';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ThemedText as Text, ThemedTextInput as TextInput } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
@@ -95,6 +96,7 @@ export default function AdminPanel({ close }: { close: () => void }) {
                 <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.label}>新用户禁言</Text><Text style={styles.hint}>控制新注册用户发言</Text></View><Switch accessibilityLabel="新用户禁言" disabled={disabled} value={config.disableNewUserSendMessage} onValueChange={value => confirm(value ? '开启新用户禁言？' : '关闭新用户禁言？', '这会修改服务器的新用户发言设置。', async () => { if (await request('toggleNewUserSendMessage', { enable: !value })) { Toast.success('发言设置已更新'); await refresh(); } })} /></View>
             </>}</View>
             <View style={styles.card}><Text style={styles.title}>创建小洛克账号</Text><Field label="洛克王国 ID" value={username} onChange={setUsername} disabled={disabled} /><Field label="学号（初始密码）" value={password} onChange={setPassword} secret disabled={disabled} />{button('创建账号', () => { if (!required(username, '洛克王国 ID') || !required(password, '学号')) return; void run(async () => { const result = await request<{ username: string }>('createUser', { username: username.trim(), password: password.trim() }); if (result) { setUsername(''); setPassword(''); Toast.success(`账号 ${result.username} 创建成功`); } }); })}</View>
+            <View style={styles.card}><HeadwearPicker admin /></View>
             <View style={styles.card}><Text style={styles.title}>用户标签</Text><Field label="用户名" value={tagUsername} onChange={setTagUsername} disabled={disabled} /><Field label="标签内容" value={tag} onChange={setTag} disabled={disabled} />
                 {choices(presets, preset, setPreset)}{choices(particles, particle, setParticle)}
                 {colors.slice(0, colorCount).map((color, index) => <View key={index} style={styles.colorRow}><View style={[styles.swatch, { backgroundColor: /^#[0-9a-f]{6}$/i.test(color) ? color : '#e5e9f0' }]} /><View style={{ flex: 1 }}><Field label={`颜色 ${index + 1}（#RRGGBB）`} value={color} maxLength={7} disabled={disabled} onChange={value => setColors(previous => previous.map((item, i) => i === index ? value : item))} /></View></View>)}

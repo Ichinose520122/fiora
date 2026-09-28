@@ -1,5 +1,5 @@
 import React, { SyntheticEvent, useState, useMemo } from 'react';
-import { crownMark } from '../../../utils/avatarDecoration';
+import { resolveHeadwear } from '../../../utils/avatarDecoration';
 import { avatarPresets } from '../utils/avatarPresets';
 import useAvatarDecoration from '../hooks/useAvatarDecoration';
 import { getOSSFileUrl } from '../utils/uploadFile';
@@ -11,6 +11,7 @@ type Props = {
     src: string;
     userId?: string;
     decoration?: string;
+    headwear?: string;
     /** 展示大小 */
     size?: number;
     /** 额外类名 */
@@ -23,7 +24,7 @@ type Props = {
 
 function Avatar({
     src,
-    userId, decoration,
+    userId, decoration, headwear,
     size = 60,
     className = '',
     onClick,
@@ -31,6 +32,7 @@ function Avatar({
     onMouseLeave,
 }: Props) {
     const appearance = useAvatarDecoration(userId);
+    const head = resolveHeadwear(headwear ?? appearance?.headwear, appearance?.isAdmin);
     const preset = avatarPresets.find((item) => item.id === (decoration ?? appearance?.decoration));
     const [failTimes, updateFailTimes] = useState(0);
 
@@ -64,7 +66,7 @@ function Avatar({
             onError={handleError}
         />
         {!!preset?.paths.length && <svg aria-hidden="true" viewBox="-10 -10 120 120" style={{ pointerEvents: 'none', position: 'absolute', width: '120%', height: '120%', left: '-10%', top: '-10%', overflow: 'visible' }}>{preset.paths.map((d) => <path key={d} d={d} fill="none" stroke={preset.color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />)}</svg>}
-        {appearance?.isAdmin && <svg role="img" aria-label="管理员" viewBox="0 0 40 30" style={{ pointerEvents: 'none', position: 'absolute', width: '48%', height: '35%', left: '26%', top: '-23%' }}><path d={crownMark} fill="#fff1c2" stroke="#ca9b43" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" /></svg>}
+        {!!head.paths.length && <svg role="img" aria-label={head.name} viewBox="0 0 40 30" style={{ pointerEvents: 'none', position: 'absolute', width: '48%', height: '35%', left: '26%', top: '-23%' }}>{head.paths.map((d) => <path key={d} d={d} fill={head.fill} stroke={head.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />)}</svg>}
         </span>
     );
 }

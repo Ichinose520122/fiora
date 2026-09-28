@@ -60,4 +60,21 @@ export const avatarPresets = [
         ],
     },
 ] as const;
-export type AvatarDecoration = { decoration: string; isAdmin: boolean };
+
+/** Cosmetic headwear is independent from administrator permissions. */
+export const headwearPresets = [
+    { id: 'auto', name: '默认', color: '#9babc0', fill: 'none', paths: [] as string[] },
+    { id: 'none', name: '无头饰', color: '#9babc0', fill: 'none', paths: [] as string[] },
+    { id: 'crown', name: '金色皇冠', color: '#ca9b43', fill: '#fff1c2', paths: [crownMark] },
+    { id: 'halo', name: '天使光环', color: '#d7b76d', fill: '#fff5ce', paths: ['M5 15a15 6 0 1 0 30 0a15 6 0 1 0-30 0Z', 'M9 5v3M31 3v4'] },
+    { id: 'star', name: '许愿星', color: '#b39ad8', fill: '#eee4ff', paths: ['M20 3l5 8 9 2-6 7 1 8-9-4-9 4 1-8-6-7 9-2Z'] },
+    { id: 'bow', name: '莓果蝴蝶结', color: '#ce89a2', fill: '#ffe0eb', paths: ['M17 14C-1-3 0 29 17 19M23 14C41-3 40 29 23 19M17 13h6v8h-6ZM16 22l-4 6M24 22l4 6'] },
+    { id: 'sprout', name: '薄荷新芽', color: '#69aa8d', fill: '#d2f2dc', paths: ['M20 27V14M20 18C4 20 3 6 5 4c12 0 16 6 15 14ZM20 14C20 3 28 1 35 3c0 10-6 14-15 11Z'] },
+    { id: 'flower', name: '晴日小花', color: '#d6a76e', fill: '#fff0c8', paths: ['M16 11C4-2 0 13 11 16 0 22 12 32 17 22 21 35 33 25 27 19 40 18 33 3 24 10 26-3 12-2 16 11Z', 'M16 16a4 4 0 1 0 8 0a4 4 0 1 0-8 0Z'] },
+] as const;
+export function resolveHeadwear(headwear?: string, isAdmin = false) {
+    const id = !headwear || headwear === 'auto' ? (isAdmin ? 'crown' : 'none') : headwear;
+    return headwearPresets.find((item) => item.id === id) || headwearPresets[1];
+}
+export type AvatarDecoration = { decoration: string; headwear?: string; isAdmin: boolean };
+

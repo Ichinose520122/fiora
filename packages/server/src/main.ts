@@ -30,9 +30,6 @@ const DEFAULT_GROUP_NAME = '休息室';
             logger.error('[defaultGroup]', 'create default group fail');
             return process.exit(1);
         }
-    } else if (group.name !== DEFAULT_GROUP_NAME) {
-        group.name = DEFAULT_GROUP_NAME;
-        await group.save();
     }
 
     app.listen(config.port, async () => {

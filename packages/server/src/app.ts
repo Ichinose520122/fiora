@@ -1,3 +1,4 @@
+import imageUpload from './middlewares/imageUpload';
 import Koa from 'koa';
 import koaSend from 'koa-send';
 import koaStatic from 'koa-static';
@@ -71,6 +72,7 @@ app.use(async (ctx, next) => {
 });
 
 app.use(musicFiles);
+app.use(imageUpload);
 
 // serve index.html
 app.use(async (ctx, next) => {

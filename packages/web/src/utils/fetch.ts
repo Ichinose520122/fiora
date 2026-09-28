@@ -1,3 +1,4 @@
+import waitForConnection from './waitForConnection';
 import Message from '../components/Message';
 import socket from '../socket';
 
@@ -9,7 +10,7 @@ const RequestTimeout = 30000;
 const DisconnectedText = '连接已断开, 正在尝试重连';
 const RequestTimeoutText = '请求超时, 请检查网络后重试';
 
-export default function fetch<T = any>(
+export default async function fetch<T = any>(
     event: string,
     data = {},
     { toast = true, timeout = RequestTimeout } = {},
@@ -18,12 +19,12 @@ export default function fetch<T = any>(
         Message.error(SEAL_TEXT);
         return Promise.resolve([SEAL_TEXT, null]);
     }
-    if (!socket.connected) {
-        socket.connect();
-        if (toast) {
-            Message.error(DisconnectedText);
-        }
-        return Promise.resolve([DisconnectedText, null]);
+    const token = window.localStorage.getItem('token');
+    const readinessError = await waitForConnection(event);
+    if (readinessError || token !== window.localStorage.getItem('token') || !socket.connected) {
+        const error = readinessError || DisconnectedText;
+        if (toast) Message.error(error);
+        return [error, null];
     }
     return new Promise((resolve) => {
         let settled = false;

@@ -12,6 +12,7 @@ export default function isAdmin(socket: Socket) {
         'getSealList',
         'resetUserPassword',
         'setUserTag',
+        'setUserHeadwear',
         'getUserIps',
         'sealIp',
         'sealUserOnlineIp',

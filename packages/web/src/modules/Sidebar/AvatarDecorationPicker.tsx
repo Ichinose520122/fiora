@@ -1,3 +1,4 @@
+import HeadwearPicker from './HeadwearPicker';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { avatarPresets } from '../../utils/avatarPresets';
@@ -19,6 +20,7 @@ export default function AvatarDecorationPicker() {
             try { const [error] = await fetch('setAvatarDecoration', { decoration: item.id }); if (!error) { setSelected(item.id); refreshAvatarDecorations(); Message.success('头像挂件已保存'); } }
             finally { setBusy(false); }
         }}><Avatar src={user.avatar} size={46} userId={user._id} decoration={item.id} /><span>{item.name}</span></button>)}</div>
-        <p style={{ fontSize: 12, opacity: 0.6, marginTop: 12 }}>挂件随账号保存，所有用户均可选择。管理员皇冠自动显示。</p>
+        <p style={{ fontSize: 12, opacity: 0.6, marginTop: 12 }}>挂件随账号保存，所有用户均可选择。头饰可在下方单独设置。</p>
+        <HeadwearPicker />
     </section>;
 }

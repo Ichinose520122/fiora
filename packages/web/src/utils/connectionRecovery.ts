@@ -13,6 +13,7 @@ export default function installConnectionRecovery(
     socket: RecoverableSocket,
     isRestoring: () => boolean,
     restoreSession: () => void,
+    foreground: { onStart?: () => void; onReady?: () => void } = {},
 ) {
     let probeTimer: number | undefined;
     let probeVersion = 0;
@@ -21,6 +22,8 @@ export default function installConnectionRecovery(
     let frozen = false;
     let disposed = false;
     let failures = 0;
+    let resumePending = false;
+    let lastResume = -Infinity;
 
     function cancelProbe() {
         window.clearTimeout(probeTimer);
@@ -45,7 +48,9 @@ export default function installConnectionRecovery(
         if (probeTimer !== undefined || Date.now() - lastCheck < 5000) return;
         lastCheck = Date.now();
         const startedAt = lastCheck;
-        const timeoutMs = document.hidden ? 90000 : 10000;
+        // Returning users should not wait through two ordinary 10-second probes.
+        const isForegroundProbe = resumePending && !document.hidden;
+        const timeoutMs = document.hidden ? 90000 : isForegroundProbe ? 3000 : 10000;
         const version = ++probeVersion;
         const connectionId = socket.id;
         const timedOut = (allowGrace: boolean) => {
@@ -59,7 +64,7 @@ export default function installConnectionRecovery(
             }
             cancelProbe();
             failures += 1;
-            if (failures >= 2) restart();
+            if (isForegroundProbe || failures >= 2) restart();
             else check();
         };
         probeTimer = window.setTimeout(() => timedOut(true), timeoutMs);
@@ -68,25 +73,41 @@ export default function installConnectionRecovery(
             cancelProbe();
             // Any response proves transport liveness, even a server business error.
             failures = 0;
-            if (response && typeof response === 'object' && response.ok === true &&
-                window.localStorage.getItem('token') && response.authenticated === false && !isRestoring()) {
+            const needsLogin = !!window.localStorage.getItem('token');
+            if (response && response.ok === true && (!needsLogin || response.authenticated === true)) {
+                if (resumePending && !isRestoring()) {
+                    resumePending = false;
+                    foreground.onReady?.();
+                }
+            } else if (needsLogin && !isRestoring() &&
+                (resumePending || (response && response.ok === true && response.authenticated === false))) {
+                resumePending = false;
                 restoreSession();
             }
         });
     }
     function resume() {
-        if (disposed || frozen || document.hidden) return;
-        check();
-    }
-    function visibilityChanged() {
-        // Visibility changes also change the timeout policy. Start a fresh probe.
+        if (disposed || frozen || document.hidden || Date.now() - lastResume < 1000) return;
+        lastResume = Date.now();
+        // Invalidate background timers/acks before releasing any queued sends.
         cancelProbe();
         failures = 0;
         lastCheck = -Infinity;
+        resumePending = true;
+        foreground.onStart?.();
+        check();
+    }
+    function visibilityChanged() {
+        if (!document.hidden) { resume(); return; }
+        cancelProbe();
+        failures = 0;
+        lastCheck = -Infinity;
+        lastResume = -Infinity;
         check();
     }
     function freeze() {
         frozen = true;
+        lastResume = -Infinity;
         cancelProbe();
     }
     function thaw() {
@@ -94,6 +115,7 @@ export default function installConnectionRecovery(
         visibilityChanged();
     }
     function resetConnection() {
+        resumePending = false; // A new socket's login path already performs history catch-up.
         cancelProbe();
         failures = 0;
         lastCheck = -Infinity;

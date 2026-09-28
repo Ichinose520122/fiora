@@ -1,3 +1,4 @@
+import { headwearPresets } from '@fiora/utils/avatarDecoration';
 import { Schema, model, Document } from 'mongoose';
 import {
     isValidUserTag,
@@ -39,6 +40,7 @@ const UserSchema = new Schema({
     tokenVersion: { type: Number, default: 0 },
     avatar: String,
     avatarDecoration: { type: String, enum: ['none', 'orbit', 'bloom', 'cat', 'wings', 'moon', 'laurel', 'butterfly', 'rabbit', 'ribbon', 'ocean'], default: 'none' },
+    avatarHeadwear: { type: String, enum: headwearPresets.map((item) => item.id), default: 'auto' },
     tag: {
         type: String,
         default: '',
@@ -80,6 +82,7 @@ export interface UserDocument extends Document {
     /** 头像 */
     avatar: string;
     avatarDecoration: string;
+    avatarHeadwear: string;
     /** 用户标签 */
     tag: string;
     /** 用户标签样式 */

@@ -240,7 +240,7 @@ export async function deleteFriend(userId: string) {
 export async function getLinkmansLastMessagesV2(linkmanIds: string[]) {
     const [, linkmanMessages] = await fetch('getLinkmansLastMessagesV2', {
         linkmans: linkmanIds,
-    });
+    }, { toast: false });
     return linkmanMessages;
 }
 

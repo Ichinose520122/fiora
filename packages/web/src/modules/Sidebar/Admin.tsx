@@ -1,3 +1,4 @@
+import HeadwearPicker from './HeadwearPicker';
 import React, { useEffect, useState } from 'react';
 
 import { css } from 'linaria';
@@ -189,7 +190,7 @@ function Admin(props: AdminProps) {
             onClose={onClose}
         >
             <div className={Common.container}>
-                {visible && <><PixivAccount /><div className={Common.block}><MusicAccount /></div></>}
+                {visible && <><div className={Common.block}><HeadwearPicker admin /></div><PixivAccount /><div className={Common.block}><MusicAccount /></div></>}
                 <div className={Common.block}>
                     <p className={Common.title}>创建小洛克账号</p>
                     <div className={Style.inputBlock}>

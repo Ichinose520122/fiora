@@ -1,3 +1,4 @@
+import uploadImageHttp from './uploadImageHttp';
 import * as OSS from 'ali-oss';
 import fetch from './fetch';
 
@@ -73,6 +74,9 @@ export default async function uploadFile(
 ): Promise<string> {
     // 阿里云 OSS 不可用, 上传文件到服务端
     if (!ossClient) {
+        if (/^(Avatar|BackgroundImage|GroupAvatar|ImageMessage)\/[^/]+\.(png|jpe?g|gif|webp)$/i.test(fileName)) {
+            return uploadImageHttp(blob, fileName);
+        }
         const [uploadErr, result] = await fetch('uploadFile', {
             file: blob,
             fileName,

@@ -46,6 +46,7 @@ function reconnectIfNeeded() {
 
 let sessionVersion = 0;
 let restoringSession = false;
+let syncAfterResume: (() => boolean) | undefined;
 let restoreTimer: number | undefined;
 const InvalidTokenErrors = new Set([
     '非法token', 'token已过期', '非法登录', '用户不存在', 'token不能为空',
@@ -53,6 +54,7 @@ const InvalidTokenErrors = new Set([
 
 async function restoreSession() {
     const version = ++sessionVersion;
+    syncAfterResume = undefined;
     const token = window.localStorage.getItem('token');
     const isCurrent = () =>
         version === sessionVersion &&
@@ -101,67 +103,72 @@ async function restoreSession() {
                     type: restoringUser ? ActionTypes.RestoreUser : ActionTypes.SetUser,
                     payload: user,
                 });
-                if (restoringUser) {
-                    // Authentication is ready; history catch-up must not block typing/sending.
-                    dispatch({ type: ActionTypes.Connect, payload: '' });
-                }
-                let linkmanIds = [
-                    ...user.groups.map((group: any) => group._id),
-                    ...user.friends.map((friend: any) =>
-                        getFriendId(friend.from, friend.to._id),
-                    ),
-                ];
-                if (restoringUser) {
-                    const currentLinkmans = store.getState().linkmans;
-                    linkmanIds = Object.keys(currentLinkmans);
-                    const emptyLinkmans: string[] = [];
-                    for (const id of linkmanIds) {
-                        const baseline = currentLinkmans[id].messages;
-                        // eslint-disable-next-line no-await-in-loop
-                        const recovered = await recoverMessages(
-                            id, baseline, syncLinkmanMessages, isCurrent,
-                        );
-                        if (!isCurrent()) {
-                            return;
-                        }
-                        if (recovered === null) {
-                            emptyLinkmans.push(id);
-                        } else {
-                            recovered.forEach(convertMessage);
-                            dispatch({
-                                type: ActionTypes.MergeRecoveredMessages,
-                                payload: { linkmanId: id, messages: recovered, baseline },
-                            });
-                        }
-                    }
-                    linkmanIds = emptyLinkmans;
-                }
-                // The server accepts at most 100 conversations per request.
-                const linkmanMessages: Record<string, any> = {};
-                for (let offset = 0; offset < linkmanIds.length; offset += 100) {
-                    // eslint-disable-next-line no-await-in-loop
-                    const batch = await getLinkmansLastMessagesV2(
-                        linkmanIds.slice(offset, offset + 100),
-                    );
-                    if (!isCurrent()) {
-                        return;
-                    }
-                    if (!batch) {
-                        retryRestore();
-                        return;
-                    }
-                    Object.assign(linkmanMessages, batch);
-                }
-                Object.values(linkmanMessages).forEach(({ messages }) => {
-                    messages.forEach(convertMessage);
-                });
-                dispatch({
-                    type: ActionTypes.SetLinkmansLastMessages,
-                    payload: linkmanMessages,
-                });
+                // Login is ready even while history is catching up.
                 dispatch({ type: ActionTypes.Connect, payload: '' });
-                // OSS credentials must not block chat recovery.
                 initOSS().catch(() => undefined);
+                const remaining = new Set<string>(Object.keys(store.getState().linkmans));
+                let syncingHistory = false;
+                let syncAgain = false;
+                async function syncHistory() {
+                    if (syncingHistory || !isCurrent()) return;
+                    syncingHistory = true;
+                    try {
+                        const { focus } = store.getState();
+                        const ids = [...remaining].sort((a, b) => Number(b === focus) - Number(a === focus));
+                        const emptyLinkmans: string[] = [];
+                        for (const id of ids) {
+                            if (!isCurrent()) return;
+                            const room = store.getState().linkmans[id];
+                            if (!room) { remaining.delete(id); continue; }
+                            const baseline = room.messages;
+                            try {
+                                // eslint-disable-next-line no-await-in-loop
+                                const recovered = await recoverMessages(id, baseline, syncLinkmanMessages, isCurrent);
+                                if (!isCurrent()) return;
+                                if (recovered === null) emptyLinkmans.push(id);
+                                else {
+                                    recovered.forEach(convertMessage);
+                                    if (store.getState().linkmans[id]) dispatch({
+                                        type: ActionTypes.MergeRecoveredMessages,
+                                        payload: { linkmanId: id, messages: recovered, baseline },
+                                    });
+                                    remaining.delete(id);
+                                }
+                            } catch (_) {
+                                // A failed room must not prevent other conversations catching up.
+                            }
+                        }
+                        for (let offset = 0; offset < emptyLinkmans.length; offset += 100) {
+                            const batchIds = emptyLinkmans.slice(offset, offset + 100);
+                            // eslint-disable-next-line no-await-in-loop
+                            const batch = await getLinkmansLastMessagesV2(batchIds);
+                            if (!isCurrent()) return;
+                            if (batch) {
+                                Object.values(batch).forEach(({ messages }: any) => messages.forEach(convertMessage));
+                                dispatch({ type: ActionTypes.SetLinkmansLastMessages, payload: batch });
+                                batchIds.forEach((id) => { if (batch[id]) remaining.delete(id); });
+                            }
+                        }
+                    } finally {
+                        syncingHistory = false;
+                        const resumedDuringSync = syncAgain;
+                        syncAgain = false;
+                        if (resumedDuringSync) Object.keys(store.getState().linkmans).forEach((id) => remaining.add(id));
+                        // Resume catch-up immediately; failed history alone uses a backoff.
+                        if (isCurrent() && remaining.size) restoreTimer = window.setTimeout(() => {
+                            if (isCurrent()) void syncHistory().catch(() => undefined);
+                        }, resumedDuringSync ? 0 : 5000);
+                    }
+                }
+                syncAfterResume = () => {
+                    if (!isCurrent()) return false;
+                    if (syncingHistory) { syncAgain = true; return true; }
+                    window.clearTimeout(restoreTimer);
+                    Object.keys(store.getState().linkmans).forEach((id) => remaining.add(id));
+                    void syncHistory().catch(() => undefined);
+                    return true;
+                };
+                void syncHistory().catch(() => undefined);
                 return;
             }
         }
@@ -183,6 +190,7 @@ socket.on('connect', restoreSession);
 
 socket.on('disconnect', (reason) => {
     sessionVersion += 1;
+    syncAfterResume = undefined;
     restoringSession = false;
     window.clearTimeout(restoreTimer);
     // @ts-ignore
@@ -205,6 +213,20 @@ installConnectionRecovery(socket, () => restoringSession, () => {
     // Keep the transport, but block sends until the lost login is restored.
     dispatch({ type: ActionTypes.Disconnect, payload: '' });
     void restoreSession();
+}, {
+    onStart: () => {
+        // A stale connected flag is insufficient after background suspension.
+        if (store.getState().user?._id && window.localStorage.getItem('token')) {
+            dispatch({ type: ActionTypes.Disconnect, payload: '' });
+        }
+    },
+    onReady: () => {
+        if (store.getState().user?._id && window.localStorage.getItem('token')) {
+            // Interactive login may not yet have installed a recovery session.
+            if (syncAfterResume?.()) dispatch({ type: ActionTypes.Connect, payload: '' });
+            else void restoreSession();
+        }
+    },
 });
 
 let prevFrom: string | null = '';

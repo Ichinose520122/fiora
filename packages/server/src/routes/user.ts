@@ -1,3 +1,4 @@
+import { headwearPresets } from '@fiora/utils/avatarDecoration';
 import bcrypt from 'bcryptjs';
 import assert, { AssertionError } from 'assert';
 import jwt from 'jwt-simple';
@@ -807,12 +808,36 @@ export async function getUserOnlineStatus(
 
 export async function getAvatarDecorations(ctx: Context<{ userIds: string[] }>) {
     assert(Array.isArray(ctx.data.userIds) && ctx.data.userIds.length <= 40 && ctx.data.userIds.every((id) => typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id)), '用户列表无效');
-    const users = await User.find({ _id: { $in: ctx.data.userIds } }, { avatarDecoration: 1, isAdmin: 1 });
-    return users.map((user) => ({ _id: user._id.toString(), decoration: user.avatarDecoration || 'none', isAdmin: Boolean(user.isAdmin || config.administrator.includes(user._id.toString())) }));
+    const users = await User.find({ _id: { $in: ctx.data.userIds } }, { avatarDecoration: 1, avatarHeadwear: 1, isAdmin: 1 });
+    return users.map((user) => ({ _id: user._id.toString(), decoration: user.avatarDecoration || 'none', headwear: user.avatarHeadwear || 'auto', isAdmin: Boolean(user.isAdmin || config.administrator.includes(user._id.toString())) }));
 }
 export async function setAvatarDecoration(ctx: Context<{ decoration: string }>) {
     const { decoration } = ctx.data;
     assert(['none', 'orbit', 'bloom', 'cat', 'wings', 'moon', 'laurel', 'butterfly', 'rabbit', 'ribbon', 'ocean'].includes(decoration), '无效的头像挂件');
     await User.updateOne({ _id: ctx.socket.user }, { avatarDecoration: decoration });
     return { decoration };
+}
+
+export async function setAvatarHeadwear(ctx: Context<{ headwear: string }>) {
+    const { headwear } = ctx.data;
+    assert(headwearPresets.some((item) => item.id === headwear), '无效的头像头饰');
+    const actor = await User.findById(ctx.socket.user);
+    assert(actor, '用户不存在');
+    const administrator = Boolean(actor.isAdmin || config.administrator.includes(actor._id.toString()));
+    assert(headwear !== 'crown' || administrator, '皇冠只能由管理员设置');
+    await User.updateOne({ _id: actor._id }, { avatarHeadwear: headwear });
+    return { headwear };
+}
+
+export async function setUserHeadwear(ctx: Context<{ username: string; headwear: string }>) {
+    // Verify the actor in storage as well as the event permission middleware.
+    const actor = await User.findById(ctx.socket.user);
+    assert(actor && (actor.isAdmin || config.administrator.includes(actor._id.toString())), '你不是管理员');
+    const { username, headwear } = ctx.data;
+    assert(typeof username === 'string' && username.trim().length > 0 && username.length <= 64, '请输入用户名');
+    assert(headwearPresets.some((item) => item.id === headwear), '无效的头像头饰');
+    const target = await User.findOne({ username: username.trim() });
+    assert(target, '用户不存在');
+    await User.updateOne({ _id: target._id }, { avatarHeadwear: headwear });
+    return { headwear, username: target.username };
 }

@@ -71,7 +71,6 @@ function ChatInput() {
     const suggestions = commandHidden ? [] : commandSuggestions(commandText);
     const action = useAction();
     const isLogin = useIsLogin();
-    const connect = useSelector((state: State) => state.connect);
     const selfId = useSelector((state: State) => state.user?._id);
     const username = useSelector((state: State) => state.user?.username);
     const avatar = useSelector((state: State) => state.user?.avatar);
@@ -299,9 +298,6 @@ function ChatInput() {
     }
 
     async function handleSendImage() {
-        if (!connect) {
-            return Message.error('发送消息失败, 您当前处于离线状态');
-        }
         const image = await readDiskFile(
             'blob',
             'image/png,image/jpeg,image/gif',
@@ -318,10 +314,6 @@ function ChatInput() {
         handleSendMessage(id, 'image', huaji);
     }
     async function handleSendFile() {
-        if (!connect) {
-            Message.error('发送消息失败, 您当前处于离线状态');
-            return;
-        }
         const file = await readDiskFile('blob');
         if (!file) {
             return;
@@ -368,10 +360,6 @@ function ChatInput() {
 
     async function handlePaste(e: any) {
         // eslint-disable-next-line react/destructuring-assignment
-        if (!connect) {
-            e.preventDefault();
-            return Message.error('发送消息失败, 您当前处于离线状态');
-        }
         const { items, types } =
             e.clipboardData || e.originalEvent.clipboardData;
 
@@ -413,9 +401,6 @@ function ChatInput() {
     }
 
     async function sendTextMessage() {
-        if (!connect) {
-            return Message.error('发送消息失败, 您当前处于离线状态');
-        }
 
         // @ts-ignore
         const message = $input.current.value.trim();
@@ -600,9 +585,6 @@ function ChatInput() {
     }
 
     function handleSendCode(language: string, rawCode: string) {
-        if (!connect) {
-            return Message.error('发送消息失败, 您当前处于离线状态');
-        }
 
         if (rawCode === '') {
             return Message.warning('请输入内容');
