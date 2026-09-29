@@ -1,3 +1,4 @@
+import Style from './AppearancePicker.less';
 import HeadwearPicker from './HeadwearPicker';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -13,14 +14,21 @@ export default function AvatarDecorationPicker() {
     const [busy, setBusy] = useState(false);
     const [selected, setSelected] = useState<string>();
     if (!user) return null;
-    return <section style={{ padding: '12px 0 22px' }}>
-        <p style={{ marginBottom: 20 }}>头像挂件</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>{avatarPresets.map((item) => <button type="button" aria-pressed={(selected ?? appearance?.decoration ?? 'none') === item.id} disabled={busy} key={item.id} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: 84, padding: '20px 8px 12px', borderRadius: 16, border: `1px solid ${(selected ?? appearance?.decoration ?? 'none') === item.id ? '#919bd0' : '#e4e8f2'}`, background: '#f7f8fd', color: '#667391' }} onClick={async () => {
+    const current = selected ?? appearance?.decoration ?? 'none';
+    return <section className={Style.section}>
+        <h3 className={Style.heading}>头像装扮</h3>
+        <p className={Style.caption}>珠光线条、细小星芒，把喜欢的风景戴在身边。</p>
+        <div className={Style.preview}>
+            <Avatar src={user.avatar} size={72} userId={user._id} decoration={current} />
+            <div className={Style.previewText}><strong>{avatarPresets.find((item) => item.id === current)?.name || '无挂件'}</strong><p>选择即保存 · 网页与 App 共用装扮款式</p></div>
+        </div>
+        <div className={Style.grid}>{avatarPresets.map((item) => <button type="button" aria-pressed={current === item.id} disabled={busy} key={item.id} className={Style.choice} onClick={async () => {
             setBusy(true);
             try { const [error] = await fetch('setAvatarDecoration', { decoration: item.id }); if (!error) { setSelected(item.id); refreshAvatarDecorations(); Message.success('头像挂件已保存'); } }
             finally { setBusy(false); }
-        }}><Avatar src={user.avatar} size={46} userId={user._id} decoration={item.id} /><span>{item.name}</span></button>)}</div>
-        <p style={{ fontSize: 12, opacity: 0.6, marginTop: 12 }}>挂件随账号保存，所有用户均可选择。头饰可在下方单独设置。</p>
+        }}><Avatar src={user.avatar} size={48} decoration={item.id} headwear="none" /><span>{item.name}</span></button>)}</div>
+        <p className={Style.caption}>所有用户均可选择。系统开启“减少动态效果”时，装饰会静止显示。</p>
+        <hr className={Style.divider} />
         <HeadwearPicker />
     </section>;
 }

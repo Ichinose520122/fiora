@@ -1,6 +1,5 @@
 import React, { SyntheticEvent, useState, useMemo } from 'react';
-import { resolveHeadwear } from '../../../utils/avatarDecoration';
-import { avatarPresets } from '../utils/avatarPresets';
+import AvatarOrnaments from './AvatarOrnaments';
 import useAvatarDecoration from '../hooks/useAvatarDecoration';
 import { getOSSFileUrl } from '../utils/uploadFile';
 
@@ -32,8 +31,6 @@ function Avatar({
     onMouseLeave,
 }: Props) {
     const appearance = useAvatarDecoration(userId);
-    const head = resolveHeadwear(headwear ?? appearance?.headwear, appearance?.isAdmin);
-    const preset = avatarPresets.find((item) => item.id === (decoration ?? appearance?.decoration));
     const [failTimes, updateFailTimes] = useState(0);
 
     /**
@@ -56,7 +53,7 @@ function Avatar({
             src,
             `image/resize,w_${size * 2},h_${size * 2}/quality,q_90`,
         );
-    }, [src]);
+    }, [src, size]);
 
     return (
         <span className={className} style={{ width: size, height: size, position: 'relative', display: 'inline-flex', flexShrink: 0, overflow: 'visible', verticalAlign: 'middle' }} onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}><img
@@ -65,8 +62,7 @@ function Avatar({
             alt=""
             onError={handleError}
         />
-        {!!preset?.paths.length && <svg aria-hidden="true" viewBox="-10 -10 120 120" style={{ pointerEvents: 'none', position: 'absolute', width: '120%', height: '120%', left: '-10%', top: '-10%', overflow: 'visible' }}>{preset.paths.map((d) => <path key={d} d={d} fill="none" stroke={preset.color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />)}</svg>}
-        {!!head.paths.length && <svg role="img" aria-label={head.name} viewBox="0 0 40 30" style={{ pointerEvents: 'none', position: 'absolute', width: '48%', height: '35%', left: '26%', top: '-23%' }}>{head.paths.map((d) => <path key={d} d={d} fill={head.fill} stroke={head.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />)}</svg>}
+        <AvatarOrnaments decoration={decoration ?? appearance?.decoration} headwear={headwear ?? appearance?.headwear} isAdmin={appearance?.isAdmin} />
         </span>
     );
 }

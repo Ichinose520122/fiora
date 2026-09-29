@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { headwearPresets } from '../../../../utils/avatarDecoration';
 import Avatar from '../../components/Avatar';
 import Input from '../../components/Input';
-import Button from '../../components/Button';
+import Style from './AppearancePicker.less';
 import Message from '../../components/Message';
 import { State } from '../../state/reducer';
 import useAvatarDecoration, { refreshAvatarDecorations } from '../../hooks/useAvatarDecoration';
@@ -27,15 +27,21 @@ export default function HeadwearPicker({ admin = false }: { admin?: boolean }) {
             if (!error) { refreshAvatarDecorations(); Message.success('头像头饰已保存'); }
         } finally { pending.current = false; setBusy(false); }
     }
-    return <section style={{ padding: '12px 0 22px' }}>
-        <p style={{ marginBottom: 20 }}>{admin ? '设置用户头饰' : '头像头饰'}</p>
-        {admin && <Input value={username} onChange={setUsername} placeholder="要设置头饰的用户名" />}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 16 }}>
-            {headwearPresets.filter((item) => item.id !== 'crown' || admin || appearance?.isAdmin).map((item) => <button key={item.id} type="button" disabled={busy} aria-pressed={selected === item.id} onClick={() => admin ? setSelection(item.id) : void save(item.id)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: 90, padding: '24px 4px 12px', borderRadius: 16, border: selected === item.id ? '1px solid #919bd0' : '1px solid #e4e8f2', background: '#f7f8fd', color: '#667391' }}>
-                <Avatar src={user.avatar} size={44} userId={admin ? undefined : user._id} decoration="none" headwear={item.id} /><span>{item.name}</span>
+    const current = headwearPresets.find((item) => item.id === selected);
+    return <section className={`${Style.section} ${admin ? Style.compact : ''}`}>
+        <h3 className={Style.heading}>{admin ? '头像头饰' : '挑一枚小心情'}</h3>
+        <p className={Style.caption}>{admin ? '给指定用户设置头饰，皇冠也可以在这里授予。' : '细小的光芒与轻柔摆动，让头像多一点自己的样子。'}</p>
+        {admin && <label className={Style.target}>设置对象<Input value={username} onChange={setUsername} placeholder="输入完整用户名" /></label>}
+        <div className={Style.preview}>
+            <Avatar src={user.avatar} size={72} userId={admin ? undefined : user._id} decoration={admin ? 'none' : undefined} headwear={selected} />
+            <div className={Style.previewText}><strong>{current?.name || '默认'}</strong><p>{admin ? '以你的头像预览头饰，保存后应用到上方指定用户。' : '头饰独立于头像挂件，可以自由搭配。'}</p></div>
+        </div>
+        <div className={Style.grid}>
+            {headwearPresets.filter((item) => item.id !== 'crown' || admin || appearance?.isAdmin).map((item) => <button key={item.id} type="button" disabled={busy} aria-pressed={selected === item.id} onClick={() => admin ? setSelection(item.id) : void save(item.id)} className={Style.choice}>
+                <Avatar src={user.avatar} size={48} userId={admin ? undefined : user._id} decoration="none" headwear={item.id} /><span>{item.name}</span>
             </button>)}
         </div>
-        <p style={{ fontSize: 12, opacity: 0.7, marginTop: 12 }}>普通头饰可自由选择。皇冠由管理员设置，仅为装饰，不授予管理权限。更换普通头饰后，皇冠需由管理员重新设置。</p>
-        {admin && <Button onClick={() => void save(selection)}>{busy ? '保存中…' : '保存用户头饰'}</Button>}
+        <p className={Style.caption}>皇冠仅由管理员设置，不附带管理权限。换掉获赠皇冠后，需要管理员重新授予。</p>
+        {admin && <button type="button" className={Style.save} disabled={busy || !username.trim()} onClick={() => void save(selection)}>{busy ? '正在保存…' : '保存用户头饰'}</button>}
     </section>;
 }

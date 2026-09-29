@@ -1,0 +1,23 @@
+.frame, .head { position: absolute; pointer-events: none; overflow: visible; }
+.frame { width: 120%; height: 120%; left: -10%; top: -10%; }
+.head { width: 48%; height: 36%; left: 26%; top: calc(-33.6% + 1px); }
+.head[data-kind='halo'] { top: calc(-29.4% + 1px); }
+.head[data-kind='flower'] { top: calc(-34.8% + 1px); }
+.head[data-kind='crown'] { top: calc(-30% + 1px); }
+.frameArt, .headArt { transform-box: fill-box; transform-origin: center; }
+.headArt { transform-origin: center bottom; animation: swayJewel 8s ease-in-out infinite; }
+.head[data-kind='bow'] .headArt, .head[data-kind='sprout'] .headArt, .head[data-kind='flower'] .headArt {
+    transform-origin: center bottom; animation-name: swayJewel; animation-duration: 7s;
+}
+.frame[data-kind='wings'] .frameArt, .frame[data-kind='butterfly'] .frameArt { animation: breatheFrame 7s ease-in-out infinite; }
+.sparkles > *, .gleam { transform-box: fill-box; transform-origin: center; animation: jewelSparkle 6s ease-in-out infinite; }
+.sparkles > :nth-child(2) { animation-delay: -2s; }
+.sparkles > :nth-child(3) { animation-delay: -4s; }
+.gleam { animation-duration: 8s; }
+@keyframes swayJewel { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+@keyframes breatheFrame { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+@keyframes jewelSparkle { 0%, 65%, 100% { opacity: .22; transform: scale(.8); } 35% { opacity: .95; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+    .headArt, .frameArt, .sparkles > *, .gleam { animation: none !important; }
+    .sparkles { opacity: .65; }
+}
