@@ -20,6 +20,7 @@ import isAdmin from './middlewares/isAdmin';
 
 import * as uploadRoutes from './routes/upload';
 import * as userRoutes from './routes/user';
+import * as adminUserRoutes from './routes/adminUsers';
 import * as groupRoutes from './routes/group';
 import * as messageRoutes from './routes/message';
 import * as systemRoutes from './routes/system';
@@ -121,6 +122,7 @@ app.use(
 
 const routes = {
     ...userRoutes,
+    ...adminUserRoutes,
     ...uploadRoutes,
     ...groupRoutes,
     ...messageRoutes,

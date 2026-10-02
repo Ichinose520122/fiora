@@ -1,4 +1,5 @@
 import HeadwearPicker from './HeadwearPicker';
+import AdminUsers from './AdminUsers';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ThemedText as Text, ThemedTextInput as TextInput } from '../../components/ThemedText';
 import { useAppTheme, useThemedStyles } from '../../utils/theme';
@@ -30,6 +31,7 @@ export default function AdminPanel({ close }: { close: () => void }) {
     const theme = useAppTheme(); const styles = useThemedStyles(baseStyles);
 
     const isAdmin = useIsAdmin(); const user = useUser(); const { connect } = useStore();
+    const [usersRevision, setUsersRevision] = useState(0);
     const [busy, setBusy] = useState(false); const pending = useRef(false); const live = useRef(false);
     const [config, setConfig] = useState<SystemConfig>(); const [seals, setSeals] = useState<SealList>();
     const [loadError, setLoadError] = useState(''); const [pixiv, setPixiv] = useState(false);
@@ -47,6 +49,7 @@ export default function AdminPanel({ close }: { close: () => void }) {
     const tagStyle = { preset, particle, colors: colors.slice(0, colorCount) };
 
     async function refresh() {
+        setUsersRevision(value => value + 1);
         const [[configError, nextConfig], [sealError, nextSeals]] = await Promise.all([
             fetch<SystemConfig>('getSystemConfig', {}, { toast: false }),
             fetch<SealList>('getSealList', {}, { toast: false }),
@@ -90,12 +93,13 @@ export default function AdminPanel({ close }: { close: () => void }) {
         <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="返回" onPress={close} style={styles.back}><Ionicons name="chevron-back" size={22} color={theme.color('#52658e')} /></TouchableOpacity><View style={{ flex: 1 }}><Text style={styles.heading}>管理员面板</Text><Text style={styles.hint}>当前账号：{user?.username}</Text></View>{busy ? <ActivityIndicator color={theme.color('#6377b4')} /> : <TouchableOpacity accessibilityRole="button" onPress={() => { void run(refresh); }} disabled={!connect} style={styles.back}><Ionicons name="refresh-outline" size={22} color={theme.color('#52658e')} /></TouchableOpacity>}</View>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             {!connect && <Text style={styles.error}>连接恢复后可继续管理。</Text>}
+            <View style={styles.card}><AdminUsers revision={usersRevision} /></View>
             {!!loadError && <Text style={styles.error}>读取管理状态失败：{loadError}。请点右上角刷新。</Text>}
             <View style={styles.card}><Text style={styles.title}>发言管理</Text>{!config ? <Text style={styles.hint}>尚未读取到当前设置</Text> : <>
                 <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.label}>全站禁言</Text><Text style={styles.hint}>控制全站用户发言</Text></View><Switch accessibilityLabel="全站禁言" disabled={disabled} value={config.disableSendMessage} onValueChange={value => confirm(value ? '开启全站禁言？' : '关闭全站禁言？', '这会修改服务器的全站发言设置。', async () => { if (await request('toggleSendMessage', { enable: !value })) { Toast.success('发言设置已更新'); await refresh(); } })} /></View>
                 <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.label}>新用户禁言</Text><Text style={styles.hint}>控制新注册用户发言</Text></View><Switch accessibilityLabel="新用户禁言" disabled={disabled} value={config.disableNewUserSendMessage} onValueChange={value => confirm(value ? '开启新用户禁言？' : '关闭新用户禁言？', '这会修改服务器的新用户发言设置。', async () => { if (await request('toggleNewUserSendMessage', { enable: !value })) { Toast.success('发言设置已更新'); await refresh(); } })} /></View>
             </>}</View>
-            <View style={styles.card}><Text style={styles.title}>创建小洛克账号</Text><Field label="洛克王国 ID" value={username} onChange={setUsername} disabled={disabled} /><Field label="学号（初始密码）" value={password} onChange={setPassword} secret disabled={disabled} />{button('创建账号', () => { if (!required(username, '洛克王国 ID') || !required(password, '学号')) return; void run(async () => { const result = await request<{ username: string }>('createUser', { username: username.trim(), password: password.trim() }); if (result) { setUsername(''); setPassword(''); Toast.success(`账号 ${result.username} 创建成功`); } }); })}</View>
+            <View style={styles.card}><Text style={styles.title}>创建小洛克账号</Text><Field label="洛克王国 ID" value={username} onChange={setUsername} disabled={disabled} /><Field label="学号（初始密码）" value={password} onChange={setPassword} secret disabled={disabled} />{button('创建账号', () => { if (!required(username, '洛克王国 ID') || !required(password, '学号')) return; void run(async () => { const result = await request<{ username: string }>('createUser', { username: username.trim(), password: password.trim() }); if (result) { setUsername(''); setPassword(''); setUsersRevision(value => value + 1); Toast.success(`账号 ${result.username} 创建成功`); } }); })}</View>
             <View style={styles.card}><HeadwearPicker admin /></View>
             <View style={styles.card}><Text style={styles.title}>用户标签</Text><Field label="用户名" value={tagUsername} onChange={setTagUsername} disabled={disabled} /><Field label="标签内容" value={tag} onChange={setTag} disabled={disabled} />
                 {choices(presets, preset, setPreset)}{choices(particles, particle, setParticle)}

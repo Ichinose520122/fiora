@@ -271,6 +271,7 @@ export async function createUser(
             salt,
             password: hash,
             avatar: getRandomAvatar(),
+            lastLoginTime: null,
         } as UserDocument);
     } catch (err) {
         if ((err as Error).name === 'ValidationError') {

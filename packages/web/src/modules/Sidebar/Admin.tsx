@@ -1,4 +1,5 @@
 import HeadwearPicker from './HeadwearPicker';
+import AdminUsers from './AdminUsers';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { TagParticleType, TagStylePreset } from '@fiora/utils/tagStyle';
@@ -23,7 +24,7 @@ import {
 
 const sections = [
     { id: 'moderation', title: '发言管理', description: '发言开关与封禁名单', path: 'M4 5h16v11H9l-5 4ZM8 9h8M8 12h5' },
-    { id: 'accounts', title: '用户账号', description: '开通账号与密码管理', path: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2' },
+    { id: 'accounts', title: '用户账号', description: '账号列表、登录记录与密码管理', path: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2' },
     { id: 'appearance', title: '用户装扮', description: '头像头饰与个性标签', path: 'M12 3l2.7 5.5L21 9.4l-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.4l6.3-.9Z' },
     { id: 'platform', title: '平台账号', description: '网易云与 Pixiv 登录', path: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2' },
 ] as const;
@@ -53,6 +54,7 @@ function Admin(props: AdminProps) {
     const { visible, onClose } = props;
     const [section, setSection] = useState<Section>('moderation');
     const [busy, setBusy] = useState(false);
+    const [usersRevision, setUsersRevision] = useState(0);
     const pending = useRef(false);
     const visibilityVersion = useRef(0);
     const [resetResult, setResetResult] = useState<{ username: string; password: string }>();
@@ -90,6 +92,7 @@ function Admin(props: AdminProps) {
         );
         if (user) {
             Message.success(`账号 ${user.username} 创建成功`);
+            setUsersRevision((value) => value + 1);
             setNewUserId('');
             setNewUserStudentId('');
         }
@@ -209,7 +212,7 @@ function Admin(props: AdminProps) {
                 </button>)}
             </nav>
             <div className={Style.workspace}>
-                <header className={Style.pageHeader}><p>{currentSection.description}</p><button type="button" className={Style.refresh} disabled={busy} onClick={() => void run(() => Promise.all([handleGetSystemConfig(), handleGetSealList()]))}>
+                <header className={Style.pageHeader}><p>{currentSection.description}</p><button type="button" className={Style.refresh} disabled={busy} onClick={() => void run(() => { setUsersRevision((value) => value + 1); return Promise.all([handleGetSystemConfig(), handleGetSealList()]); })}>
                     <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M5.6 7A8 8 0 0 1 20 12M4 12a8 8 0 0 0 14.4 5" /></svg>{busy ? '处理中…' : '刷新状态'}
                 </button></header>
                 <fieldset className={Style.fields} disabled={busy}>
@@ -232,6 +235,7 @@ function Admin(props: AdminProps) {
                         </div>
                     </section>
                     <section className={Style.panel} id="admin-panel-accounts" aria-label="用户账号" hidden={section !== 'accounts'}>
+                        <div className={Style.card}>{visible && section === 'accounts' && <AdminUsers revision={usersRevision} />}</div>
                         <div className={Style.twoColumns}>
                             <div className={Style.card}><h3>创建小洛克账号</h3><p className={Style.description}>使用洛克王国 ID 开通聊天室账号。</p>
                                 <label className={Style.field}>洛克王国 ID<Input value={newUserId} onChange={setNewUserId} placeholder="洛克王国 ID" /></label>

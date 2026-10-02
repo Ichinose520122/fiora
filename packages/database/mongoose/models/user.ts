@@ -92,7 +92,7 @@ export interface UserDocument extends Document {
     /** 创建时间 */
     createTime: Date;
     /** 最后登录时间 */
-    lastLoginTime: Date;
+    lastLoginTime: Date | null;
     /** 最后登录IP */
     lastLoginIp: string;
     /** 是否为管理员 */
