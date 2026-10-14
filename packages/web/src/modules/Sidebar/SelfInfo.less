@@ -15,8 +15,52 @@
         margin-bottom: 8px;
     }
     .loading {
-        top: 170px;
-        left: 170px;
+        top: 80px;
+        left: calc(50% - 60px);
+    }
+}
+
+.cropHint {
+    margin: 8px 0;
+    color: #666;
+}
+
+.zoomControl {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+    font-size: 14px;
+
+    input {
+        flex: 1;
+        min-width: 0;
+        cursor: pointer;
+    }
+
+    output {
+        width: 42px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.cropActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    > button:not(.button) {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        padding: 8px;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
     }
 }
 
