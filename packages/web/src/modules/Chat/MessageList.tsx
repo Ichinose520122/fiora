@@ -1,5 +1,6 @@
 import React, { useRef, useLayoutEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { hasNewOwnMessage } from '@fiora/utils/messageScroll';
 
 import { css } from 'linaria';
 import { State, Message } from '../../state/reducer';
@@ -14,7 +15,7 @@ import MessageComponent from './Message/Message';
 
 import Style from './MessageList.less';
 import {
-    captureMessageScroll, restoreMessageScroll, MessageScroll,
+    captureMessageScroll, restoreMessageScroll, observeMessageResize, MessageScroll,
 } from '../../utils/messageScroll';
 
 const styles = {
@@ -62,6 +63,7 @@ function MessageList() {
     const $list = useRef<HTMLDivElement>(null);
     const positions = useRef<Record<string, MessageScroll>>({});
     const isFetching = useRef(false);
+    const previous = useRef({ focus, ids: new Set(Object.keys(messages)) });
 
     function restorePosition() {
         if ($list.current) {
@@ -70,7 +72,20 @@ function MessageList() {
         }
     }
 
-    useLayoutEffect(restorePosition, [focus, messages]);
+    useLayoutEffect(() => {
+        if (previous.current.focus === focus &&
+            hasNewOwnMessage(Object.values(messages), previous.current.ids, selfId)) {
+            delete positions.current[focus];
+        }
+        previous.current = { focus, ids: new Set(Object.keys(messages)) };
+        restorePosition();
+    }, [focus, messages]);
+
+    useLayoutEffect(() => {
+        if (!$list.current) return undefined;
+        // Keep the bottom anchored when the input or loaded media changes height.
+        return observeMessageResize($list.current, restorePosition);
+    }, [focus, messages]);
 
     function clearUnread() {
         action.setLinkmanProperty(focus, 'unread', 0);

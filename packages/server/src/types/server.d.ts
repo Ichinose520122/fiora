@@ -4,6 +4,8 @@ declare interface Context<T> {
         id: string;
         ip: string;
         user: string;
+        tokenVersion: number;
+        invalidateSessions: (userId: string) => void;
         isAdmin: boolean;
         join: (room: string) => void;
         leave: (room: string) => void;

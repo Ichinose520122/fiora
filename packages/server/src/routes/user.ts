@@ -209,6 +209,7 @@ export async function register(
     const token = generateToken(newUser._id.toString(), environment);
 
     ctx.socket.user = newUser._id.toString();
+    ctx.socket.tokenVersion = newUser.tokenVersion ?? 0;
     ctx.socket.isAdmin = false;
     ctx.socket.join(defaultGroup._id.toString());
     await Socket.updateOne(
@@ -342,6 +343,7 @@ export async function login(
     );
 
     ctx.socket.user = user._id.toString();
+    ctx.socket.tokenVersion = user.tokenVersion ?? 0;
     await Socket.updateOne(
         { id: ctx.socket.id },
         {
@@ -441,6 +443,7 @@ export async function loginByToken(
     });
 
     ctx.socket.user = user._id.toString();
+    ctx.socket.tokenVersion = user.tokenVersion ?? 0;
     await Socket.updateOne(
         { id: ctx.socket.id },
         {
@@ -609,6 +612,7 @@ export async function changePassword(
         { _id: user._id },
         { $set: { password: hash, salt }, $inc: { tokenVersion: 1 } },
     );
+    ctx.socket.invalidateSessions(user._id.toString());
 
     return {
         msg: 'ok',
@@ -643,16 +647,18 @@ export async function changeUsername(ctx: Context<{ username: string }>) {
  * 重置用户密码, 需要管理员权限
  * @param ctx Context
  */
-export async function resetUserPassword(ctx: Context<{ username: string }>) {
-    const { username } = ctx.data;
-    assert(username !== '', 'username不能为空');
+export async function resetUserPassword(ctx: Context<{ username: string; newPassword: string }>) {
+    const { newPassword } = ctx.data;
+    const username = typeof ctx.data.username === 'string' ? ctx.data.username.trim() : '';
+    assert(username, '用户名不能为空');
+    assert(typeof newPassword === 'string' && newPassword.trim().length > 0, '新密码不能为空');
+    assert(Buffer.byteLength(newPassword, 'utf8') <= 72, '新密码不能超过 72 字节');
 
     const user = await User.findOne({ username });
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
 
-    const newPassword = 'helloworld';
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const hash = await bcrypt.hash(newPassword, salt);
 
@@ -660,6 +666,7 @@ export async function resetUserPassword(ctx: Context<{ username: string }>) {
         { _id: user._id },
         { $set: { password: hash, salt }, $inc: { tokenVersion: 1 } },
     );
+    ctx.socket.invalidateSessions(user._id.toString());
 
     return {
         newPassword,

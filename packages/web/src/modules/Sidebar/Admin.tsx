@@ -78,6 +78,7 @@ function Admin(props: AdminProps) {
         '#ffd666',
     ]);
     const [resetPasswordUsername, setResetPasswordUsername] = useState('');
+    const [resetPassword, setResetPassword] = useState('');
     const [sealUsername, setSealUsername] = useState('');
     const [sealList, setSealList] = useState<{ users: string[]; ips: string[] }>();
     const [sealIpAddress, setSealIpAddress] = useState('');
@@ -117,6 +118,7 @@ function Admin(props: AdminProps) {
             handleGetSealList();
         } else {
             setResetResult(undefined);
+            setResetPassword('');
             setNewUserStudentId('');
         }
     }, [visible]);
@@ -144,13 +146,19 @@ function Admin(props: AdminProps) {
     async function handleResetPassword() {
         const version = visibilityVersion.current;
         const target = resetPasswordUsername.trim();
+        if (!target || !resetPassword.trim()) {
+            Message.error('请填写用户名和新密码');
+            return;
+        }
+        if (!window.confirm(`重置 ${target} 的密码？原密码及已登录会话将失效。`)) return;
         setResetResult(undefined);
-        const res = await resetUserPassword(target);
+        const res = await resetUserPassword(target, resetPassword);
         if (version !== visibilityVersion.current) return;
         if (res) {
             setResetResult({ username: target, password: res.newPassword });
             Message.success('密码已重置，新密码显示在下方');
             setResetPasswordUsername('');
+            setResetPassword('');
         }
     }
     /**
@@ -242,8 +250,9 @@ function Admin(props: AdminProps) {
                                 <label className={Style.field}>学号 · 初始密码<Input type="password" value={newUserStudentId} onChange={setNewUserStudentId} placeholder="填写学号" onEnter={() => void run(handleCreateUser)} /></label>
                                 <div className={Style.actions}>{actionButton('创建账号', handleCreateUser)}</div>
                             </div>
-                            <div className={Style.card}><h3>重置用户密码</h3><p className={Style.description}>生成新密码，重置后原密码将失效。</p>
+                            <div className={Style.card}><h3>重置用户密码</h3><p className={Style.description}>填写自定义新密码，重置后原密码及已登录会话将失效。</p>
                                 <label className={Style.field}>用户名<Input value={resetPasswordUsername} onChange={setResetPasswordUsername} placeholder="要重置密码的用户名" /></label>
+                                <label className={Style.field}>新密码<Input type="password" value={resetPassword} onChange={setResetPassword} placeholder="填写自定义新密码" /></label>
                                 <div className={Style.actions}>{actionButton('重置密码', handleResetPassword)}</div>
                                 {resetResult && <div className={Style.result} role="status"><span>{resetResult.username} 的新密码</span><code>{resetResult.password}</code><small>请通知用户登录后修改密码。关闭面板后不保留显示。</small></div>}
                             </div>

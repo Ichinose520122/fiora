@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -42,7 +43,7 @@ jest.mock('koa-static', () => jest.fn(() => async () => {}));
 const userId = '111111111111111111111111';
 const groupId = '222222222222222222222222';
 function context(data: any, user = userId): any {
-    return { data, socket: { user, id: 'test', ip: '127.0.0.1', isAdmin: false, join: jest.fn(), emit: jest.fn() } };
+    return { data, socket: { user, id: 'test', ip: '127.0.0.1', isAdmin: false, join: jest.fn(), emit: jest.fn(), invalidateSessions: jest.fn() } };
 }
 
 describe('security regressions', () => {
@@ -120,11 +121,23 @@ describe('security regressions', () => {
         }
         const after: any = await login(context({ username: 'tester', password: 'new-password', environment: 'test' }));
         await expect(loginByToken(context({ token: after.token, environment: 'test' }))).resolves.toMatchObject({ _id: userId });
-        await resetUserPassword(context({ username: 'tester' }));
+        const reset = context({ username: 'tester', newPassword: '自定义 password 42' });
+        await expect(resetUserPassword(reset)).resolves.toEqual({ newPassword: '自定义 password 42' });
+        expect(reset.socket.invalidateSessions).toHaveBeenCalledWith(userId);
         await expect(loginByToken(context({ token: after.token, environment: 'test' }))).rejects.toThrow('token已过期');
         expect(account.tokenVersion).toBe(2);
-        expect(bcrypt.compareSync('helloworld', account.password)).toBe(true);
+        expect(bcrypt.compareSync('自定义 password 42', account.password)).toBe(true);
+        expect(bcrypt.compareSync('helloworld', account.password)).toBe(false);
     });
+
+    it.each([undefined, null, '', '   ', 123, 'x'.repeat(73), '密'.repeat(25)])(
+        'rejects invalid custom reset passwords (%p) without changing credentials', async (newPassword) => {
+            const ctx = context({ username: 'tester', newPassword });
+            await expect(resetUserPassword(ctx)).rejects.toThrow();
+            expect(account.tokenVersion).toBe(0);
+            expect(ctx.socket.invalidateSessions).not.toHaveBeenCalled();
+        },
+    );
 
     it('does not invalidate tokens when the old password is incorrect', async () => {
         await expect(changePassword(context({ oldPassword: 'wrong', newPassword: 'new' }))).rejects.toThrow('旧密码不正确');

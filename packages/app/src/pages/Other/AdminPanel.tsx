@@ -41,6 +41,7 @@ export default function AdminPanel({ close }: { close: () => void }) {
     const [preset, setPreset] = useState<TagStylePreset>('solid'); const [particle, setParticle] = useState<TagParticleType>('none');
     const [colors, setColors] = useState(['#5b8ff9', '#f759ab', '#ffd666']);
     const [resetName, setResetName] = useState(''); const [resetResult, setResetResult] = useState<{ username: string; password: string }>();
+    const [resetPassword, setResetPassword] = useState('');
     const [sealName, setSealName] = useState(''); const [sealIp, setSealIp] = useState('');
     const userId = user?._id;
     const current = () => live.current && store.getState().user?._id === userId;
@@ -107,7 +108,21 @@ export default function AdminPanel({ close }: { close: () => void }) {
                 <View style={styles.preview}><Text style={styles.hint}>效果预览</Text><UserTag text={tag.trim() || '炫彩标签'} tagStyle={tagStyle} /></View>
                 {button('保存标签', () => { if (!required(tagUsername, '用户名') || !required(tag, '标签内容')) return; if (tagStyle.colors.some(color => !/^#[0-9a-f]{6}$/i.test(color))) { Toast.warning('颜色请填写完整的 #RRGGBB'); return; } void run(async () => { if (await request('setUserTag', { username: tagUsername.trim(), tag: tag.trim(), tagStyle })) Toast.success('用户标签已更新'); }); })}
             </View>
-            <View style={styles.card}><Text style={styles.title}>重置用户密码</Text><Field label="要重置密码的用户名" value={resetName} onChange={setResetName} disabled={disabled} />{button('重置密码', () => { if (!required(resetName, '用户名')) return; const target = resetName.trim(); confirm(`重置 ${target} 的密码？`, '原密码将失效，用户需要使用新密码重新登录。', async () => { setResetResult(undefined); const result = await request<{ newPassword: string }>('resetUserPassword', { username: target }); if (result) { setResetResult({ username: target, password: result.newPassword }); setResetName(''); } }); }, true)}
+            <View style={styles.card}><Text style={styles.title}>重置用户密码</Text><Field label="要重置密码的用户名" value={resetName} onChange={setResetName} disabled={disabled} />
+                <Field label="自定义新密码" value={resetPassword} onChange={setResetPassword} secret disabled={disabled} maxLength={72} />
+                {button('重置密码', () => {
+                    if (!required(resetName, '用户名') || !required(resetPassword, '新密码')) return;
+                    const target = resetName.trim();
+                    const newPassword = resetPassword;
+                    confirm(`重置 ${target} 的密码？`, '原密码及已登录会话将失效，用户需要使用新密码重新登录。', async () => {
+                        setResetResult(undefined);
+                        const result = await request<{ newPassword: string }>('resetUserPassword', { username: target, newPassword });
+                        if (result) {
+                            setResetResult({ username: target, password: result.newPassword });
+                            setResetName(''); setResetPassword('');
+                        }
+                    });
+                }, true)}
                 {resetResult && <View style={styles.result}><Text style={styles.label}>{resetResult.username} 的新密码（长按复制）</Text><Text selectable style={styles.password}>{resetResult.password}</Text><Text style={styles.hint}>请通知用户登录后修改密码。关闭面板后不保留此结果。</Text></View>}
             </View>
             <View style={styles.card}><Text style={styles.title}>封禁用户</Text><Text style={styles.hint}>当前服务器封禁时长：10 分钟</Text><Field label="要封禁的用户名" value={sealName} onChange={setSealName} disabled={disabled} />{button('封禁用户', () => { if (!required(sealName, '用户名')) return; const target = sealName.trim(); confirm(`封禁 ${target}？`, '该账号将在 10 分钟内无法正常使用聊天服务。', async () => { if (await request('sealUser', { username: target })) { setSealName(''); Toast.success('用户已封禁'); await refresh(); } }); }, true)}<Text style={styles.label}>当前封禁用户</Text><Text selectable style={styles.hint}>{seals ? seals.users.join('、') || '暂无' : '尚未读取'}</Text></View>

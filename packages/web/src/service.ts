@@ -417,8 +417,8 @@ export async function createUser(username: string, password: string) {
  * 重置指定用户的密码
  * @param username 目标用户名
  */
-export async function resetUserPassword(username: string) {
-    const [, res] = await fetch('resetUserPassword', { username });
+export async function resetUserPassword(username: string, newPassword: string) {
+    const [, res] = await fetch('resetUserPassword', { username, newPassword });
     return res;
 }
 

@@ -3,6 +3,7 @@ import logger from '@fiora/utils/logger';
 import { getSocketIp } from '@fiora/utils/socket';
 import config from '@fiora/config/server';
 import { Socket } from 'socket.io';
+import { expireSocketSession, expireUserSessions, SESSION_EXPIRED, validateSocketSession } from '../utils/socketSession';
 
 type RegisterRoutesOptions = {
     onUserChange?: (userId: string) => void;
@@ -33,6 +34,13 @@ export default function registerRoutes(
                         set user(newUserId: string) {
                             socket.data.user = newUserId;
                         },
+                        get tokenVersion() {
+                            return socket.data.tokenVersion;
+                        },
+                        set tokenVersion(value: number) {
+                            socket.data.tokenVersion = value;
+                        },
+                        invalidateSessions: (userId) => expireUserSessions(socket, userId),
                         get isAdmin() {
                             return socket.data.isAdmin;
                         },
@@ -48,6 +56,18 @@ export default function registerRoutes(
                 };
                 const before = Date.now();
                 const res = await route(ctx);
+                // Close the race between an in-flight login and a password reset.
+                if (['register', 'login', 'loginByToken'].includes(event) && typeof res !== 'string') {
+                    try {
+                        if (!(await validateSocketSession(socket))) {
+                            cb(SESSION_EXPIRED);
+                            return;
+                        }
+                    } catch (error) {
+                        expireSocketSession(socket);
+                        throw error;
+                    }
+                }
                 if (
                     socket.data.user &&
                     socket.data.user !== previousUserId &&

@@ -5,6 +5,21 @@ export interface MessageScroll {
     offset: number;
 }
 
+export function observeMessageResize(list: HTMLElement, restore: () => void) {
+    // The web package's TypeScript 3.x DOM definitions predate ResizeObserver.
+    const { ResizeObserver: Observer } = window as typeof window & {
+        ResizeObserver?: new (callback: () => void) => {
+            observe: (element: Element) => void;
+            disconnect: () => void;
+        };
+    };
+    if (!Observer) return undefined;
+    const observer = new Observer(restore);
+    observer.observe(list);
+    Array.from(list.children).forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+}
+
 export function captureMessageScroll(list: HTMLElement): MessageScroll {
     const top = list.getBoundingClientRect().top;
     const anchor = Array.from(list.querySelectorAll<HTMLElement>('[data-message-id]'))

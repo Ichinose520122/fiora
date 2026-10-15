@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { hasNewOwnMessage } from '../../../../utils/messageScroll';
 import { ScrollView, StyleSheet } from 'react-native';
 import { KeyboardEvents } from 'react-native-keyboard-controller';
 import ImageViewer from 'react-native-image-viewing';
@@ -25,7 +26,9 @@ type Props = {
 
 
 function MessageList({ $scrollView }: Props) {
-    const scrollState = useRef({ prevContentHeight: 0, prevMessageCount: 0, shouldScroll: true, isFirstTimeFetchHistory: true }).current;
+    const scrollState = useRef({ prevContentHeight: 0, firstMessageId: '', shouldScroll: true, isFirstTimeFetchHistory: true }).current;
+    const scrollOffset = useRef(0);
+    const pendingOwnScroll = useRef(false);
     const keyboardTransition = useRef(false);
     const wasAtBottom = useRef(true);
     const scrollFrame = useRef<number | null>(null);
@@ -36,6 +39,17 @@ function MessageList({ $scrollView }: Props) {
     const focusLinkman = useFocusLinkman();
     const { focus } = useStore();
     const messages = focusLinkman?.messages || [];
+    const previousIds = useRef(new Set(messages.map((message) => message._id)));
+
+    useLayoutEffect(() => {
+        if (hasNewOwnMessage(messages, previousIds.current, self)) {
+            scrollState.shouldScroll = true;
+            wasAtBottom.current = true;
+            pendingOwnScroll.current = true;
+            scrollToEnd();
+        }
+        previousIds.current = new Set(messages.map((message) => message._id));
+    }, [messages, self]);
 
     const userScrolling = useRef(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -57,7 +71,10 @@ function MessageList({ $scrollView }: Props) {
             resizeScroll.current = setTimeout(() => {
                 // On hide, ScrollView clamps to the larger viewport itself.
                 // A second scrollToEnd after that clamp causes a visible bounce.
-                if (opening && wasAtBottom.current) $scrollView.current?.scrollToEnd({ animated: false });
+                if ((opening && wasAtBottom.current) || pendingOwnScroll.current) {
+                    $scrollView.current?.scrollToEnd({ animated: false });
+                    pendingOwnScroll.current = false;
+                }
                 keyboardTransition.current = false;
                 scrollState.shouldScroll = wasAtBottom.current;
             }, 50);
@@ -100,7 +117,10 @@ function MessageList({ $scrollView }: Props) {
         if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
         scrollFrame.current = requestAnimationFrame(() => {
             scrollFrame.current = null;
-            if (!keyboardTransition.current) $scrollView.current?.scrollToEnd({ animated: false });
+            if (!keyboardTransition.current) {
+                $scrollView.current?.scrollToEnd({ animated: false });
+                pendingOwnScroll.current = false;
+            }
         });
     }
 
@@ -147,24 +167,20 @@ function MessageList({ $scrollView }: Props) {
         contentWidth: number,
         contentHeight: number,
     ) {
-        if (scrollState.prevContentHeight === 0) {
-            $scrollView.current!.scrollTo({
+        const prependedHistory = !!scrollState.firstMessageId &&
+            messages[0]?._id !== scrollState.firstMessageId &&
+            messages.some((message) => message._id === scrollState.firstMessageId);
+        if (pendingOwnScroll.current || (!prependedHistory && scrollState.shouldScroll)) {
+            scrollToEnd();
+        } else if (prependedHistory && !keyboardTransition.current) {
+            $scrollView.current?.scrollTo({
                 x: 0,
-                y: 0,
-                animated: false,
-            });
-        } else if (
-            contentHeight !== scrollState.prevContentHeight &&
-            messages.length - scrollState.prevMessageCount > 1
-        ) {
-            $scrollView.current!.scrollTo({
-                x: 0,
-                y: contentHeight - scrollState.prevContentHeight - 60,
+                y: scrollOffset.current + contentHeight - scrollState.prevContentHeight,
                 animated: false,
             });
         }
         scrollState.prevContentHeight = contentHeight;
-        scrollState.prevMessageCount = messages.length;
+        scrollState.firstMessageId = messages[0]?._id || '';
     }
 
     function handleScroll(event: any) {
@@ -174,6 +190,7 @@ function MessageList({ $scrollView }: Props) {
             contentOffset,
         } = event.nativeEvent;
         if (keyboardTransition.current) return;
+        scrollOffset.current = contentOffset.y;
         scrollState.shouldScroll =
             contentOffset.y >
             contentSize.height - layoutMeasurement.height * 1.2;
@@ -198,7 +215,7 @@ function MessageList({ $scrollView }: Props) {
                 key={message._id}
                 message={message}
                 isSelf={self === message.from._id}
-                shouldScroll={scrollState.shouldScroll}
+                shouldScroll={false}
                 scrollToEnd={scrollToEnd}
                 openImageViewer={openImageViewer}
             />
@@ -224,7 +241,7 @@ function MessageList({ $scrollView }: Props) {
                 // Expanding the viewport already clamps its offset natively.
                 if (!keyboardTransition.current && height < previous && scrollState.shouldScroll) scrollToEnd();
             }}
-            onScrollBeginDrag={() => { userScrolling.current = true; }}
+            onScrollBeginDrag={() => { userScrolling.current = true; pendingOwnScroll.current = false; }}
             onScrollEndDrag={() => { userScrolling.current = false; }}
             scrollEventThrottle={50}
             onScroll={handleScroll}
