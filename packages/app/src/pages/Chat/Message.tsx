@@ -16,6 +16,7 @@ import retryFile from '../../utils/retryFile';
 import Avatar from '../../components/Avatar';
 import { Message as MessageType } from '../../types/redux';
 import SystemMessage from './SystemMessage';
+import WatchMessage from './WatchMessage';
 import ImageMessage from './ImageMessage';
 import TextMessage from './TextMessage';
 import FileMessage from './FileMessage';
@@ -141,6 +142,9 @@ function Message({
             }
             case 'system': {
                 return <SystemMessage message={message} />;
+            }
+            case 'watch': {
+                return <WatchMessage roomId={message.to} content={message.content} />;
             }
             case 'inviteV2': {
                 return <InviteMessage message={message} isSelf={isSelf} />;

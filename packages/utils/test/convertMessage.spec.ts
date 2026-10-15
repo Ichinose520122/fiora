@@ -1,6 +1,11 @@
 import convertMessage from '../convertMessage';
 
 describe('legacy system messages', () => {
+    it('renders watch invitations without embedding login tickets', () => {
+        const result = convertMessage({ type: 'system', content: JSON.stringify({ command: 'watch', invite: true, source: 'https://example.com/a.m3u8' }), from: { _id: 'user', username: 'tester' } });
+        expect(result.type).toBe('watch');
+        expect(JSON.parse(result.content)).toEqual({ source: 'https://example.com/a.m3u8' });
+    });
     it.each(['not-json', '', 'null', '0', '"text"'])('does not throw for %p', (content) => {
         const message = { type: 'system', content, from: { _id: 'user', username: 'tester' } };
         expect(() => convertMessage(message)).not.toThrow();

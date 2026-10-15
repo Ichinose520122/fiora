@@ -35,6 +35,13 @@ function convertSystemMessage(message: any) {
             return;
         }
         switch (content.command) {
+            case 'watch': {
+                if (content.invite === true) {
+                    message.type = 'watch';
+                    message.content = JSON.stringify({ source: typeof content.source === 'string' ? content.source : '' });
+                } else message.content = String(content.value || '影院指令已处理');
+                break;
+            }
             case 'pixiv': {
                 message.content = typeof content.value === 'string' ? content.value : '无效的 Pixiv 回复';
                 break;

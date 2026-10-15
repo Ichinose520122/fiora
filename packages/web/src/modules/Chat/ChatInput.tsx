@@ -408,7 +408,7 @@ function ChatInput() {
             return null;
         }
 
-        if (/^\/(?:music|\s*pixiv)(?:\s|$)/i.test(message)) {
+        if (/^\/(?:watch|music|\s*pixiv)(?:\s|$)/i.test(message)) {
             // Submission consumes the draft even if execution fails. Never clear
             // a new message typed while the previous command is still pending.
             $input.current!.value = '';
