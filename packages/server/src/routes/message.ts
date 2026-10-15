@@ -27,6 +27,7 @@ import {
 import client from '../../../config/client';
 import getLinkmanAccess from '../utils/linkmanAccess';
 import { executeMusicCommand } from '../music/commands';
+import { _watchInvitation } from './watch';
 import { preparePixivImages } from '../utils/pixiv';
 import { pixivDirectImage } from '@fiora/utils/pixiv';
 
@@ -135,6 +136,9 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             }
             // Downloads can take time; membership must still hold before publishing.
             await getLinkmanAccess(ctx.socket.user, to);
+        } else if (/^\/watch(?:\s|$)/i.test(messageContent.trim())) {
+            type = 'system';
+            messageContent = JSON.stringify(_watchInvitation(messageContent));
         } else if (/^\/music(?:\s|$)/.test(messageContent.trim())) {
             type = 'system';
             messageContent = JSON.stringify({

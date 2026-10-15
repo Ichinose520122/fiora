@@ -16,6 +16,7 @@ import CodeMessage from './CodeMessage';
 import UrlMessage from './UrlMessage';
 import InviteMessageV2 from './InviteMessageV2';
 import SystemMessage from './SystemMessage';
+import WatchMessage from './WatchMessage';
 import store from '../../../state/store';
 import { ActionTypes, DeleteMessagePayload } from '../../../state/action';
 import { deleteMessage } from '../../../service';
@@ -196,6 +197,9 @@ class Message extends Component<MessageProps, MessageState> {
                         username={originUsername}
                     />
                 );
+            }
+            case 'watch': {
+                return <WatchMessage roomId={this.props.linkmanId} content={content} />;
             }
             default:
                 return <div className="unknown">不支持的消息类型</div>;

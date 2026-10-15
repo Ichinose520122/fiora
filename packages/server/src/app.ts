@@ -29,6 +29,7 @@ import * as historyRoutes from './routes/history';
 import * as musicRoutes from './routes/music';
 import * as musicAccountRoutes from './routes/musicAccount';
 import * as pixivAccountRoutes from './routes/pixivAccount';
+import * as watchRoutes from './routes/watch';
 import { installMusic } from './music/service';
 import musicFiles from './music/files';
 import registerRoutes from './middlewares/registerRoutes';
@@ -132,6 +133,7 @@ const routes = {
     ...musicRoutes,
     ...musicAccountRoutes,
     ...pixivAccountRoutes,
+    ...watchRoutes,
 } as unknown as Routes;
 Object.keys(routes).forEach((key) => {
     if (key.startsWith('_')) {

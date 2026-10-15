@@ -40,6 +40,13 @@ export default {
     // jwt encryption secret
     jwtSecret: env.JwtSecret || 'jwtSecret',
 
+    /** Independent cinema; use a dedicated secret, never JwtSecret. */
+    watch: {
+        url: env.WatchServerUrl || '',
+        issuer: env.WatchIssuer || '',
+        secret: env.WatchSharedSecret || '',
+    },
+
     // Maximize the number of groups
     maxGroupsCount: env.MaxGroupCount ? parseInt(env.MaxGroupCount, 10) : 3,
 
