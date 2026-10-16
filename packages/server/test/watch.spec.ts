@@ -39,3 +39,9 @@ test('ordinary group member gets view-only grant', async () => {
     const ticket = new URLSearchParams(new URL(result.url).hash.slice(1)).get('ticket')!;
     expect(JSON.parse(Buffer.from(ticket.split('.')[0], 'base64').toString()).canControl).toBe(false);
 });
+
+test('password reset between socket validation and ticket issuance cannot renew authorization', async () => {
+    (User.findById as jest.Mock).mockReturnValue({ select: () => ({ lean: async () => ({ username: 'Alice', tokenVersion: 2 }) }) });
+    await expect(watchJoin({ socket: { user: 'd'.repeat(24), tokenVersion: 1 }, data: { roomId: 'b'.repeat(24) } } as any))
+        .rejects.toThrow('登录已失效');
+});

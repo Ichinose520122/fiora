@@ -85,7 +85,7 @@ async function pushNotification(
  * 如果是发送给个人, to是俩人id按大小序拼接后的值
  * @param ctx Context
  */
-export async function sendMessage(ctx: Context<SendMessageData>) {
+export async function sendMessage(ctx: Context<SendMessageData>, options: { literalText?: boolean; bridgeKey?: string } = {}) {
     const disableSendMessage = await Redis.get(DisableSendMessageKey);
     assert(disableSendMessage !== 'true' || ctx.socket.isAdmin, '全员禁言中');
 
@@ -122,7 +122,9 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(messageContent.length <= 2048, '消息长度过长');
 
         const rollRegex = /^-roll( ([0-9]*))?$/;
-        if (/^\/\s*pixiv(?:\s|$)/i.test(messageContent.trim()) || pixivDirectImage(messageContent)) {
+        if (options.literalText) {
+            // Cinema comments are plain text; never execute chat commands here.
+        } else if (/^\/\s*pixiv(?:\s|$)/i.test(messageContent.trim()) || pixivDirectImage(messageContent)) {
             try {
                 pixivImages = await preparePixivImages(messageContent.trim(), ctx.socket.user);
                 type = 'image';
@@ -196,16 +198,30 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
     }
 
     const batch = pixivImages || [messageContent];
+    // The sparse unique index must be ready before accepting retryable bridge writes.
+    if (options.bridgeKey) await Message.init();
     const sent: any[] = [];
     const createdAt = Date.now();
     for (let index = 0; index < batch.length; index += 1) {
-        const message = await Message.create({
+        const document = {
             from: ctx.socket.user,
             to,
             type,
             content: batch[index],
             createTime: new Date(createdAt + index),
-        } as MessageDocument);
+            ...(options.bridgeKey ? { bridgeKey: options.bridgeKey } : {}),
+        } as MessageDocument;
+        let message;
+        try {
+            message = await Message.create(document);
+        } catch (error) {
+            if (!options.bridgeKey || (error as { code?: number }).code !== 11000) throw error;
+            // A retry after a lost acknowledgement must not create or broadcast a duplicate.
+            const existing = await Message.findOne({ bridgeKey: options.bridgeKey });
+            if (!existing) throw error;
+            return { _id: existing._id, createTime: existing.createTime, from: user.toObject(),
+                to: existing.to, type: existing.type, content: existing.deleted ? '' : existing.content, deleted: existing.deleted };
+        }
 
         const messageData = {
             _id: message._id,

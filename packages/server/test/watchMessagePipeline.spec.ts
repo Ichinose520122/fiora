@@ -1,0 +1,30 @@
+import Message from '@fiora/database/mongoose/models/message';
+import { createOrUpdateHistory } from '@fiora/database/mongoose/models/history';
+import { sendMessage } from '../src/routes/message';
+jest.mock('expo-server-sdk', () => ({ Expo: jest.fn() }), { virtual: true });
+jest.mock('@fiora/utils/logger', () => ({ __esModule: true, default: { error: jest.fn(), warn: jest.fn() } }));
+jest.mock('@fiora/database/mongoose/models/message', () => ({ __esModule: true, default: { init: jest.fn().mockResolvedValue(null), create: jest.fn(), findOne: jest.fn() } }));
+jest.mock('@fiora/database/mongoose/models/user', () => ({ __esModule: true, default: { findOne: async () => ({ toObject: () => ({ _id: 'user', username: 'Alice' }) }) } }));
+jest.mock('@fiora/database/mongoose/models/group', () => ({ __esModule: true, default: {} }));
+jest.mock('@fiora/database/mongoose/models/history', () => ({ __esModule: true, default: {}, createOrUpdateHistory: jest.fn() }));
+jest.mock('@fiora/database/mongoose/models/notification', () => ({ __esModule: true, default: { find: async () => [] } }));
+jest.mock('@fiora/database/mongoose/models/socket', () => ({ __esModule: true, default: { find: async () => [{ id: 'chat-socket' }] } }));
+jest.mock('@fiora/database/redis/initRedis', () => ({ Redis: { get: async () => 'false' } }));
+jest.mock('../src/utils/linkmanAccess', () => ({ __esModule: true, default: async () => ({ group: null, user: { _id: 'peer' } }) }));
+jest.mock('../src/music/commands', () => ({ executeMusicCommand: jest.fn() }));
+jest.mock('../src/utils/pixiv', () => ({ preparePixivImages: jest.fn() }));
+
+test('cinema comment is broadcast through Fiora once; retries reuse persisted message', async () => {
+    const emit = jest.fn(); const document = { _id: 'saved-id', to: 'room', type: 'text', content: '/watch', createTime: new Date() };
+    (Message.create as jest.Mock).mockResolvedValueOnce(document).mockRejectedValueOnce({ code: 11000 });
+    (Message.findOne as jest.Mock).mockResolvedValue(document);
+    const ctx: any = { data: { to: 'room', type: 'text', content: '/watch' }, socket: { user: 'user', isAdmin: false, emit } };
+    const options = { literalText: true, bridgeKey: 'watch:user:room:request' };
+    expect((await sendMessage(ctx, options)).type).toBe('text');
+    expect(Message.init).toHaveBeenCalled();
+    expect(emit).toHaveBeenCalledWith(['chat-socket'], 'message', expect.objectContaining({ _id: 'saved-id', content: '/watch' }));
+    const broadcasts = emit.mock.calls.length;
+    expect((await sendMessage(ctx, options))._id).toBe('saved-id');
+    expect(emit.mock.calls.length).toBe(broadcasts);
+    expect(createOrUpdateHistory).toHaveBeenCalledTimes(1);
+});
