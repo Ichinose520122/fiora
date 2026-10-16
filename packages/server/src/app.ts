@@ -30,6 +30,7 @@ import * as musicRoutes from './routes/music';
 import * as musicAccountRoutes from './routes/musicAccount';
 import * as pixivAccountRoutes from './routes/pixivAccount';
 import * as watchRoutes from './routes/watch';
+import watchChat from './watch/chat';
 import { installMusic } from './music/service';
 import musicFiles from './music/files';
 import registerRoutes from './middlewares/registerRoutes';
@@ -52,6 +53,7 @@ const io = new Server(httpServer, {
     pingInterval: 30000,
 });
 
+app.use(watchChat(io));
 // Wait for the complete local QQ expression cache before publishing its manifest.
 app.use(async (ctx, next) => {
     if (ctx.path !== '/QQExpression/_index.json') {

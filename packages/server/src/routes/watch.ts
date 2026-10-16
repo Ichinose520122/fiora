@@ -3,6 +3,7 @@ import { createHmac, randomBytes } from 'crypto';
 import config from '@fiora/config/server';
 import User from '@fiora/database/mongoose/models/user';
 import getLinkmanAccess from '../utils/linkmanAccess';
+import { issueWatchChatGrant } from '../utils/watchGrant';
 
 const recent = new Map<string, number[]>();
 const base64url = (buffer: Buffer) => buffer.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -46,8 +47,9 @@ export async function watchJoin(ctx: Context<any>) {
     const times = (recent.get(ctx.socket.user) || []).filter(time => time > now - 60000);
     assert(times.length < 10, '进入影院过于频繁，请稍后再试');
     recent.set(ctx.socket.user, [...times, now]);
-    const user = await User.findById(ctx.socket.user).select('username avatar').lean();
+    const user = await User.findById(ctx.socket.user).select('username avatar tokenVersion').lean();
     assert(user, '用户不存在');
+    assert((ctx.socket.tokenVersion || 0) === (user!.tokenVersion || 0), '登录已失效，请重新登录');
     const admin = !!ctx.socket.isAdmin;
     const payload = {
         v: 1, iss: issuer, aud: audience,
@@ -55,6 +57,7 @@ export async function watchJoin(ctx: Context<any>) {
         jti: randomBytes(16).toString('hex'), sub: ctx.socket.user,
         name: user!.username.slice(0, 100), avatar: user!.avatar || '', room: roomId,
         admin, canControl: admin || !access.group || access.group.creator.toString() === ctx.socket.user,
+        chatGrant: issueWatchChatGrant(ctx.socket.user, roomId, user!.tokenVersion || 0),
     };
     const body = base64url(Buffer.from(JSON.stringify(payload)));
     const signature = base64url(createHmac('sha256', config.watch.secret).update(body).digest());

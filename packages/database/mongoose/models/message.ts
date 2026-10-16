@@ -26,9 +26,11 @@ const MessageSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    bridgeKey: { type: String },
 });
 
 MessageSchema.index({ to: 1, createTime: -1 });
+MessageSchema.index({ bridgeKey: 1 }, { unique: true, sparse: true });
 
 export interface MessageDocument extends Document {
     /** 发送人 */
