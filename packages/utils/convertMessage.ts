@@ -38,7 +38,9 @@ function convertSystemMessage(message: any) {
             case 'watch': {
                 if (content.invite === true) {
                     message.type = 'watch';
-                    message.content = JSON.stringify({ source: typeof content.source === 'string' ? content.source : '' });
+                    message.content = JSON.stringify({ source: typeof content.source === 'string' ? content.source : '',
+                        title: typeof content.title === 'string' ? content.title : '一起看',
+                        cover: typeof content.cover === 'string' ? content.cover : '' });
                 } else message.content = String(content.value || '影院指令已处理');
                 break;
             }

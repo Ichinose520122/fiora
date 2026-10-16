@@ -1,0 +1,23 @@
+.card {
+    display: flex;
+    align-items: stretch;
+    width: 310px;
+    max-width: 100%;
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
+    border: 1px solid rgba(130, 137, 175, .2);
+    border-radius: 14px;
+    background: #f6f5fb;
+    color: #34374f;
+    cursor: pointer;
+    box-shadow: 0 5px 20px rgba(38, 44, 74, .07);
+    transition: border-color .2s, box-shadow .2s;
+    &:hover { border-color: #b4a3cf; box-shadow: 0 6px 24px rgba(73, 61, 105, .12); }
+    &:focus-visible { outline: 2px solid #9d8cbd; outline-offset: 3px; }
+    &:disabled { opacity: .65; cursor: wait; }
+}
+.cover { width: 92px; height: 132px; object-fit: cover; flex-shrink: 0; }
+.placeholder { width: 72px; min-height: 104px; flex-shrink: 0; display: grid; place-items: center; background: #eae6f2; color: #a18aab; font-size: 30px; }
+.info { display: flex; flex-direction: column; justify-content: center; gap: 17px; padding: 18px; min-width: 0; }
+.info strong { font-size: 14px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }

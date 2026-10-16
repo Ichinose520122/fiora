@@ -12,7 +12,8 @@ import watchChat from '../src/watch/chat';
 jest.mock('../src/routes/message', () => ({ sendMessage: jest.fn() }));
 jest.mock('../src/utils/linkmanAccess', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@fiora/database/mongoose/models/user', () => ({ __esModule: true, default: { findById: jest.fn() } }));
-jest.mock('@fiora/database/mongoose/models/message', () => ({ __esModule: true, default: { find: jest.fn() } }));
+jest.mock('@fiora/database/mongoose/models/message', () => ({ __esModule: true, default: { find: jest.fn(), findOneAndUpdate: jest.fn() } }));
+jest.mock('@fiora/database/mongoose/models/socket', () => ({ __esModule: true, default: { find: jest.fn() } }));
 jest.mock('@fiora/database/redis/initRedis', () => ({ Redis: { has: jest.fn() }, getSealUserKey: (id: string) => id }));
 const user = 'a'.repeat(24); const room = 'b'.repeat(24);
 beforeEach(() => {
@@ -44,6 +45,40 @@ test('reads only signed-room text messages and redacts retracted contents', asyn
     const result = await handleWatchChat(issueWatchChatGrant(user, room, 7), { action: 'read', room: 'evil' }, jest.fn());
     expect(Message.find).toHaveBeenCalledWith({ to: room, type: 'text' }, expect.any(Object), expect.any(Object));
     expect((result as any).messages.map((item: any) => item.content)).toEqual(['hello', '']);
+});
+
+test('media updates require control permission and safe metadata before reading invitations', async () => {
+    const token = issueWatchChatGrant(user, room, 7);
+    const media = { action: 'media', title: '葬送的芙莉莲', cover: 'https://img.example.com/cover.jpg', source: 'https://example.com/series' };
+    (getLinkmanAccess as jest.Mock).mockResolvedValueOnce({ group: { creator: 'c'.repeat(24) } });
+    await expect(handleWatchChat(token, media, jest.fn())).rejects.toThrow('没有切换影片');
+    await expect(handleWatchChat(token, { ...media, cover: 'https://user:password@img.example.com/cover.jpg' }, jest.fn())).rejects.toThrow('HTTPS');
+    await expect(handleWatchChat(token, { ...media, source: 'http://example.com/series' }, jest.fn())).rejects.toThrow('HTTPS');
+    await expect(handleWatchChat(token, { ...media, title: 'x'.repeat(181) }, jest.fn())).rejects.toThrow('180');
+    expect(Message.find).not.toHaveBeenCalled(); expect(Message.findOneAndUpdate).not.toHaveBeenCalled();
+});
+
+test('updates only the latest actual watch invitation and broadcasts without creating a message', async () => {
+    const token = issueWatchChatGrant(user, room, 7); const emit = jest.fn();
+    const media = { action: 'media', title: '葬送的芙莉莲', cover: 'https://img.example.com/cover.jpg', source: 'https://example.com/series' };
+    const original = { command: 'watch', invite: true, value: '邀请一起看', source: '' };
+    const content = JSON.stringify(original);
+    (getLinkmanAccess as jest.Mock).mockResolvedValue({ group: { creator: user } });
+    (Message.find as jest.Mock).mockReturnValue({ lean: async () => [
+        { _id: 'unrelated', content: JSON.stringify({ command: 'music', nested: original }) },
+        { _id: 'latest', content }, { _id: 'older', content },
+    ] });
+    (Message.findOneAndUpdate as jest.Mock).mockReturnValue({ lean: async () => ({ _id: 'latest' }) });
+    expect(await handleWatchChat(token, media, emit)).toEqual({ updated: true, messageId: 'latest' });
+    expect(Message.find).toHaveBeenCalledWith(expect.objectContaining({ to: room, type: 'system', deleted: { $ne: true } }), expect.any(Object), { sort: { createTime: -1, _id: -1 }, limit: 50 });
+    expect(Message.findOneAndUpdate).toHaveBeenCalledTimes(1);
+    expect(Message.findOneAndUpdate).toHaveBeenCalledWith(expect.objectContaining({ _id: 'latest', to: room, content, deleted: { $ne: true } }),
+        { $set: { content: JSON.stringify({ ...original, title: media.title, cover: media.cover, source: media.source }) } }, { new: true });
+    expect(emit).toHaveBeenCalledWith(room, 'watchMedia', { linkmanId: room, messageId: 'latest', title: media.title, cover: media.cover, source: media.source });
+    expect(sendMessage).not.toHaveBeenCalled();
+    (Message.find as jest.Mock).mockReturnValue({ lean: async () => [] });
+    expect(await handleWatchChat(token, media, emit)).toEqual({ updated: false });
+    expect(emit).toHaveBeenCalledTimes(1);
 });
 
 test('HTTP endpoint authenticates the grant, reads bounded JSON and returns permission failures', async () => {

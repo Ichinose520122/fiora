@@ -217,6 +217,10 @@ class Message extends Component<MessageProps, MessageState> {
         } = this.props;
         const { showButtonList } = this.state;
 
+        if (this.props.type === 'watch') {
+            return <div ref={this.$container} data-message-id={this.props.id} style={{ margin: '8px 0 18px', maxWidth: '100%' }}>{this.renderContent()}</div>;
+        }
+
         let tagColor = `rgb(${themes.default.primaryColor})`;
         if (tagColorMode === 'fixedColor') {
             tagColor = getRandomColor(tag);

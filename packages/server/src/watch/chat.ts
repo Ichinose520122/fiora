@@ -3,6 +3,7 @@ import { Context as KoaContext, Next } from 'koa';
 import { Server } from 'socket.io';
 import User from '@fiora/database/mongoose/models/user';
 import Message from '@fiora/database/mongoose/models/message';
+import Socket from '@fiora/database/mongoose/models/socket';
 import { Redis, getSealUserKey } from '@fiora/database/redis/initRedis';
 import config from '@fiora/config/server';
 import { sendMessage } from '../routes/message';
@@ -15,13 +16,49 @@ export async function authorizeChat(token: string) {
     const user = await User.findById(grant.sub).select('tokenVersion isAdmin').lean();
     assert(user && (user.tokenVersion || 0) === grant.tokenVersion, '登录已失效，请从 Fiora 重新进入');
     assert(!(await Redis.has(getSealUserKey(grant.sub))), '账号已被封禁');
-    await getLinkmanAccess(grant.sub, grant.room);
-    return { grant, isAdmin: !!user!.isAdmin || config.administrator.includes(grant.sub) };
+    const access = await getLinkmanAccess(grant.sub, grant.room);
+    return { grant, access, isAdmin: !!user!.isAdmin || config.administrator.includes(grant.sub) };
+}
+
+function mediaUrl(value: unknown) {
+    assert(typeof value === 'string' && value.length <= 4096, '影片链接格式错误');
+    if (!value) return '';
+    try {
+        const url = new URL(value);
+        assert(url.protocol === 'https:' && !url.username && !url.password, '影片链接必须为无凭据的 HTTPS 地址');
+        return url.href;
+    } catch { throw new assert.AssertionError({ message: '影片链接必须为无凭据的 HTTPS 地址' }); }
 }
 
 export async function handleWatchChat(token: string, data: any, emit: (target: string | string[], event: string, data: any) => void) {
-    const { grant, isAdmin } = await authorizeChat(token);
-    assert(data && ['read', 'send'].includes(data.action), '未知聊天操作');
+    const { grant, access, isAdmin } = await authorizeChat(token);
+    assert(data && ['read', 'send', 'media'].includes(data.action), '未知聊天操作');
+    if (data.action === 'media') {
+        assert(isAdmin || !access.group || access.group.creator.toString() === grant.sub, '没有切换影片的权限');
+        assert(typeof data.title === 'string' && data.title.trim().length > 0 && data.title.length <= 180, '影片标题需为 1–180 个字符');
+        const media = { title: data.title.trim(), cover: mediaUrl(data.cover), source: mediaUrl(data.source) };
+        const invitations = await Message.find({ to: grant.room, type: 'system', deleted: { $ne: true },
+            $and: [{ content: /"command"\s*:\s*"watch"/ }, { content: /"invite"\s*:\s*true/ }] },
+        { content: 1 }, { sort: { createTime: -1, _id: -1 }, limit: 50 }).lean();
+        for (const invitation of invitations) {
+            let original;
+            try { original = JSON.parse(invitation.content); } catch { continue; }
+            if (original?.command !== 'watch' || original.invite !== true) continue;
+            const content = JSON.stringify({ ...original, ...media });
+            const updated = await Message.findOneAndUpdate({ _id: invitation._id, to: grant.room, type: 'system',
+                deleted: { $ne: true }, content: invitation.content }, { $set: { content } }, { new: true }).lean();
+            if (!updated) return { updated: false };
+            const payload = { linkmanId: grant.room, messageId: invitation._id.toString(), ...media };
+            if (access.group) emit(grant.room, 'watchMedia', payload);
+            else {
+                const sockets = await Socket.find({ user: { $in: [grant.room.slice(0, 24), grant.room.slice(24)] } }, { id: 1 }).lean();
+                const targets = sockets.map(socket => socket.id);
+                if (targets.length) emit(targets, 'watchMedia', payload);
+            }
+            return { updated: true, messageId: payload.messageId };
+        }
+        return { updated: false };
+    }
     if (data.action === 'read') {
         const messages = await Message.find({ to: grant.room, type: 'text' },
             { from: 1, content: 1, deleted: 1, createTime: 1 }, { sort: { createTime: -1, _id: -1 }, limit: 50 })

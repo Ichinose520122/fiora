@@ -160,6 +160,10 @@ function Message({
         }
     }
 
+    if (message.type === 'watch') {
+        return <View style={{ marginVertical: 9, maxWidth: '100%' }}>{renderContent()}</View>;
+    }
+
     return (
         <View style={[styles.container, isSelf && styles.containerSelf]}>
             {isSelf ? (

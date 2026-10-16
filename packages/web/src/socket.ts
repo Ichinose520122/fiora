@@ -419,4 +419,13 @@ socket.on(
     },
 );
 
+socket.on('watchMedia', ({ linkmanId, messageId, title, cover, source }: {
+    linkmanId: string; messageId: string; title: string; cover: string; source: string;
+}) => {
+    const message = store.getState().linkmans[linkmanId]?.messages[messageId];
+    if (!message || message.type !== 'watch' || message.deleted) return;
+    dispatch({ type: ActionTypes.UpdateMessage, payload: { linkmanId, messageId,
+        value: { content: JSON.stringify({ title, cover, source }) } } });
+});
+
 export default socket;

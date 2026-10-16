@@ -236,6 +236,14 @@ socket.on(
     },
 );
 
+socket.on('watchMedia', ({ linkmanId, messageId, title, cover, source }: {
+    linkmanId: string; messageId: string; title: string; cover: string; source: string;
+}) => {
+    const message = store.getState().linkmans.find(linkman => linkman._id === linkmanId)?.messages.find(item => item._id === messageId);
+    if (!message || message.type !== 'watch' || message.deleted) return;
+    action.updateSelfMessage(linkmanId, messageId, { ...message, content: JSON.stringify({ title, cover, source }) });
+});
+
 socket.connect();
 
 export default socket;
