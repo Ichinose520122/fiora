@@ -178,6 +178,6 @@ describe('security regressions', () => {
         }
         const res = { setHeader: jest.fn() };
         options.setHeaders(res, path.join(publicRoot, 'index.html'));
-        expect(res.setHeader).not.toHaveBeenCalled();
+        expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
     });
 });

@@ -34,10 +34,7 @@ module.exports = merge(common, {
                 },
             ],
         }),
-        new WorkboxPlugin.GenerateSW({
-            clientsClaim: true,
-            skipWaiting: true,
-        }),
+        new WorkboxPlugin.GenerateSW(require('./service-worker-options')),
         new WebpackBar(),
     ],
 });

@@ -7,6 +7,7 @@ import OSS, { STS } from 'ali-oss';
 
 import config from '@fiora/config/server';
 import logger from '@fiora/utils/logger';
+import { imageCacheControl } from '@fiora/utils/browserCache';
 import User from '@fiora/database/mongoose/models/user';
 import Group from '@fiora/database/mongoose/models/group';
 
@@ -424,11 +425,13 @@ export async function uploadFile(
                 region: sts.region,
                 stsToken: sts.SecurityToken,
             });
+            const cacheControl = imageCacheControl(ctx.data.fileName);
             const result = await client.put(
                 ctx.data.fileName,
                 ctx.data.isBase64
                     ? Buffer.from(ctx.data.file, 'base64')
                     : ctx.data.file,
+                { headers: cacheControl ? { 'Cache-Control': cacheControl } : {} },
             );
             if (result.res.status === 200) {
                 return {

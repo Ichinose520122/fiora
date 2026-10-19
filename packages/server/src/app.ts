@@ -7,6 +7,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 
 import logger from '@fiora/utils/logger';
+import { staticCacheControl } from '@fiora/utils/browserCache';
 import config from '@fiora/config/server';
 import { getSocketIp } from '@fiora/utils/socket';
 import SocketModel, {
@@ -84,9 +85,10 @@ app.use(async (ctx, next) => {
         /\/invite\/group\/[\w\d]+/.test(ctx.request.url) ||
         !/(\.)|(\/invite\/group\/[\w\d]+)/.test(ctx.request.url)
     ) {
+        ctx.set('Cache-Control', 'no-cache');
         await koaSend(ctx, 'index.html', {
             root: path.join(__dirname, '../public'),
-            maxage: 1000 * 60 * 60 * 24 * 7,
+            maxage: 0,
             gzip: true,
         });
     } else {
@@ -100,9 +102,12 @@ app.use(
         maxAge: 1000 * 60 * 60 * 24 * 7,
         gzip: true,
         setHeaders: (res, filePath) => {
-            const directory = path
+            const relativePath = path
                 .relative(path.join(__dirname, '../public'), filePath)
-                .split(path.sep)[0];
+                .split(path.sep).join('/');
+            const directory = relativePath.split('/')[0];
+            const cacheControl = staticCacheControl(relativePath);
+            if (cacheControl) res.setHeader('Cache-Control', cacheControl);
             const uploadDirectories = [
                 'Avatar', 'BackgroundImage', 'FileMessage', 'GroupAvatar', 'ImageMessage',
             ];

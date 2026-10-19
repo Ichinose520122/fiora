@@ -91,7 +91,7 @@ module.exports = {
                 loader: 'url-loader',
                 options: {
                     limit: 4096,
-                    name: 'images/[name].[ext]',
+                    name: 'images/[name].[hash:8].[ext]',
                     esModule: false,
                 },
             },

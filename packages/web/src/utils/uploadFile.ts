@@ -1,6 +1,7 @@
 import uploadImageHttp from './uploadImageHttp';
 import * as OSS from 'ali-oss';
 import fetch from './fetch';
+import { imageCacheControl } from '@fiora/utils/browserCache';
 
 let ossClient: OSS;
 let endpoint = '/';
@@ -88,7 +89,10 @@ export default async function uploadFile(
     }
 
     // 上传到阿里OSS
-    const result = await ossClient.put(fileName, blob);
+    const cacheControl = imageCacheControl(fileName);
+    const result = await ossClient.put(fileName, blob, {
+        headers: cacheControl ? { 'Cache-Control': cacheControl } : {},
+    });
     if (result.res.status === 200) {
         return endpoint + result.name;
     }
