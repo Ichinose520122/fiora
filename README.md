@@ -1,8 +1,8 @@
 # Fiora · Ichinose Custom
 
-基于 [Fiora](https://github.com/yinxin630/fiora) 的自用聊天站，维护分支为 **`ichinose-custom`**。服务端与网页使用 Docker Compose 部署，原生 Android App 源码位于 `packages/app`，构建与进度见 [App 说明](packages/app/README.md)。
+基于 [Fiora](https://github.com/yinxin630/fiora) 的自用聊天站，维护分支为 **`ichinose-custom`**。服务端与网页使用 Docker Compose 部署，原生 Android App 源码位于 `packages/app`，构建与使用方法见 [App 说明](packages/app/README.md)。
 
-支持群聊、私聊、表情收藏、图片与文件消息，以及每个聊天独立的“一起听”房间：点歌队列、空闲歌单顺序 / 随机播放、歌词、旋转封面和个人音量。聊天框支持命令补全与 `/pixiv` 发图。
+支持群聊、私聊、表情收藏、图片与文件消息，以及每个聊天独立的“一起听”房间：点歌队列、空闲歌单顺序 / 随机播放、歌词、旋转封面和个人音量。聊天框支持命令补全与 `/pixiv` 发图，并可通过 `/watch` 进入独立部署的 [Fiora Watch](https://github.com/Ichinose520122/fiora-watch) 影院。
 
 ## 部署方式
 
@@ -19,9 +19,9 @@
 
 主 Compose 也带有本地 `netease` 服务，可用于单机部署。接入阿里云后，默认不自动回退到本地接口，以免请求再次从海外 IP 发出。本地服务仍会启动，但主站优先使用配置的远程地址。
 
-已有阿里云接口、Caddy 和数据卷时，保留现有配置；只对照下面的变量进行接入，不必重建国内服务或更改 Compose 项目名。
+已有部署应保留阿里云接口、Caddy 配置及数据卷，按下文核对接入变量，并沿用原 Compose 项目名。
 
-## 1. 从零部署需要什么
+## 1. 部署前提
 
 | 项目 | 用途 |
 | --- | --- |
@@ -29,7 +29,7 @@
 | 一台能正常访问网易云的国内服务器 | 可使用国内地域的阿里云 ECS，运行本项目的 music-api 镜像 |
 | Docker Engine、Compose 插件、Git、OpenSSL | 两台服务器均安装；宿主机不需要单独安装 Node.js、MongoDB 或 Redis |
 | 两个域名 | 例如 `chat.example.com` 指向聊天服务器，`music-api.example.com` 指向国内服务器 |
-| DNS、端口与出站网络 | 配置 A 记录；只有 IPv6 确实可用时才配置 AAAA。HTTPS 网关需 TCP 80/443；HTTP/3 另需 UDP 443，SSH 保留你的管理端口 |
+| DNS、端口与出站网络 | 配置 A 记录；只有 IPv6 确实可用时才配置 AAAA。HTTPS 网关需 TCP 80/443；HTTP/3 另需 UDP 443，SSH 保留现有管理端口 |
 | 可用磁盘与内存 | 保存数据库、图片、曲库和备份；源码构建的 Node 堆上限为 1600 MB，需额外留出系统及容器内存 |
 | 网易云账号 | 站点管理员可在音乐面板登录；部分歌曲需要相应会员权限 |
 
@@ -37,7 +37,7 @@ MongoDB 27017、Redis 6379、Fiora 9200 均不需要公开到互联网。国内�
 
 ### 安装 Docker（全新 Ubuntu 22.04 / 24.04）
 
-下面命令在两台服务器分别执行。使用 root shell；非 root 用户先执行 `sudo -i`。已有 Docker 环境只需确认 `docker compose version` 正常，不要重复覆盖安装。
+以下命令适用于全新 Ubuntu 环境，在两台服务器分别执行。使用 root shell；非 root 用户先执行 `sudo -i`。已有 Docker 环境应先检查 `docker compose version`，按实际版本确定是否需要安装或升级。
 
 ```sh
 apt-get update
@@ -87,7 +87,7 @@ NETEASE_API_TOKEN=上一步生成的64位十六进制密钥
 NETEASE_BIND_PORT=3000
 ```
 
-这把密钥用于聊天服务器与音乐服务之间的鉴权，稍后原样填到聊天服务器的 `NETEASE_API_TOKEN`。它与聊天 JWT 密钥、网易云 Cookie 是三种不同的凭据。
+`NETEASE_API_TOKEN` 用于聊天服务器与音乐服务之间的鉴权，两端须配置相同值。该令牌、聊天 JWT 密钥与网易云 Cookie 分属不同用途，应分别管理。
 
 ### 国内服务器还没有 HTTPS 反向代理
 
@@ -111,9 +111,9 @@ curl -fsS https://music-api.example.com/health
 docker compose --env-file deploy/netease.env -p fiora-music -f deploy/netease.compose.yaml up -d --build netease
 ```
 
-让现有代理把 `music-api.example.com` 转发到 `127.0.0.1:3000`，并保留 `X-Music-Auth` 请求头。这个地址适用于**运行在宿主机上的代理**；如果代理也在容器中，应把两个容器接入同一个 Docker 网络，通过音乐容器的服务名访问 3000，不能使用代理容器自己的 `127.0.0.1`。
+将现有代理的 `music-api.example.com` 转发目标设为 `127.0.0.1:3000`，并保留 `X-Music-Auth` 请求头。该地址适用于**运行在宿主机上的代理**；如果代理也在容器中，应把两个容器接入同一个 Docker 网络，通过音乐容器的服务名访问 3000，不能使用代理容器自己的 `127.0.0.1`。
 
-网易云账号保存在这个 Compose 项目的 `music_account` 数据卷中。不要为了换部署目录或改项目名而创建一套空数据卷。
+网易云账号保存在该 Compose 项目的 `music_account` 数据卷中。变更部署目录或项目名时，应确认仍挂载原数据卷，避免登录状态丢失。
 
 ## 3. 聊天服务器：配置主站
 
@@ -130,7 +130,7 @@ chmod 600 .env
 sh scripts/setup-storage.sh
 ```
 
-编辑 `.env`，使用你自己的域名和密钥：
+编辑 `.env`，填写部署域名和专用密钥：
 
 ```dotenv
 FIORA_DOMAIN=chat.example.com
@@ -157,7 +157,7 @@ NETEASE_API_FALLBACK=
 | `NETEASE_API_TOKEN` | 国内服务的 `MusicAuthToken`，至少 32 个字符 |
 | `NETEASE_API_FALLBACK` | 默认为空；有需要才填 `http://netease:3000` 启用本地回退 |
 
-这些变量会由 Compose 显式传入容器。只在 `.env` 随意写一个未映射的变量，并不会让应用自动读取它，见 [Compose 环境变量说明](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)。
+上述变量由 Compose 显式传入容器；仅在 `.env` 中新增变量不会自动传递给应用，须同时核对 Compose 的环境变量映射。参见 [Compose 环境变量说明](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)。
 
 **单机部署**：如果主站本身就在能访问网易云的国内网络，可把 `NETEASE_API_URL` 设为 `http://netease:3000`，`NETEASE_API_TOKEN` 留空。本地服务会自动生成共享密钥，主站通过只读数据卷读取，无需人工复制。
 
@@ -183,9 +183,9 @@ docker compose pull
 docker compose up -d --no-build
 ```
 
-镜像标签为 `ghcr.io/ichinose520122/fiora:ichinose-custom` 和 `ghcr.io/ichinose520122/fiora:music-api`。国内服务器无法拉取 GHCR 时，可在能拉取的机器执行 `docker save`，传输后在国内机器 `docker load`；不要用其他 API 镜像替代本项目音乐镜像来碰运气。
+镜像标签为 `ghcr.io/ichinose520122/fiora:ichinose-custom` 和 `ghcr.io/ichinose520122/fiora:music-api`。国内服务器无法拉取 GHCR 时，可在能拉取的机器执行 `docker save`，传输后在国内机器 `docker load`。替代音乐镜像前应验证其内部鉴权及 `/auth/*` 接口兼容性。
 
-### 给主站配置 HTTPS
+### 配置主站 HTTPS
 
 如果当前没有占用 80/443 的反向代理，执行：
 
@@ -194,9 +194,9 @@ cd /opt/fiora
 docker compose --env-file .env -p fiora-gateway -f deploy/caddy.compose.yaml up -d
 ```
 
-这个命令单独启动 Caddy，不改变主站的 Compose 项目名和数据卷。Caddy 根据域名申请证书，具体前提见 [Caddy HTTPS 文档](https://caddyserver.com/docs/quick-starts/https)。
+该命令独立启动 Caddy，主站的 Compose 项目名和数据卷保持不变。Caddy 根据域名申请证书，具体前提见 [Caddy HTTPS 文档](https://caddyserver.com/docs/quick-starts/https)。
 
-**已有 Docker Caddy 的用户不需要再启动一份。** 将 Caddy 接入 `caddy-proxy` 网络，在自己的 Caddyfile 中添加并重载：
+**已有 Docker Caddy 的部署应复用现有网关。** 将 Caddy 接入 `caddy-proxy` 网络，在现有 Caddyfile 中添加以下配置并重载：
 
 ```caddyfile
 chat.example.com {
@@ -226,7 +226,7 @@ docker compose exec fiora ../../node_modules/.bin/ts-node --transpile-only ../bi
 4. 打开左侧“音乐 → 网易云账号”，用手机号和验证码登录；短信被平台风控拦截时，可以使用界面里的 `MUSIC_U` 登录。
 5. 搜索并点一首可完整播放的歌。浏览器阻止自动播放时，点击播放器的“加入”或“重试”。
 
-这是**服务器共用的网易云账号**，仅站点管理员可管理；其他聊天用户不需要分别登录网易云。使用远程接口时，登录请求和账号保存都发生在国内服务上，不在浏览器保存网易云 Cookie，也不要把凭据发到聊天框。
+网易云账号为**站点共用账号**，仅站点管理员可管理；其他聊天用户不需要分别登录网易云。使用远程接口时，登录请求和账号保存都发生在国内服务上，不在浏览器保存网易云 Cookie，也不要把凭据发到聊天框。
 
 取消数据库中的管理员权限：
 
@@ -236,7 +236,7 @@ docker compose exec fiora ../../node_modules/.bin/ts-node --transpile-only ../bi
 
 若同时在 `FIORA_ADMINISTRATOR` 中配置过该用户 ID，也要删除该 ID 并重建 Fiora；已建立的连接需要重新登录才会刷新权限。
 
-## 5. 音乐、本地曲库与 Pixiv
+## 5. 音乐、本地曲库、Pixiv 与影院
 
 | 操作 | 用法 |
 | --- | --- |
@@ -299,9 +299,19 @@ QQ 音乐保留了自定义 API 入口，但没有随本部署提供 QQ 服务�
 
 Docker Compose 已包含 `PixivAccountFile: /pixiv-auth/account.json` 和 `pixiv_account:/pixiv-auth` 持久卷，重建主站容器后登录状态仍保留。凭据存放在静态文件目录之外，不回传给客户端，也不发送给图片 CDN。
 
-**已有部署升级：** 本次只需要更新主站，阿里云网易云服务无需变更。拉取新代码和主站镜像后，确认自己的 Compose 中 `fiora.environment` 有上述路径、`fiora.volumes` 有上述挂载，且顶层 `volumes` 声明了 `pixiv_account:`；然后执行 `docker compose up -d --no-deps --force-recreate fiora`。自定义 Compose 请保留现有网易云地址、令牌和其他配置。
+**Pixiv 账号功能接入：** 该功能由主站提供，不要求变更国内网易云服务。更新主站代码及镜像后，确认 Compose 的 `fiora.environment`、`fiora.volumes` 和顶层 `volumes` 包含上述配置，再执行 `docker compose up -d --no-deps --force-recreate fiora`。自定义 Compose 应保留现有网易云地址、令牌及其他配置。
 
-单张上限 20 MB，整组上限 100 MB / 200 张；不可访问或超过限制会返回 system 提示，不会悄悄只发一部分。
+单张上限 20 MB，整组上限 100 MB / 200 张；不可访问或超过限制会返回 system 提示，不会将不完整的结果视为发送成功。
+
+### 独立影院
+
+[Fiora Watch](https://github.com/Ichinose520122/fiora-watch) 提供同步观影、在线片源解析、Bilibili 扫码登录与字幕、管理员下载及本地媒体库。Fiora 负责影院邀请、身份交接和聊天记录，视频解析与播放由 Watch 独立处理。
+
+在群聊或私聊输入 `/watch` 创建邀请，也可使用 `/watch 视频地址` 预填片源。点击邀请时重新验证成员资格并签发 60 秒一次性票据；影院房间授权与聊天授权约为 180 分钟。私聊双方、群主和站点管理员可控制播放，普通群成员跟随。
+
+影院评论写入原聊天记录；选片后更新该聊天最新影院邀请的标题和封面。两端须配置相同的专用共享密钥，并保持 Fiora 签发者地址与 Watch 的 `FIORA_ORIGIN` 一致。
+
+部署与功能范围以 [Watch README](https://github.com/Ichinose520122/fiora-watch#readme) 为准；Fiora 侧配置项见 [.env.example](.env.example) 和 [docker-compose.yaml](docker-compose.yaml)。
 
 ## 6. 更新与备份
 
@@ -317,7 +327,7 @@ docker compose config --quiet
 docker compose up -d --build
 ```
 
-如果使用发布镜像，等本次 Actions 构建成功后，改用 `docker compose pull && docker compose up -d --no-build`。只更新代码但继续运行旧镜像不会生效。
+使用发布镜像时，待目标提交的 Actions 构建成功后，改用 `docker compose pull && docker compose up -d --no-build`。只更新代码但继续运行旧镜像不会生效。
 
 国内服务使用独立配置；首次按本 README 部署的实例可执行：
 
@@ -329,7 +339,7 @@ docker compose --env-file deploy/netease.env -p fiora-music -f deploy/netease.co
 
 使用已有反向代理的国内实例，去掉 `--profile https`，并在命令末尾指定 `netease`。既有实例按自己的原 Compose 文件和项目名更新。
 
-### 保存了哪些数据
+### 持久化数据
 
 | 位置 | 内容 |
 | --- | --- |
@@ -392,7 +402,7 @@ sh scripts/backup-r2.sh
 - `packages/app`：原生 Android App，已接入音乐、Pixiv、QQ/收藏表情、文件发送与应用内更新；不参与 Docker 构建。见 [App 构建说明](packages/app/README.md)，安装包见 [Android Release](https://github.com/Ichinose520122/fiora/releases/tag/android-latest)。
 - `scripts/`：存储初始化、本地备份和 R2 备份。
 
-旧文档站和临时审核部署文件已清理，部署说明统一以本 README 为准。网页 / 服务端源码测试与开发配置保留；GitHub Actions 提供 Docker 镜像构建和 CodeQL 分析。
+主站部署说明以本 README 为准，Android 构建与使用说明位于 `packages/app/README.md`。仓库保留网页和服务端测试及开发配置；GitHub Actions 提供 Docker 镜像构建、Android 类型检查与 APK 构建，以及 CodeQL 分析。根 Jest 测试尚未纳入 Docker 发布流程，相关变更应单独执行回归测试。
 
 ## 贡献者与 AI 协作
 
@@ -403,7 +413,7 @@ sh scripts/backup-r2.sh
 | ChatGPT（OpenAI） | AI 协作：需求梳理、方案讨论与文档辅助 |
 | Codex（OpenAI） | AI 协作：代码实现、问题排查、针对性验证与仓库整理 |
 
-感谢 ChatGPT 和 Codex 在本项目定制过程中的协助。AI 工具署名用于记录协作，项目的最终审核、发布和维护由维护者负责。
+AI 工具署名用于记录辅助开发与文档协作，项目审核、发布和维护由维护者负责。
 
 ## 许可与依赖致谢
 
@@ -412,15 +422,15 @@ sh scripts/backup-r2.sh
 
 ### 重连、群名与头像头饰
 
-网页切到其他标签页、最小化或后台挂很久后，返回前台会立即检查旧连接：正常就补查遗漏消息；3 秒内无响应则主动重连、恢复登录并补消息。当前聊天页和草稿保留；曾经在线的页面返回时提供 12 秒静默恢复窗口，持续失败才显示断线提示。尚未发出的请求会等待连接恢复（最多 12 秒）；已经发出但结果不确定的消息不会自动重发，避免重复。浏览器冻结或丢弃标签页时，网页无法承诺持续后台在线；恢复运行后会检查连接并补消息。
+网页从后台或最小化状态返回前台时检查连接：连接正常则同步遗漏消息；3 秒内无响应则主动重连、恢复登录并补消息。当前聊天页和草稿保留；曾经在线的页面返回时提供 12 秒静默恢复窗口，持续失败才显示断线提示。尚未发出的请求会等待连接恢复（最多 12 秒）；已经发出但结果不确定的消息不会自动重发，避免重复。浏览器冻结或丢弃标签页时，网页无法承诺持续后台在线；恢复运行后会检查连接并补消息。
 
-默认群只在数据库中不存在时创建，重建容器不再覆盖已保存的群名。之前被覆盖的名字需重新设置一次，并确保保留 MongoDB 数据卷。
+默认群仅在数据库中不存在时创建，重建容器保留已保存的群名。历史部署中被覆盖的群名需重新设置；更新时应保留 MongoDB 数据卷。
 
 网页设置和 App 的头像挂件区域新增“头像头饰”，普通用户可选择光环、星星、蝴蝶结、薄荷芽、小花等。管理员面板的“设置用户头饰”支持按用户名设置皇冠或其他头饰。头饰仅改变外观，不改变管理权限；普通用户更换掉获赠的皇冠后，需要管理员再次设置。头饰保存在 MongoDB，网页与 App 共用，其他客户端会在头像资料下一次刷新时显示（通常一分钟内）。
 
 ### 图片与 HTTP/3
 
-网页上传 PNG/JPEG/GIF/WebP 图片、头像与背景时使用带登录令牌的 HTTP 接口 `POST /api/upload/image`，不再把这些图片的二进制内容塞进聊天 WebSocket。接口保留登录有效期、密码变更失效、封禁、文件归属、大小与格式检查，并限制并发和读取时间。启用 OSS 时仍优先直传 OSS。图片显示本身也是普通 HTTP 请求。
+网页上传 PNG/JPEG/GIF/WebP 图片、头像与背景时使用带登录令牌的 HTTP 接口 `POST /api/upload/image`，图片二进制数据通过 HTTP 传输，不占用聊天 WebSocket 通道。接口保留登录有效期、密码变更失效、封禁、文件归属、大小与格式检查，并限制并发和读取时间。启用 OSS 时仍优先直传 OSS。图片显示本身也是普通 HTTP 请求。
 
 浏览器缓存覆盖聊天图片、头像、群头像、背景、QQ 表情和前端资源。带用户 ID / 时间戳或随机标识的上传图片与 Pixiv 本地图片缓存一年；其他静态图片缓存 30 天。前端脚本、图片、字体等带内容版本号的资源缓存一年，文件变化会生成新地址；HTML 与 Service Worker 每次校验更新。网页还通过 Service Worker 保存最近使用的同域图片，最多 200 项、30 天，超出后清理旧项；需要 HTTPS 和浏览器支持，未启用时仍使用普通 HTTP 缓存。原生 App 已使用图片缓存，并沿用这些服务端响应头。
 
@@ -428,6 +438,6 @@ sh scripts/backup-r2.sh
 
 HTTP/3 由浏览器和 HTTPS 网关协商，前端不能强制指定。仓库附带的 Caddy Compose 已映射 `443:443/udp`；还需在服务器防火墙和云安全组放行 UDP 443。如果使用独立 Caddy/CDN，需在实际对外网关启用，Fiora 内部的 9200 端口无需改成 QUIC。浏览器不支持或 UDP 不通时可继续使用 HTTP/2、HTTP/1.1；无需强制 H3。
 
-确认方法：浏览器开发者工具 → Network → 显示 Protocol 列，查看图片 GET 或上传 POST 是否为 `h3`；响应中的 `Alt-Svc: h3` 仅表示服务器声明支持，不代表本次传输已经使用 H3。App 是否使用 H3 由其原生网络栈决定，本次未强制修改原生传输协议。
+确认方法：浏览器开发者工具 → Network → 显示 Protocol 列，查看图片 GET 或上传 POST 是否为 `h3`；响应中的 `Alt-Svc: h3` 仅表示服务器声明支持，不代表本次传输已经使用 H3。App 是否使用 H3 由其原生网络栈决定。
 
 参考：[Caddy 协议配置](https://caddyserver.com/docs/caddyfile/options#protocols)、[Alt-Svc 的含义](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Alt-Svc)。
