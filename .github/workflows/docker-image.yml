@@ -32,23 +32,67 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish image
+      - name: Build Fiora image
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
-          push: true
+          pull: true
+          load: true
           tags: ghcr.io/ichinose520122/fiora:ichinose-custom
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build and publish integrated music service
+      - name: Build integrated music service
         uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile.netease
           platforms: linux/amd64
-          push: true
+          pull: true
+          load: true
           tags: ghcr.io/ichinose520122/fiora:music-api
           cache-from: type=gha,scope=music-api
           cache-to: type=gha,mode=max,scope=music-api
+
+      - name: Verify container runtimes
+        run: |
+          for image in ghcr.io/ichinose520122/fiora:ichinose-custom ghcr.io/ichinose520122/fiora:music-api; do
+            docker run --rm --entrypoint node "$image" -e "if (process.version !== 'v22.23.4') throw new Error(process.version); console.log(process.version)"
+          done
+
+      - name: Smoke test Fiora and music service
+        env:
+          FIORA_JWT_SECRET: ci-only-not-a-production-secret-0123456789
+          FIORA_DOMAIN: localhost
+        run: |
+          docker network create caddy-proxy
+          docker compose pull mongodb redis
+          docker compose up -d --no-build --pull never --wait --wait-timeout 120
+          for i in $(seq 1 30); do
+            if docker compose exec -T fiora node -e "fetch('http://127.0.0.1:9200/', {signal: AbortSignal.timeout(3000)}).then(async r => {if (!r.ok || !(await r.text()).includes('<html')) process.exit(1)}).catch(() => process.exit(1))"; then
+              docker compose exec -T netease node -e "fetch('http://127.0.0.1:3000/health', {signal: AbortSignal.timeout(3000)}).then(async r => {if (!r.ok || (await r.json()).ok !== true) process.exit(1)}).catch(() => process.exit(1))"
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Publish verified images
+        run: |
+          docker push ghcr.io/ichinose520122/fiora:ichinose-custom
+          docker push ghcr.io/ichinose520122/fiora:music-api
+
+      - name: Show smoke test logs
+        if: failure()
+        env:
+          FIORA_JWT_SECRET: ci-only-not-a-production-secret-0123456789
+          FIORA_DOMAIN: localhost
+        run: docker compose logs --tail 100
+
+      - name: Remove smoke test containers
+        if: always()
+        env:
+          FIORA_JWT_SECRET: ci-only-not-a-production-secret-0123456789
+          FIORA_DOMAIN: localhost
+        run: docker compose down -v

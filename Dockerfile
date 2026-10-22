@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim
+FROM node:22.23.4-bookworm-slim
 WORKDIR /usr/app/fiora
 COPY package.json yarn.lock ./
 COPY packages/assets/package.json packages/assets/package.json
