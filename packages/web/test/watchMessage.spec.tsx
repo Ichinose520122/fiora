@@ -25,3 +25,34 @@ test('access refusal closes the blank window', async () => {
     fireEvent.click(view.getByRole('button', { name: '一起看，进入影院' }));
     await waitFor(() => expect(tab.close).toHaveBeenCalled()); open.mockRestore();
 });
+
+test('an updated invitation refreshes its title and recovers from a failed cover', () => {
+    const view = render(<WatchMessage roomId="chat-id" content='{"title":"原来的影片","cover":"https://img.example.com/old.jpg"}' />);
+    fireEvent.error(view.getByAltText('原来的影片'));
+    expect(view.queryByRole('img')).toBe(null);
+    expect(view.getByRole('button', { name: '原来的影片，进入影院' })).toBeTruthy();
+
+    view.rerender(<WatchMessage roomId="chat-id" content='{"title":"新的影片","cover":"https://img.example.com/new.jpg"}' />);
+    expect(view.getByText('新的影片')).toBeTruthy();
+    expect(view.getByAltText('新的影片').getAttribute('src')).toBe('https://img.example.com/new.jpg');
+    expect(view.queryByText('原来的影片')).toBe(null);
+});
+
+test('joining remains disabled and shows progress until the ticket arrives', async () => {
+    let complete: (result: any) => void = () => {};
+    const tab = { opener: {}, location: { replace: jest.fn() }, close: jest.fn() };
+    const open = jest.spyOn(window, 'open').mockReturnValue(tab as any);
+    (fetch as jest.Mock).mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
+    const view = render(<WatchMessage roomId="chat-id" content='{"title":"影片"}' />);
+    const button = view.getByRole('button', { name: '影片，进入影院' });
+    fireEvent.click(button);
+    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect(view.getByText('正在进入…')).toBeTruthy();
+
+    complete([null, { url: 'https://watch.example.com/#ticket=fresh' }]);
+    await waitFor(() => expect(button.hasAttribute('disabled')).toBe(false));
+    expect(button.getAttribute('aria-busy')).toBe('false');
+    expect(view.getByText('加入一起看')).toBeTruthy();
+    open.mockRestore();
+});
