@@ -81,7 +81,7 @@ export default function WatchMessage({ roomId, content }: { roomId: string; cont
                 <strong className={Style.title} title={title}>
                     {title}
                 </strong>
-                <span className={Style.join}>
+                <span className={`${Style.join}${pending ? ` ${Style.joinPending}` : ''}`}>
                     <span>{pending ? '正在进入…' : '加入一起看'}</span>
                     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M3.5 8h8.5M8.5 4.5 12 8l-3.5 3.5" />

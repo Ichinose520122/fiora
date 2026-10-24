@@ -37,13 +37,13 @@
         box-shadow: 0 6px 18px rgba(45, 95, 88, 0.12);
         transform: translateY(-1px);
 
-        .join {
+        .join:not(.joinPending) {
             background: #4f9b91;
             color: #ffffff;
-        }
 
-        .join svg {
-            transform: translateX(2px);
+            svg {
+                transform: translateX(2px);
+            }
         }
     }
 
@@ -157,6 +157,43 @@
     }
 }
 
+.joinPending {
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 200%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.45),
+            transparent
+        );
+        animation: cardShimmer 1.5s infinite;
+    }
+}
+
+@keyframes cardShimmer {
+    0% {
+        transform: translateX(-50%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .joinPending::after {
+        animation: none;
+        display: none;
+    }
+}
+
 @media (max-width: 480px) {
     .card {
         width: 292px;
@@ -180,6 +217,10 @@
     .title {
         font-size: 14.5px;
     }
+
+    .join {
+        min-height: 34px;
+    }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -195,5 +236,14 @@
         --watch-placeholder: #6ec2b6;
 
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    }
+
+    .joinPending::after {
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+        );
     }
 }
