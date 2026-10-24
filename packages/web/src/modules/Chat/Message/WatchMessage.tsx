@@ -15,7 +15,7 @@ export default function WatchMessage({ roomId, content }: { roomId: string; cont
     const title =
         typeof invitation.title === 'string' && invitation.title.trim()
             ? invitation.title.trim()
-            : '一起看';
+            : '放映室';
     let cover = '';
     try {
         const url = new URL(invitation.cover || '');
@@ -29,7 +29,7 @@ export default function WatchMessage({ roomId, content }: { roomId: string; cont
         if (pending) return;
         const tab = window.open('about:blank', '_blank');
         if (!tab) {
-            Message.error('请允许弹出影院窗口后重试');
+            Message.error('请允许弹出放映室窗口后重试');
             return;
         }
         tab.opener = null;
@@ -44,7 +44,7 @@ export default function WatchMessage({ roomId, content }: { roomId: string; cont
             else tab.location.replace(result.url);
         } catch {
             tab.close();
-            Message.error('影院暂时无法打开，请重试');
+            Message.error('放映室暂时无法打开，请重试');
         } finally {
             setPending(false);
         }
@@ -55,7 +55,7 @@ export default function WatchMessage({ roomId, content }: { roomId: string; cont
             className={Style.card}
             disabled={pending}
             onClick={join}
-            aria-label={`${title}，进入影院`}
+            aria-label={`${title}，进入放映室`}
             aria-busy={pending}
         >
             <span className={Style.poster}>
@@ -82,7 +82,7 @@ export default function WatchMessage({ roomId, content }: { roomId: string; cont
                     {title}
                 </strong>
                 <span className={`${Style.join}${pending ? ` ${Style.joinPending}` : ''}`}>
-                    <span>{pending ? '正在进入…' : '加入一起看'}</span>
+                    <span>{pending ? '正在进入…' : '进入放映室'}</span>
                     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M3.5 8h8.5M8.5 4.5 12 8l-3.5 3.5" />
                     </svg>

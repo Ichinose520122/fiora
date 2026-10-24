@@ -1,5 +1,5 @@
 export const chatCommands = [
-    { value: '/watch', description: '创建一起看影院邀请（可追加视频地址）' },
+    { value: '/watch', description: '创建放映室邀请（可追加视频地址）' },
     { value: '/pixiv ', description: '作品 ID / 作品链接发全部图片，pximg 直链只发一张' },
     { value: '/music ', description: '点歌：歌名、ID 或完整链接' },
     { value: '/music search ', description: '搜索歌曲并选择' },

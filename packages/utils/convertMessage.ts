@@ -39,9 +39,9 @@ function convertSystemMessage(message: any) {
                 if (content.invite === true) {
                     message.type = 'watch';
                     message.content = JSON.stringify({ source: typeof content.source === 'string' ? content.source : '',
-                        title: typeof content.title === 'string' ? content.title : '一起看',
+                        title: typeof content.title === 'string' ? content.title : '放映室',
                         cover: typeof content.cover === 'string' ? content.cover : '' });
-                } else message.content = String(content.value || '影院指令已处理');
+                } else message.content = String(content.value || '放映室指令已处理');
                 break;
             }
             case 'pixiv': {

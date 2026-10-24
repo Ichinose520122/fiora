@@ -3,11 +3,11 @@ import convertAppMessage from '../../app/src/utils/convertMessage';
 
 describe('legacy system messages', () => {
     it('renders watch invitations without embedding login tickets', () => {
-        const result = convertMessage({ type: 'system', content: JSON.stringify({ command: 'watch', invite: true, source: 'https://example.com/a.m3u8' }), from: { _id: 'user', username: 'tester' } });
-        expect(result.type).toBe('watch');
-        expect(JSON.parse(result.content)).toEqual({ source: 'https://example.com/a.m3u8', title: '一起看', cover: '' });
         const metadata = { source: 'https://example.com/series', title: '<script>片名</script>', cover: 'https://img.example.com/a.jpg' };
         for (const convert of [convertMessage, convertAppMessage]) {
+            const result = convert({ type: 'system', content: JSON.stringify({ command: 'watch', invite: true, source: 'https://example.com/a.m3u8' }), from: { _id: 'user', username: 'tester' } } as any);
+            expect(result.type).toBe('watch');
+            expect(JSON.parse(result.content)).toEqual({ source: 'https://example.com/a.m3u8', title: '放映室', cover: '' });
             const updated = convert({ type: 'system', content: JSON.stringify({ command: 'watch', invite: true, value: '邀请一起看', ...metadata }), from: { _id: 'user', username: 'tester' } } as any);
             expect(updated.type).toBe('watch'); expect(JSON.parse(updated.content)).toEqual(metadata);
         }
