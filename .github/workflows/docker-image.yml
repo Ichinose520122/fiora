@@ -15,7 +15,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  bot-gateway:
+    uses: ./.github/workflows/bot-gateway.yml
+
   build:
+    needs: bot-gateway
     runs-on: ubuntu-latest
 
     steps:

@@ -25,6 +25,7 @@ jest.mock('@fiora/database/mongoose/models/socket', () => ({
     default: {
         create: jest.fn().mockResolvedValue({}),
         deleteMany: jest.fn().mockResolvedValue({}),
+        updateOne: jest.fn().mockResolvedValue({}),
     },
 }));
 jest.mock('../src/routes/user', () => ({

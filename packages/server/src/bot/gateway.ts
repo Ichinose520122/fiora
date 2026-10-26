@@ -135,24 +135,22 @@ export function installBotGateway(httpServer: http.Server, io: any) {
         const ip = getUpgradeIp(req, config.trustProxyHeaders);
         const socketId = `bot_${auth.settings.userId}_${randomBytes(8).toString('hex')}`;
 
-        // Clear any previous stale bot socket records for this bot identity
-        try {
-            await Socket.deleteMany({ user: auth.settings.userId, environment: 'bot' });
-        } catch {
-            // non-fatal
-        }
-
         // Register in Fiora's real-time Socket collection so the bot is online just like a real user
+        const presence = {
+            id: socketId,
+            user: auth.settings.userId,
+            ip,
+            os: 'Windows',
+            browser: 'DaFeiYu Bot',
+            environment: 'bot',
+            createTime: new Date(),
+        };
         try {
-            await Socket.create({
-                id: socketId,
-                user: auth.settings.userId,
-                ip,
-                os: 'Windows',
-                browser: 'DaFeiYu Bot',
-                environment: 'bot',
-                createTime: new Date(),
-            });
+            await Socket.create(presence);
+            if (ws.readyState !== WebSocket.OPEN) {
+                await Socket.deleteMany({ id: socketId });
+                return;
+            }
             _invalidateUserOnlineStatusCache(auth.settings.userId);
             _invalidateGroupOnlineMembersCache();
             logger.info('[BotGateway]', `Bot connected: ${auth.user.username} (${auth.settings.userId}) socketId=${socketId}`);
@@ -204,7 +202,23 @@ export function installBotGateway(httpServer: http.Server, io: any) {
 
             // Handle ping / heartbeat
             if (data.type === 'ping' || data.action === 'ping') {
-                ws.send(JSON.stringify({ type: 'pong', time: Date.now() }));
+                try {
+                    const current = await authorizeBot(token);
+                    if (current.settings.userId !== session.userId) throw new Error('Bot identity changed');
+                    if (!activeBotSessions.has(socketId) || ws.readyState !== WebSocket.OPEN) return;
+                    session.settings = current.settings;
+                    await Socket.updateOne({ id: socketId }, { $setOnInsert: presence }, { upsert: true });
+                    if (!activeBotSessions.has(socketId) || ws.readyState !== WebSocket.OPEN) {
+                        await Socket.deleteMany({ id: socketId });
+                        return;
+                    }
+                    _invalidateUserOnlineStatusCache(session.userId);
+                    _invalidateGroupOnlineMembersCache();
+                    ws.send(JSON.stringify({ type: 'pong', time: Date.now() }));
+                } catch (error) {
+                    logger.warn('[BotGateway]', 'Bot heartbeat validation failed:', (error as Error).message);
+                    ws.close(1008, 'Bot authentication or presence check failed');
+                }
                 return;
             }
 
@@ -271,7 +285,10 @@ export function installBotGateway(httpServer: http.Server, io: any) {
             }
         });
 
+        let cleanedUp = false;
         const cleanup = async () => {
+            if (cleanedUp) return;
+            cleanedUp = true;
             activeBotSessions.delete(socketId);
             try {
                 await Socket.deleteMany({ id: socketId });
