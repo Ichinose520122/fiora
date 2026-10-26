@@ -208,9 +208,38 @@ export function installBotGateway(httpServer: http.Server, io: any) {
                 return;
             }
 
+            // Handle upload_image action
+            if (data.action === 'upload_image' || data.action === 'upload') {
+                const { file, fileName, requestId } = data;
+                try {
+                    const result: any = await handleBotRequest(
+                        token,
+                        'POST',
+                        '/images',
+                        {},
+                        { file, fileName },
+                        (target: string | string[], event: string, value: any) => io.to(target).emit(event, value),
+                    );
+                    ws.send(JSON.stringify({
+                        type: 'uploaded',
+                        url: result.url,
+                        requestId,
+                    }));
+                } catch (err) {
+                    const error = err as any;
+                    ws.send(JSON.stringify({
+                        type: 'error',
+                        requestId,
+                        error: error.message || '上传图片失败',
+                        status: error.status || 500,
+                    }));
+                }
+                return;
+            }
+
             // Handle send action
             if (data.action === 'send' || data.type === 'send') {
-                const { conversationId, content, requestId } = data;
+                const { conversationId, content, requestId, type = 'text' } = data;
                 if (!requestId || typeof requestId !== 'string') {
                     ws.send(JSON.stringify({ type: 'error', error: 'requestId 必填且需为 UUID' }));
                     return;
@@ -221,7 +250,7 @@ export function installBotGateway(httpServer: http.Server, io: any) {
                         'POST',
                         '/messages',
                         {},
-                        { conversationId, content, requestId },
+                        { conversationId, content, requestId, type },
                         (target: string | string[], event: string, value: any) => io.to(target).emit(event, value),
                     );
                     ws.send(JSON.stringify({

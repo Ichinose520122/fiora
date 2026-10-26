@@ -245,6 +245,12 @@ class Message extends Component<MessageProps, MessageState> {
                                 // @ts-ignore
                                 this.handleClickAvatar(context.showUserInfo)
                             }
+                            onContextMenu={(e: React.MouseEvent) => {
+                                e.preventDefault();
+                                if (this.props.username) {
+                                    window.dispatchEvent(new CustomEvent('insertAtUser', { detail: { username: this.props.username } }));
+                                }
+                            }}
                         />
                     )}
                 </ShowUserOrGroupInfoContext.Consumer>
@@ -258,7 +264,12 @@ class Message extends Component<MessageProps, MessageState> {
                                 fallbackColor={tagColor}
                             />
                         )}
-                        <span className={Style.nickname}>{username}</span>
+                        <span className={Style.nickname} onContextMenu={(e: React.MouseEvent) => {
+                            e.preventDefault();
+                            if (this.props.username) {
+                                window.dispatchEvent(new CustomEvent('insertAtUser', { detail: { username: this.props.username } }));
+                            }
+                        }}>{username}</span>
                         <span className={Style.time}>{this.formatTime()}</span>
                     </div>
                     <div

@@ -24,6 +24,7 @@ jest.mock('@fiora/database/mongoose/models/friend', () => ({ __esModule: true, d
 jest.mock('@fiora/database/mongoose/models/message', () => ({ __esModule: true, default: { find: jest.fn(), findById: jest.fn() } }));
 jest.mock('@fiora/database/redis/initRedis', () => ({ Redis: { has: jest.fn() }, getSealUserKey: (id: string) => id }));
 jest.mock('../src/routes/message', () => ({ sendMessage: jest.fn() }));
+jest.mock('../src/routes/system', () => ({ uploadFile: jest.fn().mockResolvedValue({ url: '/ImageMessage/test.png' }) }));
 
 const actor = 'a'.repeat(24); const bot = 'b'.repeat(24); const group = 'c'.repeat(24); const peer = 'd'.repeat(24);
 const privateId = bot + peer; const token = 'fiora_bot_' + '1'.repeat(64);
@@ -97,7 +98,7 @@ test('disabled, promoted and banned identities cannot use valid keys', async () 
 });
 
 test('identity truthfully advertises text, history, polling and membership queries', async () => {
-    expect(await request('/identity')).toMatchObject({ user: { id: bot }, capabilities: { send: { text: true, image: false, reply: false, recall: false }, member: { list: true, mute: false } } });
+    expect(await request('/identity')).toMatchObject({ user: { id: bot }, capabilities: { send: { text: true, image: true, reply: false, recall: false }, member: { list: true, mute: false } } });
 });
 
 test('history rejects unscoped and removed groups and redacts withdrawn messages', async () => {
@@ -215,4 +216,15 @@ test('real HTTP transport authenticates, reads bounded JSON, applies scopes and 
         expect((await send('/messages', JSON.stringify({ conversationId: group, content: '/watch', requestId: '12345678-1234-1234-1234-123456789abd' }))).status).toBe(200);
         await revokeBotApiKey(ctx()); expect((await send('/identity')).status).toBe(401);
     } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
+});
+
+test('bot can upload images and send image messages', async () => {
+    const uploadRes = await request('/images', {}, { file: Buffer.from('GIF89a').toString('base64'), fileName: 'test.gif' }, 'POST') as any;
+    expect(uploadRes.url).toBe('/ImageMessage/test.png');
+
+    const msgRes = await request('/messages', {}, { conversationId: group, content: uploadRes.url, type: 'image', requestId: '88888888-4444-4444-4444-123456789abc' }, 'POST') as any;
+    expect(msgRes.id).toBe('e'.repeat(24));
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ type: 'image', content: '/ImageMessage/test.png' })
+    }), expect.any(Object));
 });

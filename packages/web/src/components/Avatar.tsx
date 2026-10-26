@@ -17,6 +17,7 @@ type Props = {
     className?: string;
     /** 点击事件 */
     onClick?: () => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
 };
@@ -27,6 +28,7 @@ function Avatar({
     size = 60,
     className = '',
     onClick,
+    onContextMenu,
     onMouseEnter,
     onMouseLeave,
 }: Props) {
@@ -56,7 +58,7 @@ function Avatar({
     }, [src, size]);
 
     return (
-        <span className={className} style={{ width: size, height: size, position: 'relative', display: 'inline-flex', flexShrink: 0, overflow: 'visible', verticalAlign: 'middle' }} onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}><img
+        <span className={className} style={{ width: size, height: size, position: 'relative', display: 'inline-flex', flexShrink: 0, overflow: 'visible', verticalAlign: 'middle' }} onClick={onClick} onContextMenu={onContextMenu} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}><img
             style={{ width: size, height: size, borderRadius: size / 2 }}
             src={url}
             alt=""

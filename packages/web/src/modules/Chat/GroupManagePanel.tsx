@@ -193,6 +193,12 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                         onClick={() =>
                                             handleShowUserInfo(member.user)
                                         }
+                                        onContextMenu={(e) => {
+                                            e.preventDefault();
+                                            if (member.user && member.user.username) {
+                                                window.dispatchEvent(new CustomEvent('insertAtUser', { detail: { username: member.user.username } }));
+                                            }
+                                        }}
                                         role="button"
                                     >
                                         <Avatar

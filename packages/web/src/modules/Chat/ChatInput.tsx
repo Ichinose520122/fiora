@@ -90,6 +90,18 @@ function ChatInput() {
     const [at, setAt] = useState({ enable: false, content: '' });
     const $input = useRef<HTMLInputElement>(null);
     const aero = useAero();
+    useEffect(() => {
+        const handleInsertAtUser = (e: any) => {
+            if (e.detail && e.detail.username) {
+                insertAtCursor(`@${e.detail.username} `);
+            }
+        };
+        window.addEventListener('insertAtUser', handleInsertAtUser);
+        return () => {
+            window.removeEventListener('insertAtUser', handleInsertAtUser);
+        };
+    }, []);
+
     const [expressions, setExpressions] = useState<
         { image: string; width: number; height: number }[]
     >([]);

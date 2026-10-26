@@ -9,6 +9,7 @@ import Message from '@fiora/database/mongoose/models/message';
 import { BotRequest, BotConfigDocument } from '@fiora/database/mongoose/models/botConfig';
 import getFriendId from '@fiora/utils/getFriendId';
 import { sendMessage } from '../routes/message';
+import { uploadFile } from '../routes/system';
 import { authorizeBot, BotError, hash, identifier } from './config';
 
 const rates = new Map<string, number[]>();
@@ -98,7 +99,7 @@ export async function handleBotRequest(token: string, method: string, path: stri
     rate(`key:${settings.apiKeyHash}`, 120);
     if (method === 'GET' && path === '/identity') {
         return { user: { id: settings.userId, name: user.username }, apiVersion: 1,
-            capabilities: { receive: { history: true, poll: true, message: true, recall: false }, send: { text: true, image: false, reply: false, recall: false }, member: { list: true, kick: false, mute: false } },
+            capabilities: { receive: { history: true, poll: true, message: true, recall: false }, send: { text: true, image: true, reply: false, recall: false }, member: { list: true, kick: false, mute: false } },
             scope: { allowedGroupIds: [...settings.allowedGroupIds], allowPrivate: settings.allowPrivate },
             limits: { history: 50, events: 100, content: 2048, pollCursorMaxAgeSeconds: 300 } };
     }
@@ -157,13 +158,35 @@ export async function handleBotRequest(token: string, method: string, path: stri
                 id: hasMore && last ? String(last._id) : '000000000000000000000000', purpose: 'events',
                 start: after.start, issuedAt: now }), hasMore, reset: false };
     }
+    if (method === 'POST' && path === '/images') {
+        assert(data && typeof data.file === 'string', 'file 字段必填且需为 Base64 字符串');
+        const buffer = Buffer.from(data.file, 'base64');
+        assert(buffer.length > 0 && buffer.length <= 15 * 1024 * 1024, '图片大小不能超过 15MB');
+        let ext = 'png';
+        if (data.fileName && typeof data.fileName === 'string') {
+            const matched = data.fileName.match(/\.(png|jpe?g|gif|webp)$/i);
+            if (matched) ext = matched[1].toLowerCase();
+        } else {
+            if (buffer.length >= 3 && buffer[0] === 255 && buffer[1] === 216 && buffer[2] === 255) ext = 'jpg';
+            else if (buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) ext = 'png';
+            else if (['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) ext = 'gif';
+            else if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') ext = 'webp';
+        }
+        if (ext === 'jpeg') ext = 'jpg';
+        const targetFileName = `ImageMessage/${settings.userId}_${Date.now()}.${ext}`;
+        const result = await uploadFile({ data: { fileName: targetFileName, file: buffer }, socket: { user: settings.userId } } as any);
+        if (typeof result === 'string') throw new BotError(500, result);
+        return { url: result.url };
+    }
     if (method === 'POST' && path === '/messages') {
-        assert(data && typeof data.content === 'string' && data.content.trim().length > 0 && data.content.length <= 2048, '文本内容必须为 1–2048 个字符');
+        const type = data?.type || 'text';
+        assert(type === 'text' || type === 'image', '只支持 text 或 image 消息类型');
+        assert(data && typeof data.content === 'string' && data.content.trim().length > 0 && data.content.length <= 2048, '内容必须为 1–2048 个字符');
         assert(typeof data.requestId === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(data.requestId), 'requestId 必须为 UUID');
         const id = await assertConversation(settings, data.conversationId);
         rate(`send:${settings.userId}`, 30);
         const key = `bot:${settings.apiKeyHash}:${data.requestId.toLowerCase()}`;
-        const digest = hash(JSON.stringify([id, data.content]));
+        const digest = hash(JSON.stringify(type === 'text' ? [id, data.content] : [id, type, data.content]));
         await BotRequest.init();
         let record;
         try { record = await BotRequest.findOneAndUpdate({ key }, { $setOnInsert: { key, digest } }, { upsert: true, new: true }).lean(); }
@@ -175,7 +198,7 @@ export async function handleBotRequest(token: string, method: string, path: stri
         if (record.messageId) return { id: record.messageId, conversationId: id };
         const fresh = await authorizeBot(token);
         await assertConversation(fresh.settings, id);
-        const sent = await sendMessage({ data: { to: id, type: 'text', content: data.content }, socket: { user: settings.userId, isAdmin: false, emit } } as Context<SendMessageData>, { literalText: true, bridgeKey: key });
+        const sent = await sendMessage({ data: { to: id, type, content: data.content }, socket: { user: settings.userId, isAdmin: false, emit } } as Context<SendMessageData>, { literalText: true, bridgeKey: key });
         await BotRequest.updateOne({ key, digest }, { $set: { messageId: String(sent._id) } });
         return { id: String(sent._id), conversationId: id };
     }
