@@ -479,3 +479,53 @@ export async function toggleNewUserSendMessage(enable: boolean) {
     const [, result] = await fetch('toggleNewUserSendMessage', { enable });
     return !!result;
 }
+
+export interface BotAccessConfig {
+    enabled: boolean;
+    userId: string;
+    allowedGroupIds: string[];
+    allowPrivate: boolean;
+    hasApiKey: boolean;
+    apiKeyPrefix: string;
+    updatedAt?: string | null;
+}
+
+export interface BotAccessOptions {
+    users: { _id: string; username: string }[];
+    groups: { _id: string; name: string }[];
+}
+
+export interface BotAccessSettings {
+    config: BotAccessConfig;
+    options: BotAccessOptions;
+}
+
+export type BotAccessInput = Pick<BotAccessConfig, 'enabled' | 'userId' | 'allowedGroupIds' | 'allowPrivate'>;
+
+export async function getBotConfig(userId?: string) {
+    const [error, result] = await fetch<BotAccessSettings>('getBotConfig', userId === undefined ? {} : { userId });
+    if (error) throw new Error(error);
+    if (!result) throw new Error('读取机器人接入配置失败');
+    return result;
+}
+
+export async function saveBotConfig(config: BotAccessInput) {
+    const [error, result] = await fetch<BotAccessSettings>('saveBotConfig', config);
+    if (error) throw new Error(error);
+    if (!result) throw new Error('保存机器人接入配置失败');
+    return result;
+}
+
+export async function rotateBotApiKey() {
+    const [error, result] = await fetch<{ config: BotAccessConfig; apiKey: string }>('rotateBotApiKey', {});
+    if (error) throw new Error(error);
+    if (!result) throw new Error('生成机器人 API Key 失败');
+    return result;
+}
+
+export async function revokeBotApiKey() {
+    const [error, result] = await fetch<{ config: BotAccessConfig }>('revokeBotApiKey', {});
+    if (error) throw new Error(error);
+    if (!result) throw new Error('撤销机器人 API Key 失败');
+    return result;
+}

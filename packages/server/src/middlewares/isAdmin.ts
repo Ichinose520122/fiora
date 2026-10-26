@@ -21,6 +21,10 @@ export default function isAdmin(socket: Socket) {
         'getSystemConfig',
         'createUser',
         'getAdminUsers',
+        'getBotConfig',
+        'saveBotConfig',
+        'rotateBotApiKey',
+        'revokeBotApiKey',
     ]);
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         socket.data.isAdmin =

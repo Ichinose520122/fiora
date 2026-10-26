@@ -561,9 +561,12 @@ export async function deleteMessage(ctx: Context<{ messageId: string }>) {
         '只能撤回本人的消息',
     );
 
-    if (ctx.socket.isAdmin) {
+    if (ctx.socket.isAdmin && !(message.bridgeKey && message.bridgeKey.startsWith('bot:'))) {
         await Message.deleteOne({ _id: messageId });
     } else {
+        // Retain bot retry keys even for admin deletion. Clearing content removes
+        // the payload while the unique key prevents concurrent retries resurrecting it.
+        if (ctx.socket.isAdmin) message.content = '';
         message.deleted = true;
         await message.save();
     }

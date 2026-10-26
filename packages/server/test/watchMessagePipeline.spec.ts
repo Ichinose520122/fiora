@@ -1,9 +1,9 @@
 import Message from '@fiora/database/mongoose/models/message';
 import { createOrUpdateHistory } from '@fiora/database/mongoose/models/history';
-import { sendMessage } from '../src/routes/message';
+import { sendMessage, deleteMessage } from '../src/routes/message';
 jest.mock('expo-server-sdk', () => ({ Expo: jest.fn() }), { virtual: true });
 jest.mock('@fiora/utils/logger', () => ({ __esModule: true, default: { error: jest.fn(), warn: jest.fn() } }));
-jest.mock('@fiora/database/mongoose/models/message', () => ({ __esModule: true, default: { init: jest.fn().mockResolvedValue(null), create: jest.fn(), findOne: jest.fn() } }));
+jest.mock('@fiora/database/mongoose/models/message', () => ({ __esModule: true, default: { init: jest.fn().mockResolvedValue(null), create: jest.fn(), findOne: jest.fn(), deleteOne: jest.fn() } }));
 jest.mock('@fiora/database/mongoose/models/user', () => ({ __esModule: true, default: { findOne: async () => ({ toObject: () => ({ _id: 'user', username: 'Alice' }) }) } }));
 jest.mock('@fiora/database/mongoose/models/group', () => ({ __esModule: true, default: {} }));
 jest.mock('@fiora/database/mongoose/models/history', () => ({ __esModule: true, default: {}, createOrUpdateHistory: jest.fn() }));
@@ -27,4 +27,14 @@ test('cinema comment is broadcast through Fiora once; retries reuse persisted me
     expect((await sendMessage(ctx, options))._id).toBe('saved-id');
     expect(emit.mock.calls.length).toBe(broadcasts);
     expect(createOrUpdateHistory).toHaveBeenCalledTimes(1);
+});
+
+test('admin removal keeps a bot retry tombstone and erases content', async () => {
+    const saved = { _id: 'e'.repeat(24), from: 'bot', to: 'c'.repeat(24), content: 'remove me', bridgeKey: 'bot:key:request', deleted: false, save: jest.fn() };
+    (Message.findOne as jest.Mock).mockResolvedValue(saved);
+    await deleteMessage({ data: { messageId: saved._id }, socket: { user: 'admin', isAdmin: true, emit: jest.fn() } } as any);
+    expect(saved.deleted).toBe(true);
+    expect(saved.content).toBe('');
+    expect(saved.save).toHaveBeenCalled();
+    expect(Message.deleteOne).not.toHaveBeenCalled();
 });

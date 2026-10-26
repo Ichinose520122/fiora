@@ -45,6 +45,7 @@ export interface MessageDocument extends Document {
     createTime: Date;
     /** Has it been deleted */
     deleted: boolean;
+    bridgeKey?: string;
 }
 
 /**

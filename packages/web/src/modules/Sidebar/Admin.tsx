@@ -1,5 +1,6 @@
 import HeadwearPicker from './HeadwearPicker';
 import AdminUsers from './AdminUsers';
+import BotAccess from './BotAccess';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { TagParticleType, TagStylePreset } from '@fiora/utils/tagStyle';
@@ -27,6 +28,7 @@ const sections = [
     { id: 'accounts', title: '用户账号', description: '账号列表、登录记录与密码管理', path: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2' },
     { id: 'appearance', title: '用户装扮', description: '头像头饰与个性标签', path: 'M12 3l2.7 5.5L21 9.4l-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.4l6.3-.9Z' },
     { id: 'platform', title: '平台账号', description: '网易云与 Pixiv 登录', path: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2' },
+    { id: 'bot', title: '机器人接入', description: '机器人账号、消息权限与 API Key', path: 'M12 3v3M9 3h6M5 8h14v12H5ZM2 12v4M22 12v4M8 12h1M15 12h1M9 17h6' },
 ] as const;
 type Section = typeof sections[number]['id'];
 
@@ -275,6 +277,9 @@ function Admin(props: AdminProps) {
                     <section className={Style.panel} id="admin-panel-platform" aria-label="平台账号" hidden={section !== 'platform'}>
                         <div className={Style.card}><div className={Style.cardTitle}><h3>网易云音乐</h3><span className={Style.badge}>一起听歌</span></div><div className={Style.accountContent}>{visible && <MusicAccount />}</div></div>
                         <div className={Style.card}><div className={Style.accountContent}>{visible && <PixivAccount />}</div></div>
+                    </section>
+                    <section className={Style.panel} id="admin-panel-bot" aria-label="机器人接入" hidden={section !== 'bot'}>
+                        {visible && section === 'bot' && <BotAccess revision={usersRevision} />}
                     </section>
                 </fieldset>
             </div>
