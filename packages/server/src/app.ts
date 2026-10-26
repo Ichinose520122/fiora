@@ -33,6 +33,7 @@ import * as pixivAccountRoutes from './routes/pixivAccount';
 import * as watchRoutes from './routes/watch';
 import * as botRoutes from './routes/bot';
 import botHttp from './bot/http';
+import { installBotGateway } from './bot/gateway';
 import watchChat from './watch/chat';
 import { installMusic } from './music/service';
 import musicFiles from './music/files';
@@ -58,6 +59,7 @@ const io = new Server(httpServer, {
 
 app.use(watchChat(io));
 app.use(botHttp(io));
+installBotGateway(httpServer, io);
 // Wait for the complete local QQ expression cache before publishing its manifest.
 app.use(async (ctx, next) => {
     if (ctx.path !== '/QQExpression/_index.json') {

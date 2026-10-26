@@ -28,6 +28,7 @@ import client from '../../../config/client';
 import getLinkmanAccess from '../utils/linkmanAccess';
 import { executeMusicCommand } from '../music/commands';
 import { _watchInvitation } from './watch';
+import { dispatchBotMessage } from '../bot/gateway';
 import { preparePixivImages } from '../utils/pixiv';
 import { pixivDirectImage } from '@fiora/utils/pixiv';
 
@@ -234,6 +235,7 @@ export async function sendMessage(ctx: Context<SendMessageData>, options: { lite
         if (type === 'inviteV2') {
             await handleInviteV2Message(messageData);
         }
+        dispatchBotMessage(messageData);
 
         if (toGroup) {
             ctx.socket.emit(toGroup._id.toString(), 'message', messageData);

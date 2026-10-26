@@ -14,6 +14,18 @@ Fiora 提供单个机器人账号的 HTTP 接口，由管理员绑定现有普�
 
 每次请求均核对账号状态和会话权限；群组授权不代替群成员资格。机器人退群或解除双向好友关系后，不再允许访问对应会话。
 
+## 在线状态与 WebSocket 长连接接入
+
+推荐使用原生 WebSocket 连接 `wss://你的聊天域名/api/bot/v1/ws?token=<API_KEY>`（或使用请求头 `Authorization: Bearer <API_KEY>`）。
+
+* **原生实时在线**：WebSocket 成功建连并鉴权后，服务端在 MongoDB 的 `Socket` 集合中注册该机器人用户的在线记录，并实时刷新缓存；在群成员列表与私聊界面中与普通真人用户一样即时点亮在线绿灯。
+* **即时离线清理**：当本地程序退出、断开连接或断网时，服务端自动清理对应的 Socket 记录并刷新缓存，界面即时显示离线。
+* **实时下行推送**：群内或私聊有新消息时，服务端以 `{ type: "message.created", message: {...} }` 毫秒级下发，无需 HTTP 轮询。
+* **上行发送回复**：本地程序向 WebSocket 发送 `{ action: "send", conversationId, content, requestId }`，服务端保存并广播后返回 `{ type: "sent", id, conversationId, requestId }`。
+* **心跳保活**：支持发送 `{ type: "ping" }`，服务端回复 `{ type: "pong", time }`。
+
+同时保留 HTTP 接口（`GET /events` 轮询与 `POST /messages` 发送），供无长连接支持的纯脚本调用。
+
 ## 连接与鉴权
 
 基础地址：`https://你的聊天域名/api/bot/v1`。
