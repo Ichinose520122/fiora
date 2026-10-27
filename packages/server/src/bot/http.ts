@@ -14,6 +14,12 @@ import { authorizeBot, BotError, hash, identifier } from './config';
 
 const rates = new Map<string, number[]>();
 const FiveMinutes = 5 * 60 * 1000;
+const MaxRequestBytes = 16 * 1024;
+const MaxImageBytes = 15 * 1024 * 1024;
+// Base64 expands each three decoded bytes to four characters; reserve room for JSON fields.
+const MaxImageRequestBytes = Math.ceil(MaxImageBytes / 3) * 4 + MaxRequestBytes;
+const RequestTimeout = 10 * 1000;
+const ImageRequestTimeout = 120 * 1000;
 const projection = { from: 1, to: 1, type: 1, content: 1, deleted: 1, createTime: 1 };
 type Cursor = { time: number; id: string; revision: string; purpose: string; start?: number; issuedAt?: number };
 
@@ -161,7 +167,8 @@ export async function handleBotRequest(token: string, method: string, path: stri
     if (method === 'POST' && path === '/images') {
         assert(data && typeof data.file === 'string', 'file 字段必填且需为 Base64 字符串');
         const buffer = Buffer.from(data.file, 'base64');
-        assert(buffer.length > 0 && buffer.length <= 15 * 1024 * 1024, '图片大小不能超过 15MB');
+        if (buffer.length > MaxImageBytes) throw new BotError(413, '图片大小不能超过 15 MiB');
+        assert(buffer.length > 0, '图片内容不能为空');
         let ext = 'png';
         if (data.fileName && typeof data.fileName === 'string') {
             const matched = data.fileName.match(/\.(png|jpe?g|gif|webp)$/i);
@@ -205,6 +212,38 @@ export async function handleBotRequest(token: string, method: string, path: stri
     throw new BotError(404, '机器人接口不存在或不支持该请求方法');
 }
 
+function readBody(req: KoaContext['req'], maximum: number, timeout: number, sizeError: string): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = []; let size = 0;
+        const cleanup = () => {
+            clearTimeout(deadline);
+            req.removeListener('data', onData);
+            req.removeListener('end', onEnd);
+            req.removeListener('aborted', onAborted);
+        };
+        const onError = (error: Error) => {
+            cleanup();
+            // Keep the socket writable long enough to return a JSON error response.
+            req.pause();
+            reject(error);
+        };
+        const onData = (chunk: Buffer) => {
+            size += chunk.length;
+            if (size > maximum) { onError(new BotError(413, sizeError)); return; }
+            chunks.push(Buffer.from(chunk));
+        };
+        const onEnd = () => { cleanup(); resolve(Buffer.concat(chunks)); };
+        const onAborted = () => onError(new BotError(400, '请求内容传输中断'));
+        const deadline = setTimeout(() => onError(new BotError(408, '读取请求内容超时')), timeout);
+        req.on('data', onData);
+        req.on('end', onEnd);
+        req.on('error', onError);
+        req.on('aborted', onAborted);
+        // IncomingMessage can emit ECONNRESET after aborted; keep an error listener until close.
+        req.once('close', () => req.removeListener('error', onError));
+    });
+}
+
 export default function botHttp(io: Server) {
     return async (ctx: KoaContext, next: Next) => {
         if (!ctx.path.startsWith('/api/bot/')) { await next(); return; }
@@ -221,22 +260,19 @@ export default function botHttp(io: Server) {
             let data: any;
             if (ctx.method === 'POST') {
                 if (!ctx.is('application/json')) throw new BotError(415, '请求必须使用 application/json');
-                const chunks: Buffer[] = []; let size = 0;
-                const deadline = setTimeout(() => ctx.req.destroy(), 10000);
-                try {
-                    for await (const chunk of ctx.req) {
-                        size += chunk.length;
-                        if (size > 16384) throw new BotError(413, '请求内容超过 16 KiB');
-                        chunks.push(Buffer.from(chunk));
-                    }
-                } finally { clearTimeout(deadline); }
-                try { data = JSON.parse(Buffer.concat(chunks).toString()); } catch { throw new BotError(400, 'JSON 格式错误'); }
+                const imageUpload = ctx.path === '/api/bot/v1/images';
+                const maximum = imageUpload ? MaxImageRequestBytes : MaxRequestBytes;
+                const sizeError = imageUpload ? '图片请求内容超过 20 MiB Base64 及 16 KiB 附加字段上限' : '请求内容超过 16 KiB';
+                if (Number(ctx.get('Content-Length')) > maximum) throw new BotError(413, sizeError);
+                const body = await readBody(ctx.req, maximum, imageUpload ? ImageRequestTimeout : RequestTimeout, sizeError);
+                try { data = JSON.parse(body.toString()); } catch { throw new BotError(400, 'JSON 格式错误'); }
                 assert(data && typeof data === 'object' && !Array.isArray(data), 'JSON 必须为对象');
             }
             ctx.body = await handleBotRequest(token, ctx.method, ctx.path.slice('/api/bot/v1'.length), ctx.query, data,
                 (target, event, value) => io.to(target).emit(event, value));
         } catch (error) {
             ctx.status = error instanceof BotError ? error.status : error instanceof assert.AssertionError ? 403 : 500;
+            if (ctx.status === 413 || ctx.status === 408) ctx.set('Connection', 'close');
             if (ctx.status === 429) ctx.set('Retry-After', '60');
             ctx.body = { error: ctx.status === 500 ? '机器人接口暂不可用' : (error as Error).message };
         }

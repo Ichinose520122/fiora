@@ -1,4 +1,4 @@
-name: Bot gateway presence regression tests
+name: Bot gateway regression tests
 on:
   pull_request:
   workflow_call:
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: npm install --prefix "$RUNNER_TEMP/bot-gateway-deps" --ignore-scripts --no-save ws@7.5.3
-      - run: node --experimental-vm-modules --test packages/server/test/botGatewayPresence.test.mjs
+      - run: npm install --prefix "$RUNNER_TEMP/bot-gateway-deps" --ignore-scripts --no-save ws@7.5.3 koa@2.13.1
+      - run: node --experimental-vm-modules --test packages/server/test/botGatewayPresence.test.mjs packages/server/test/botHttpImages.test.mjs
         env:
           FIORA_GATEWAY_TEST_DEPS: ${{ runner.temp }}/bot-gateway-deps

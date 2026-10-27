@@ -49,7 +49,8 @@ curl --fail-with-body "$FIORA_URL/api/bot/v1/identity" \
 | `GET /history` | `conversationId`、可选 `limit`（1–50，默认 30）、`before` | `{ messages, next }` |
 | `GET /messages/:id` | 消息编号 | `{ message }` |
 | `GET /events` | 可选 `cursor`、`limit`（1–100，默认 50） | `{ events, cursor, hasMore, reset }` |
-| `POST /messages` | JSON：`conversationId`、`content`、`requestId` | `{ id, conversationId }`，编号对应已持久化消息 |
+| `POST /images` | JSON：`file`（Base64）、可选 `fileName` | `{ url }` |
+| `POST /messages` | JSON：`conversationId`、`content`、`requestId`、可选 `type`（`text` 或 `image`） | `{ id, conversationId }`，编号对应已持久化消息 |
 
 消息对象如下。已删除消息的 `content` 为空，`deleted` 为 `true`。
 
@@ -89,17 +90,19 @@ curl --fail-with-body "$FIORA_URL/api/bot/v1/identity" \
 
 文本长度为 1–2048 个字符，不能全部为空白。发送内容按普通文字处理，不执行 `/watch`、音乐等聊天命令。消息仍受 Fiora 原有禁言和发言规则约束。
 
+发送图片时，先通过 `POST /images` 上传 Base64 编码的图片，再通过 `POST /messages` 发送 `type: "image"`，并将返回的 `url` 用作 `content`。图片解码后不得超过 15 MiB；HTTP 图片上传请求体上限为 20 MiB（Base64）加 16 KiB（JSON 与附加字段），读取期限为 120 秒。超出图片大小或请求体限制返回 `413`，读取超时返回 `408`。
+
 `requestId` 为客户端生成的 UUID。同一密钥下，对同一发送任务重试必须复用相同编号、会话和内容；服务端返回同一条消息，不重复落库。使用同一编号发送不同内容或不同会话返回 `409`。轮换密钥后属于新的去重范围，客户端应避免将已完成任务重新发送。
 
 管理员删除通过本接口发送的消息时，服务端清空内容并保留删除标记和去重编号，防止并发重试恢复已删除消息；历史查询可能返回该删除标记。
 
-请求体上限为 16 KiB，读取期限为 10 秒。接口每个密钥每分钟最多 120 次请求，机器人账号每分钟最多 30 次发送；另有连接来源请求限制。`429` 响应带 `Retry-After`，本地程序应按提示退避；网络错误应采用带上限的退避重试。
+除 `POST /images` 外，POST 请求体上限为 16 KiB，读取期限为 10 秒。接口每个密钥每分钟最多 120 次请求，机器人账号每分钟最多 30 次发送；另有连接来源请求限制。`429` 响应带 `Retry-After`，本地程序应按提示退避；网络错误应采用带上限的退避重试。
 
 错误返回 `{ "error": "说明" }`。常见状态：`400` 无效 JSON 或游标，`401` 密钥无效或接入关闭，`403` 权限或参数校验失败，`404` 接口或消息不存在，`409` 游标过期或请求编号冲突，`413` 请求体过大，`415` 请求类型不支持，`429` 超过请求限制，`500` 服务暂不可用。
 
 ## 本地程序与插件适配
 
-网站接口提供身份、能力声明、收消息、历史、消息查询、群成员查询及文字回复。图片等已有消息类型可以出现在读取结果中，但 v1 不提供上传、图片发送、引用回复、撤回、群管理或 QQ 专属动作；客户端必须依据 `capabilities` 判断支持情况。
+网站接口提供身份、能力声明、收消息、历史、消息查询、群成员查询、图片上传及文字和图片回复。v1 不提供引用回复、撤回、群管理或 QQ 专属动作；客户端必须依据 `capabilities` 判断支持情况。
 
 QQ-agent 的 0.4 和 0.5 unfinished 插件接口存在差异，不能直接将网站接口视为 OneBot 或完整 QQ-agent 插件运行环境。本地程序需要单独的 Fiora 传输适配器，并针对所选版本处理执行上下文、字符串 ID、发送回执和插件能力。模型调用、搜索、计算、记忆等与平台无关的插件可优先评估复用；依赖 QQ 消息、群管理、戳一戳、合并转发等能力的插件需逐项适配。不支持的动作应明确返回失败，不能伪造成功回执。
 
