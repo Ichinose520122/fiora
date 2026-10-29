@@ -134,13 +134,21 @@ export function installBotGateway(httpServer: http.Server, io: any) {
     wss.on('connection', async (ws: any, req: http.IncomingMessage, auth: any, token: string) => {
         const ip = getUpgradeIp(req, config.trustProxyHeaders);
         const socketId = `bot_${auth.settings.userId}_${randomBytes(8).toString('hex')}`;
+        // Display metadata comes from the bot process, which may run on another host.
+        const platform = firstHeaderValue(req.headers['x-fiora-bot-platform']);
+        const runtime = firstHeaderValue(req.headers['x-fiora-bot-runtime']);
+        const platforms: { [key: string]: string } = {
+            win32: 'Windows', linux: 'Linux', darwin: 'macOS',
+            freebsd: 'FreeBSD', openbsd: 'OpenBSD', aix: 'AIX', sunos: 'SunOS',
+        };
+        const os = Object.prototype.hasOwnProperty.call(platforms, platform) ? platforms[platform] : '未知系统';
 
         // Register in Fiora's real-time Socket collection so the bot is online just like a real user
         const presence = {
             id: socketId,
             user: auth.settings.userId,
             ip,
-            os: 'Windows',
+            os: runtime === 'docker' ? `${os} (Docker)` : os,
             browser: 'DaFeiYu Bot',
             environment: 'bot',
             createTime: new Date(),

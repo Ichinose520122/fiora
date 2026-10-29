@@ -64,8 +64,8 @@ async function gateway(t) {
         await new Promise((resolve) => server.close(resolve));
         wss.close();
     });
-    return { records, state, sessions: module.namespace.activeBotSessions, async connect() {
-        const ws = new WebSocket(`ws://127.0.0.1:${server.address().port}/api/bot/v1/ws?token=test`);
+    return { records, state, sessions: module.namespace.activeBotSessions, async connect(headers = {}) {
+        const ws = new WebSocket(`ws://127.0.0.1:${server.address().port}/api/bot/v1/ws?token=test`, { headers });
         clients.push(ws);
         const message = await once(ws, 'message');
         assert.equal(JSON.parse(message[0]).type, 'ready');
@@ -89,13 +89,31 @@ test('closing a newer bot connection keeps an older live connection online', { t
 
 test('heartbeat restores a missing online record for an active authenticated connection', { timeout: 5000 }, async (t) => {
     const h = await gateway(t);
-    const ws = await h.connect();
+    const ws = await h.connect({ 'X-Fiora-Bot-Platform': 'linux', 'X-Fiora-Bot-Runtime': 'docker' });
     h.records.clear();
     const reply = once(ws, 'message');
     ws.send(JSON.stringify({ type: 'ping' }));
     assert.equal(JSON.parse((await reply)[0]).type, 'pong');
     assert.equal(h.records.size, 1);
     assert.equal([...h.records.values()][0].user, userId);
+    assert.equal([...h.records.values()][0].os, 'Linux (Docker)');
+});
+
+test('bot presence displays reported runtime and handles legacy or invalid metadata', { timeout: 5000 }, async (t) => {
+    const h = await gateway(t);
+    for (const [headers, expected] of [
+        [{ 'X-Fiora-Bot-Platform': 'linux', 'X-Fiora-Bot-Runtime': 'docker' }, 'Linux (Docker)'],
+        [{ 'X-Fiora-Bot-Platform': 'linux' }, 'Linux'],
+        [{ 'X-Fiora-Bot-Platform': 'win32' }, 'Windows'],
+        [{ 'X-Fiora-Bot-Platform': 'darwin' }, 'macOS'],
+        [{}, '未知系统'],
+        [{ 'X-Fiora-Bot-Platform': 'constructor', 'X-Fiora-Bot-Runtime': '<invalid>' }, '未知系统'],
+    ]) {
+        await h.connect(headers);
+        const record = [...h.records.values()].at(-1);
+        assert.equal(record.os, expected);
+        assert.equal(record.environment, 'bot');
+    }
 });
 
 test('a revoked bot cannot recreate its online record through a heartbeat', { timeout: 5000 }, async (t) => {
