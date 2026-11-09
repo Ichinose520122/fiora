@@ -34,7 +34,6 @@ export async function handleWatchChat(token: string, data: any, emit: (target: s
     const { grant, access, isAdmin } = await authorizeChat(token);
     assert(data && ['read', 'send', 'media'].includes(data.action), '未知聊天操作');
     if (data.action === 'media') {
-        assert(isAdmin || !access.group || access.group.creator.toString() === grant.sub, '没有切换影片的权限');
         assert(typeof data.title === 'string' && data.title.trim().length > 0 && data.title.length <= 180, '影片标题需为 1–180 个字符');
         const media = { title: data.title.trim(), cover: mediaUrl(data.cover), source: mediaUrl(data.source) };
         const invitations = await Message.find({ to: grant.room, type: 'system', deleted: { $ne: true },

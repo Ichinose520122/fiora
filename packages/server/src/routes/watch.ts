@@ -40,7 +40,7 @@ export async function watchJoin(ctx: Context<any>) {
     assert(ctx.socket.user, '请先登录');
     assert(ctx.data && typeof ctx.data.roomId === 'string', '缺少聊天房间');
     const roomId = ctx.data.roomId.toLowerCase();
-    const access = await getLinkmanAccess(ctx.socket.user, roomId);
+    await getLinkmanAccess(ctx.socket.user, roomId);
     const { audience, issuer } = settings();
     const now = Date.now();
     recent.forEach((times, key) => { if (!times.some(time => time > now - 60000)) recent.delete(key); });
@@ -56,7 +56,7 @@ export async function watchJoin(ctx: Context<any>) {
         iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + 60,
         jti: randomBytes(16).toString('hex'), sub: ctx.socket.user,
         name: user!.username.slice(0, 100), avatar: user!.avatar || '', room: roomId,
-        admin, canControl: admin || !access.group || access.group.creator.toString() === ctx.socket.user,
+        admin, canControl: true,
         chatGrant: issueWatchChatGrant(ctx.socket.user, roomId, user!.tokenVersion || 0),
     };
     const body = base64url(Buffer.from(JSON.stringify(payload)));

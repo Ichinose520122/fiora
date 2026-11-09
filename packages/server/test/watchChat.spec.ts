@@ -47,23 +47,23 @@ test('reads only signed-room text messages and redacts retracted contents', asyn
     expect((result as any).messages.map((item: any) => item.content)).toEqual(['hello', '']);
 });
 
-test('media updates require control permission and safe metadata before reading invitations', async () => {
+test('media updates require current room membership and safe metadata before reading invitations', async () => {
     const token = issueWatchChatGrant(user, room, 7);
     const media = { action: 'media', title: '葬送的芙莉莲', cover: 'https://img.example.com/cover.jpg', source: 'https://example.com/series' };
-    (getLinkmanAccess as jest.Mock).mockResolvedValueOnce({ group: { creator: 'c'.repeat(24) } });
-    await expect(handleWatchChat(token, media, jest.fn())).rejects.toThrow('没有切换影片');
+    (getLinkmanAccess as jest.Mock).mockRejectedValueOnce(new Error('你不在该群组中'));
+    await expect(handleWatchChat(token, media, jest.fn())).rejects.toThrow('你不在该群组中');
     await expect(handleWatchChat(token, { ...media, cover: 'https://user:password@img.example.com/cover.jpg' }, jest.fn())).rejects.toThrow('HTTPS');
     await expect(handleWatchChat(token, { ...media, source: 'http://example.com/series' }, jest.fn())).rejects.toThrow('HTTPS');
     await expect(handleWatchChat(token, { ...media, title: 'x'.repeat(181) }, jest.fn())).rejects.toThrow('180');
     expect(Message.find).not.toHaveBeenCalled(); expect(Message.findOneAndUpdate).not.toHaveBeenCalled();
 });
 
-test('updates only the latest actual watch invitation and broadcasts without creating a message', async () => {
+test('ordinary members update only the latest actual invitation and broadcast without creating a message', async () => {
     const token = issueWatchChatGrant(user, room, 7); const emit = jest.fn();
     const media = { action: 'media', title: '葬送的芙莉莲', cover: 'https://img.example.com/cover.jpg', source: 'https://example.com/series' };
     const original = { command: 'watch', invite: true, value: '邀请一起看', source: '' };
     const content = JSON.stringify(original);
-    (getLinkmanAccess as jest.Mock).mockResolvedValue({ group: { creator: user } });
+    (getLinkmanAccess as jest.Mock).mockResolvedValue({ group: { creator: 'c'.repeat(24) } });
     (Message.find as jest.Mock).mockReturnValue({ lean: async () => [
         { _id: 'unrelated', content: JSON.stringify({ command: 'music', nested: original }) },
         { _id: 'latest', content }, { _id: 'older', content },

@@ -33,11 +33,11 @@ test('join checks current membership and signs short audience-bound claims', asy
     (getLinkmanAccess as jest.Mock).mockRejectedValue(new Error('你不在该群组中'));
     await expect(watchJoin(ctx)).rejects.toThrow('你不在该群组中');
 });
-test('ordinary group member gets view-only grant', async () => {
+test('ordinary group member can control playback without administrator permissions', async () => {
     (getLinkmanAccess as jest.Mock).mockResolvedValue({ group: { creator: 'c'.repeat(24) } });
     const result = await watchJoin({ socket: { user: 'a'.repeat(24), isAdmin: false }, data: { roomId: 'b'.repeat(24) } } as any);
     const ticket = new URLSearchParams(new URL(result.url).hash.slice(1)).get('ticket')!;
-    expect(JSON.parse(Buffer.from(ticket.split('.')[0], 'base64').toString()).canControl).toBe(false);
+    expect(JSON.parse(Buffer.from(ticket.split('.')[0], 'base64').toString())).toMatchObject({ canControl: true, admin: false });
 });
 
 test('password reset between socket validation and ticket issuance cannot renew authorization', async () => {
