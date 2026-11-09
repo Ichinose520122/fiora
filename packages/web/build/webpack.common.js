@@ -60,7 +60,8 @@ module.exports = {
                         options: {
                             importLoaders: 2,
                             modules: {
-                                localIdentName: '[local]--[hash:base64:5]',
+                                // Hex hashes keep generated selectors free of characters that need CSS escaping.
+                                localIdentName: '[local]--[hash:hex:8]',
                             },
                         },
                     },
