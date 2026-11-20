@@ -6,7 +6,7 @@
     "background_color": "#FAFAFA",
     "description": "一个为朋友们准备的温馨聊天空间",
     "orientation": "portrait-primary",
-    "theme_color": "#4a90e2",
+    "theme_color": "#FAFAFA",
     "icons": [
         {
             "src": "/favicon-96.png",
